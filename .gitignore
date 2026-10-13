@@ -1,0 +1,30 @@
+# Operating systems / editors
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.tmp
+*.bak
+*.swp
+# Secrets / local only
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+# Build/cache output (adjust after engine selection)
+build/
+dist/
+.cache/
+__pycache__/
+# Godot, if selected
+.godot/
+# Unity, if selected
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+# Do not ignore project sources or source art by default.
