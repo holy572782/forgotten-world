@@ -1,0 +1,186 @@
+[gd_scene load_steps=20 format=3]
+
+[sub_resource type="StandardMaterial3D" id="Material_floor"]
+albedo_color = Color(0.24, 0.34, 0.3, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Material_wall"]
+albedo_color = Color(0.52, 0.59, 0.66, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Material_ramp"]
+albedo_color = Color(0.27, 0.56, 0.65, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Material_step"]
+albedo_color = Color(0.75, 0.52, 0.27, 1)
+roughness = 1.0
+
+[sub_resource type="Environment" id="Environment_preview"]
+background_mode = 1
+background_color = Color(0.08, 0.11, 0.15, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.8, 0.87, 1, 1)
+ambient_light_energy = 0.65
+
+[sub_resource type="BoxMesh" id="Mesh_FlatGround"]
+material = SubResource("Material_floor")
+size = Vector3(28, 1, 28)
+
+[sub_resource type="BoxShape3D" id="Shape_FlatGround"]
+size = Vector3(28, 1, 28)
+
+[sub_resource type="BoxMesh" id="Mesh_Wall"]
+material = SubResource("Material_wall")
+size = Vector3(8, 3, 0.6)
+
+[sub_resource type="BoxShape3D" id="Shape_Wall"]
+size = Vector3(8, 3, 0.6)
+
+[sub_resource type="BoxMesh" id="Mesh_Ramp"]
+material = SubResource("Material_ramp")
+size = Vector3(4, 0.4, 6.324555)
+
+[sub_resource type="BoxShape3D" id="Shape_Ramp"]
+size = Vector3(4, 0.4, 6.324555)
+
+[sub_resource type="BoxMesh" id="Mesh_Landing"]
+material = SubResource("Material_ramp")
+size = Vector3(4, 2, 4)
+
+[sub_resource type="BoxShape3D" id="Shape_Landing"]
+size = Vector3(4, 2, 4)
+
+[sub_resource type="BoxMesh" id="Mesh_StepLow"]
+material = SubResource("Material_step")
+size = Vector3(4, 0.25, 2)
+
+[sub_resource type="BoxShape3D" id="Shape_StepLow"]
+size = Vector3(4, 0.25, 2)
+
+[sub_resource type="BoxMesh" id="Mesh_StepMiddle"]
+material = SubResource("Material_step")
+size = Vector3(4, 0.5, 2)
+
+[sub_resource type="BoxShape3D" id="Shape_StepMiddle"]
+size = Vector3(4, 0.5, 2)
+
+[sub_resource type="BoxMesh" id="Mesh_StepHigh"]
+material = SubResource("Material_step")
+size = Vector3(4, 1, 2)
+
+[sub_resource type="BoxShape3D" id="Shape_StepHigh"]
+size = Vector3(4, 1, 2)
+
+[node name="TestArena" type="Node3D"]
+
+[node name="Terrain" type="Node3D" parent="."]
+
+[node name="FlatGround" type="StaticBody3D" parent="Terrain"]
+position = Vector3(0, -0.5, 0)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Terrain/FlatGround"]
+mesh = SubResource("Mesh_FlatGround")
+
+[node name="Collision" type="CollisionShape3D" parent="Terrain/FlatGround"]
+shape = SubResource("Shape_FlatGround")
+
+[node name="Wall" type="StaticBody3D" parent="Terrain"]
+position = Vector3(3, 1.5, -9)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Terrain/Wall"]
+mesh = SubResource("Mesh_Wall")
+
+[node name="Collision" type="CollisionShape3D" parent="Terrain/Wall"]
+shape = SubResource("Shape_Wall")
+
+[node name="Ramp" type="StaticBody3D" parent="Terrain"]
+position = Vector3(-6, 0.810263, -2.936754)
+collision_layer = 1
+collision_mask = 0
+rotation = Vector3(0.32175055, 0, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Terrain/Ramp"]
+mesh = SubResource("Mesh_Ramp")
+
+[node name="Collision" type="CollisionShape3D" parent="Terrain/Ramp"]
+shape = SubResource("Shape_Ramp")
+
+[node name="Landing" type="StaticBody3D" parent="Terrain"]
+position = Vector3(-6, 1, -8)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Terrain/Landing"]
+mesh = SubResource("Mesh_Landing")
+
+[node name="Collision" type="CollisionShape3D" parent="Terrain/Landing"]
+shape = SubResource("Shape_Landing")
+
+[node name="StepLow" type="StaticBody3D" parent="Terrain"]
+position = Vector3(5, 0.125, 1)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Terrain/StepLow"]
+mesh = SubResource("Mesh_StepLow")
+
+[node name="Collision" type="CollisionShape3D" parent="Terrain/StepLow"]
+shape = SubResource("Shape_StepLow")
+
+[node name="StepMiddle" type="StaticBody3D" parent="Terrain"]
+position = Vector3(5, 0.25, -1)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Terrain/StepMiddle"]
+mesh = SubResource("Mesh_StepMiddle")
+
+[node name="Collision" type="CollisionShape3D" parent="Terrain/StepMiddle"]
+shape = SubResource("Shape_StepMiddle")
+
+[node name="StepHigh" type="StaticBody3D" parent="Terrain"]
+position = Vector3(5, 0.5, -3)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="Terrain/StepHigh"]
+mesh = SubResource("Mesh_StepHigh")
+
+[node name="Collision" type="CollisionShape3D" parent="Terrain/StepHigh"]
+shape = SubResource("Shape_StepHigh")
+
+[node name="PlayerSpawn" type="Marker3D" parent="."]
+position = Vector3(0, 0, 6)
+
+[node name="Preview" type="Node3D" parent="."]
+
+[node name="Camera3D" type="Camera3D" parent="Preview"]
+position = Vector3(24, 28, 32)
+rotation = Vector3(-0.610726, 0.643501, 0)
+projection = 1
+size = 43.0
+current = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Preview"]
+rotation = Vector3(-0.9, -0.5, 0)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Preview"]
+environment = SubResource("Environment_preview")
+
+[node name="Instructions" type="CanvasLayer" parent="Preview"]
+
+[node name="Label" type="Label" parent="Preview/Instructions"]
+offset_left = 20.0
+offset_top = 16.0
+mouse_filter = 2
+text = "M01 | 3D COLLISION TEST MAP
+Green: flat ground | Gray: wall | Blue: ramp | Orange: steps
+Terrain preview only. Player controls start in M02."
+

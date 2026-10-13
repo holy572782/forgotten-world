@@ -1,16 +1,3 @@
 [remap]
 
-importer="csv_translation"
-type="Translation"
-uid="uid://by87abifsfr44"
-
-[deps]
-
-source_file="res://assets/ASSET_REGISTER.csv"
-
-[params]
-
-compress=1
-delimiter=0
-unescape_keys=false
-unescape_translations=true
+importer="keep"

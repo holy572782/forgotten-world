@@ -1,1 +1,2 @@
 asset_id,path,category,creator,source_url,license,ai_generated,prompt_reference,status,notes
+m01_test_arena,scenes/test_arena.tscn,environment,Codex,,project_license_undecided,true,M01 simple primitive terrain request,prototype,Godot built-in BoxMesh and BoxShape3D; no external artwork; dimensions provisional
