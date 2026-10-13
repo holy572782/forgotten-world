@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="48" viewBox="0 0 32 48">
+  <!-- Original geometric test marker; provisional appearance, no character design. -->
+  <path fill="#172d40" d="M10 30h12v14h4v4H17V36h-2v12H6v-4h4z"/>
+  <path fill="#ffe29b" d="M8 17h16l5 18H3z"/>
+  <path fill="#527f9e" d="M11 19h10v10H11z"/>
+  <path fill="#172d40" d="M8 4h16v14H8z"/>
+  <path fill="#ffeec7" d="M10 6h12v10H10z"/>
+</svg>
