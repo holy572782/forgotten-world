@@ -129,7 +129,9 @@ static func horizontal_forward(view_basis: Basis) -> Vector3:
 
 static func input_to_world(input_vector: Vector2, view_basis: Basis) -> Vector3:
 	var forward := horizontal_forward(view_basis)
-	var right := forward.cross(Vector3.UP)
+	var right := view_basis.x
+	right.y = 0.0
+	right = right.normalized() if right.length_squared() > 0.000001 else forward.cross(Vector3.UP)
 	var bounded := input_vector.limit_length()
 	return right * bounded.x - forward * bounded.y
 

@@ -120,3 +120,10 @@
 - Godot SpringArm3D: https://docs.godotengine.org/en/stable/classes/class_springarm3d.html
 - Godot AnimatedSprite3D: https://docs.godotengine.org/en/stable/classes/class_animatedsprite3d.html
 - Godot Input: https://docs.godotengine.org/en/stable/tutorials/inputs/inputevent.html
+
+### M04実装補足（2026-10-14、数値はすべて試作値）
+- mainで独立CameraRigを使用。設定は `resources/camera_settings.tres` と `scripts/camera/camera_settings.gd` の初期値に集約。注視点Y=0.9m、距離10m、ピッチ-45°、回転100°/s、追従8.0。
+- 物理60Hzで指数追従 `1-exp(-follow_smoothing*delta)` とYaw更新を実行。プレイヤー→マップ復帰→リグ→SpringArmの順とし、共通の自動描画補間を有効化。移動は直前の物理カメラ姿勢を既存M02変換へ渡す。
+- SpringArmは地形layer 1に球半径0.25m・余白0.05mで衝突検査。プレイヤーのRIDを除外。遮蔽物フェード／輪郭表示は未実装。
+- map落下復帰は `snap_to_target()` で即時同期し描画補間をリセット。その他も1tickで8mを超える対象の位置変更を即時同期。移動・ジャンプの設定値は変更しない。
+- 実装参考: [SpringArm3D](https://docs.godotengine.org/en/stable/classes/class_springarm3d.html)、[物理補間とカメラ](https://docs.godotengine.org/en/stable/tutorials/physics/interpolation/advanced_physics_interpolation.html)。検証バイナリはGodot 4.7.2。

@@ -21,6 +21,11 @@ func _run() -> void:
 	root.add_child(main)
 	player.set_physics_process(false)
 	camera = main.get_node("TestArena/Preview/Camera3D")
+	_check(player.movement_camera == main.get_node("CameraRig/SpringArm3D/Camera3D"), "M04 camera wiring")
+	# Isolate the existing locomotion regression from orbit/follow, tested in M04.
+	main.get_node("CameraRig").set_physics_process(false)
+	player.movement_camera = camera
+	camera.make_current()
 	original_rotation = camera.rotation
 	_check(player.global_position == main.get_node("TestArena/PlayerSpawn").global_position, "Spawn wiring")
 	_check(player.movement_camera == camera, "Camera wiring")

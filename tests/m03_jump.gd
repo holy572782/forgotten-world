@@ -18,6 +18,9 @@ func _run() -> void:
 	player = main.get_node("Player")
 	player.set_physics_process(false)
 	main.get_node("TestArena/Preview/Camera3D").rotation = Vector3.ZERO
+	# Use the established world-aligned fixture; M04 tests live camera integration.
+	main.get_node("CameraRig").set_physics_process(false)
+	player.movement_camera = main.get_node("TestArena/Preview/Camera3D")
 	await _reset(Vector3(0, 0, 6))
 	jump_held = true
 	await _ticks(1)
