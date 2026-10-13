@@ -2,7 +2,7 @@
 
 # 忘れられた世界の旅人 / The Last Fable
 
-> オリジナル・幻想アクションアドベンチャー企画。版 `0.1.0`（2026-10-13）。**M00の最小Godotプロジェクトを追加。ゲームプレイは未実装、Godotでの起動確認は未実行です。**
+> オリジナル・幻想アクションアドベンチャー企画。版 `0.1.0`（2026-10-13）。**M00完了。Godot 4.7.2で起動・ヘッドレス読み込み・InputMapを確認済み。ゲームプレイは未実装です。**
 
 ## 一言でいうと
 夢・記憶・願いが風景になる幻想世界「エルディア」を、白化から救う旅。2Dスプライトの登場人物と3D世界を組み合わせ、七つの試練を順不同に探索するアクションアドベンチャー。
@@ -34,8 +34,8 @@
 
 ## M00：Godotプロジェクトの起動
 
-- 対象：Godot 4.x。具体的な利用バージョンは未固定。
-- 環境確認（2026-10-13）：PATHと確認した候補フォルダにGodot実行バイナリが見つからず、利用版・起動・ヘッドレス読み込みは未確認。未インストールと断定するものではありません。
+- 対象：Godot 4.x。今回の検証版：`4.7.2.stable.official.ed1daf0bf`。
+- 検証（2026-10-13）：ユーザーがF5で灰色の実行画面を確認。Codexがヘッドレス読み込み・60フレーム実行・InputMap全12アクション／30割り当ての合成入力検査に成功（終了コード0、エラー・警告なし）。記録は `docs/DEVELOPMENT_STATUS.md` を参照。
 - `project.godot` と空の `scenes/main.tscn`（Node3D）の最小構成です。外部アセットやプラグインは不要です。
 - Compatibilityレンダラーは起動用の仮設定、物理は仕様の初期値60 tick/sです。対応OSや最終描画方式を確定するものではありません。
 - 既存資料に残る「エンジン未決定」については、Godot採用を決定したADR-003を優先します。
@@ -53,15 +53,15 @@
 プロジェクトのルートで実行します。`$godotExe` は実際に使用するGodot 4.x実行ファイルの絶対パスに置き換えてください。
 
 ```powershell
-$godotExe = 'C:\path\to\godot.exe'
+$godotExe = 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe'
 & $godotExe --version
 & $godotExe --headless --path . --editor --quit
 $LASTEXITCODE
-& $godotExe --headless --path . --quit-after 2
+& $godotExe --headless --path . --quit-after 60
 $LASTEXITCODE
 ```
 
-各終了コードが `0` で、出力に読み込みエラーがないことを確認します。実施時は `--version` の正確な結果を本節に記録してください。`.godot/` キャッシュは既存の `.gitignore` で除外されています。
+各終了コードが `0` で、出力に読み込みエラーがないことを確認します。再検証時は `--version` の正確な結果を記録してください。InputMap検査は `& $godotExe --headless --path . --script res://tests/m00_input_map.gd` で再実行できます。`.godot/` キャッシュは既存の `.gitignore` で除外されています。
 
 ### 入力の試作値
 
