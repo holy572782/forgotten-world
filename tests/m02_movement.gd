@@ -132,12 +132,12 @@ func _run() -> void:
 	_check(absf(player.velocity.x - 2.0) < 0.01, "Movement Resource controls speed")
 	player.movement.speed = original_speed
 	await _reset(Vector3(0, 0.01, 7))
-	Input.action_press("jump")
+	# Jump is tested by M03; keep the unrelated action/camera scope regression.
 	Input.action_press("attack")
 	Input.action_press("camera_left")
 	await _ticks(30)
-	_check(player.is_on_floor() and absf(player.position.y) < 0.02 and camera.rotation == Vector3.ZERO, "No jump, attack or camera rotation added")
-	Input.action_release("jump")
+	_check(player.is_on_floor() and absf(player.position.y) < 0.02 and camera.rotation == Vector3.ZERO, "No attack or camera rotation added")
+	# No jump input in this M02 regression.
 	Input.action_release("attack")
 	Input.action_release("camera_left")
 	# Also verify Godot's normal automatic callback path, not just direct tick calls.
