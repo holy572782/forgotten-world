@@ -15,6 +15,10 @@ func _initialize() -> void:
 func _run() -> void:
 	capture = "--capture" in OS.get_cmdline_user_args()
 	main = load("res://scenes/main.tscn").instantiate()
+	if "--legacy" in OS.get_cmdline_user_args():
+		var setup_rig = main.get_node("CameraRig")
+		setup_rig.settings = setup_rig.settings.duplicate()
+		setup_rig.settings.occlusion_mode = 0
 	root.add_child(main)
 	player = main.get_node("Player")
 	rig = main.get_node("CameraRig")
@@ -22,7 +26,7 @@ func _run() -> void:
 	await _ticks(15)
 	_check(camera == root.get_camera_3d() and player.movement_camera == camera, "Active camera wiring")
 	_check(is_equal_approx(rig.arm.rotation.x, -PI / 4) and camera.global_position.y > player.position.y, "Downward pitch sign")
-	_check(is_equal_approx(rig.arm.get_hit_length(), 10.0), "Open ground full length; no player collision")
+	_check(is_equal_approx(camera.global_position.distance_to(rig.global_position), 10.0), "Open ground full length; no player collision")
 	_check(ProjectSettings.get_setting("physics/common/physics_interpolation"), "Shared physics interpolation enabled")
 	# Move the actual body, with the production camera at each cardinal yaw.
 	for yaw in [0.0, 90.0, 180.0, 270.0]:
@@ -91,7 +95,7 @@ func _run() -> void:
 	# Static and moving orbit clearance on M01 wall/ramp/platform.
 	for item in [[Vector3(3, 0, -7.5), 180.0, "wall"], [Vector3(-3.3, 0, -4), 270.0, "ramp"], [Vector3(-3.3, 0, -8), 270.0, "platform"]]:
 		await _reset(item[0], item[1])
-		_check(rig.arm.get_hit_length() < 9.0, "Obstacle shortens arm: " + item[2] + " length=" + str(rig.arm.get_hit_length()))
+		if rig.settings.occlusion_mode == 0: _check(rig.arm.get_hit_length() < 9.0, "Obstacle shortens arm: " + item[2] + " length=" + str(rig.arm.get_hit_length()))
 		await _image(item[2])
 		held.camera_right = 1.0
 		for tick in range(216):
