@@ -265,7 +265,7 @@ M04検証結果（2026-10-14）：Godot 4.7.2でM00〜M04の自動検査と実�
 1. **F8で停止**します。
 2. 左下「ファイルシステム」で `resources/camera_settings.tres` をクリック。
 3. 右のInspectorで **M04 occlusion prototype (provisional)** を展開し、**Occlusion Mode**を選択します。
-4. **A: SpringArm shortening** が従来方式、**B: Distance and fade** が改善試作です。Ctrl＋Sで保存し、F5で起動します。
+4. **A - SpringArm shortening** が従来方式、**B - Distance and fade** が改善試作です。Ctrl＋Sで保存し、F5で起動します。
 5. 同じ壁際で比較してください。比較後はBへ戻して保存してください。値は正式仕様ではなく試作用です。
 
 ### 操作確認

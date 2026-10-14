@@ -1,16 +1,17 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://c2chaqpjdyj7k"]
 
 [ext_resource type="PackedScene" path="res://scenes/test_arena.tscn" id="1_arena"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
-[ext_resource type="Script" path="res://scripts/main.gd" id="3_main"]
+[ext_resource type="Script" uid="uid://d048glycsrg6e" path="res://scripts/main.gd" id="3_main"]
 [ext_resource type="PackedScene" path="res://scenes/camera/camera_rig.tscn" id="4_camera"]
 
-[node name="Main" type="Node3D"]
+[node name="Main" type="Node3D" unique_id=1095149286]
 script = ExtResource("3_main")
 
-[node name="TestArena" parent="." instance=ExtResource("1_arena")]
+[node name="TestArena" parent="." unique_id=622795564 instance=ExtResource("1_arena")]
+transform = Transform3D(1.1924881e-08, 0, -1, 0, 1, 0, 1, 0, 1.1924881e-08, 0, 0, 0)
 
-[node name="Player" parent="." instance=ExtResource("2_player")]
+[node name="Player" parent="." unique_id=778295748 instance=ExtResource("2_player")]
 
-[node name="CameraRig" parent="." node_paths=PackedStringArray("target") instance=ExtResource("4_camera")]
+[node name="CameraRig" parent="." unique_id=236761302 node_paths=PackedStringArray("target") instance=ExtResource("4_camera")]
 target = NodePath("../Player")

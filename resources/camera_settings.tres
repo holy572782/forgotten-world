@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="" load_steps=2 format=3]
+[gd_resource type="Resource" format=3 uid="uid://d2o4tlm2jmy46"]
 
-[ext_resource type="Script" path="res://scripts/camera/camera_settings.gd" id="1"]
+[ext_resource type="Script" uid="uid://cbxclemo3qqod" path="res://scripts/camera/camera_settings.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
+occlusion_heights = null

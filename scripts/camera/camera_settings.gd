@@ -8,7 +8,7 @@ extends Resource
 @export_range(1.0, 100.0) var teleport_distance: float = 8.0
 
 @export_category("M04 occlusion prototype (provisional)")
-@export_enum("A: SpringArm shortening", "B: Distance and fade") var occlusion_mode: int = 1
+@export_enum("A - SpringArm shortening:0", "B - Distance and fade:1") var occlusion_mode: int = 1
 @export_range(0.05, 0.95) var occluded_opacity: float = 0.3
 @export_range(0.05, 1.0) var fade_time: float = 0.25
 @export_range(0.0, 0.5) var occlusion_release_delay: float = 0.12
