@@ -15,6 +15,8 @@ func _initialize() -> void:
 func _run() -> void:
 	capture = "--capture" in OS.get_cmdline_user_args()
 	main = load("res://scenes/main.tscn").instantiate()
+	# Fixed M01 fixture coordinates, independent of editor placement of the arena.
+	main.get_node("TestArena").transform = Transform3D.IDENTITY
 	if "--legacy" in OS.get_cmdline_user_args():
 		var setup_rig = main.get_node("CameraRig")
 		setup_rig.settings = setup_rig.settings.duplicate()

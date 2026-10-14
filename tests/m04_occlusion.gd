@@ -8,6 +8,8 @@ var comparison: Array[Vector3] = []
 func _run() -> void:
 	capture = "--capture" in OS.get_cmdline_user_args()
 	main = load("res://scenes/main.tscn").instantiate()
+	# Fixed M01 fixture coordinates, independent of editor placement of the arena.
+	main.get_node("TestArena").transform = Transform3D.IDENTITY
 	root.add_child(main)
 	player = main.get_node("Player")
 	rig = main.get_node("CameraRig")
@@ -44,6 +46,7 @@ func _run() -> void:
 	_check(wall.get_active_material(0) != base_material, "Per-instance material copy")
 	_check(is_equal_approx(base_material.albedo_color.a, 1.0), "Original alpha remains unchanged")
 	_check(absf(wall.get_active_material(0).albedo_color.a - 0.3) < 0.001, "Occluded opacity 0.3")
+	_check(wall.has_node("OcclusionShadow"), "Faded wall retains shadow caster")
 	_check(wall_body.collision_layer == 1 and wall_body.get_node("Collision").disabled == false, "Fading preserves collision")
 	# Multiple collinear blockers, using shared source material. Unrelated clone stays opaque.
 	var second := _box(Vector3(3, 3, -10.2), Vector3(8, 6, 0.4), base_material)
@@ -78,6 +81,7 @@ func _run() -> void:
 	await _ticks(30)
 	_check(wall.get_active_material(0) == base_material and wall.get_surface_override_material(0) == null, "Exact original binding restored")
 	_check(wall.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_ON, "Shadow state restored")
+	_check(not wall.has_node("OcclusionShadow"), "Shadow helper removed on restoration")
 	await _image("restored")
 	# Shared ramp/landing materials: only the obstructing mesh receives overrides.
 	for item in [[Vector3(-3.3, 0, -4), "Ramp"], [Vector3(-3.3, 0, -8), "Landing"]]:

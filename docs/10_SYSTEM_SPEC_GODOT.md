@@ -41,7 +41,7 @@
 - `Camera3D` を持つリグ (`CameraRig`/`SpringArm3D` 等)。プレイヤー追従、斜め見下ろし、プレイヤーの水平周囲を回転。
 - 初期ピッチ **-45°**（Godotノード回転方向は実シーンで確認）、距離 **10m**、回転速度 **100°/s**、追従平滑化 **8.0** は仮。
 - 初期版は水平Yaw回転のみ。ズーム、自由ピッチ、ロックオン追従は後続。
-- 地形に埋まらないこと。カメラが壁に当たる場合はSpringArm3D等で距離短縮。遮蔽物で主人公が隠れたらフェードまたは輪郭補助（後続）。
+- 地形に埋まらないこと。ADR-004により、距離維持＋遮蔽物フェード＋影保持を基本とし、カメラ本体の衝突は独立して補正する。従来のSpringArm距離短縮方式は比較用Aとして保持。輪郭補助は後続。
 - **回転中も入力方向が画面基準で正しく変化**し、キャラクターや地形が不自然に飛ばないこと。
 
 ## 5. 2Dスプライトと3D衝突
@@ -129,7 +129,7 @@
 - 実装参考: [SpringArm3D](https://docs.godotengine.org/en/stable/classes/class_springarm3d.html)、[物理補間とカメラ](https://docs.godotengine.org/en/stable/tutorials/physics/interpolation/advanced_physics_interpolation.html)。検証バイナリはGodot 4.7.2。
 
 ### M04遮蔽改善・B方式の比較試作（2026-10-14）
-本節はADR-004の**提案を試作したもの**。第4節および初回M04補足の距離短縮優先／フェード後続と異なる。Bを試作初期設定とし、最終採用はユーザー実機比較後に決定する。
+本節はADR-004に基づき、ユーザー比較後に採用したM04の基本方式。初回M04補足の距離短縮優先／フェード後続を更新し、B＋影保持を使用する。数値は試作値を維持する。
 
 - `camera_settings.gd` の `occlusion_mode`: 0=A（従来SpringArm）、1=B（距離維持＋フェード、初期値）。`resources/camera_settings.tres`はこの初期値を継承する。複雑なUIは追加しない。
 - BではSpringArmのネイティブ経路スイープを停止し、Camera3Dをtop_levelにして独立したワールド座標で配置。代わりに `camera_collision.gd` が半径0.25m＋余白0.05mの球で目的位置の重なりと直前位置からのsweepを検査する。視線に壁があるだけでは距離を短縮しない。
@@ -139,7 +139,8 @@
 - 視線遮蔽は足元＋Y=0.15／0.9／1.65mに向けた3本のray。各rayでヒットしたbodyを除外しながら最大16体まで検査して複数遮蔽物を収集。毎物理tick更新する。地形mask=1、プレイヤーRID除外。
 - `occlusion_fader.gd` は遮蔽物配下のMeshInstance3DごとにBaseMaterial3Dを複製し、個別surface overrideとして使用。元のmaterial_override／surface override／元alpha／影設定を保持。原本の材質や3Dコリジョンは変更しない。
 - 不透明度0.3まで0.25秒、遮蔽解除後0.12秒保持して0.25秒で復元。再検出時は現在値から継続する。rigの削除・Aへの切替でも即時復元。削除された遮蔽物は弱参照で除去。
-- 複製材質はAlpha blend、透明面はdepthを書かずdepth testは維持。透過中の影はOFF、完全復元時に元の影設定へ戻す。半透明同士の重なりは濃くなる。将来の交差メッシュには描画順の再評価が必要。
+- 複製材質はAlpha blend、透明面はdepthを書かずdepth testは維持。透過中の表示メッシュは影OFFとし、元の形状・材質を持つSHADOWS_ONLY子メッシュで影を維持する（ユーザーの影消失報告を反映）。解除／A切替／rig削除で子を削除し元の影設定へ戻す。元々影OFFなら子は作らない。影用メッシュは遮蔽収集対象外でコリジョンなし。半透明同士の重なりは濃くなる。将来の交差メッシュには描画順の再評価が必要。
 - M01では壁／床／坂／高台が別メッシュ。坂と高台の共有材質は複製により干渉しない。壁と床が一つのメッシュならメッシュ全体が薄くなる（面単位の切出しは未実装）。`camera_occlusion_exempt`グループでbodyまたはmesh単位の透過除外が可能だが、遮られた主人公が見える保証はなくなる。
 - 対応材質はBaseMaterial3D（StandardMaterial3D／ORMMaterial3D、next_passなし）。ShaderMaterialや追加パスは警告しフェードをスキップする。M01材質は対応済み。新アセットでは適合確認またはA方式を使用する。
 - 上記数値は全て試作値。スプライト・移動・ジャンプの値は維持。
+- 影補足（2026-10-14）: Bの操作感と影保持はユーザー確認済み、基本方式として採用。影品質は本番の地形・照明に合わせて後続で調整する。M01静的メッシュで検証し、透過で露出する影の縞・ギザつきは残件。スキニング／blend shapeなど変形メッシュの影同期は今回対象外。参考: [GeometryInstance3DのSHADOWS_ONLY](https://docs.godotengine.org/en/4.4/classes/class_geometryinstance3d.html)。

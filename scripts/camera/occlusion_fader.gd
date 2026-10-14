@@ -44,6 +44,7 @@ func _collect_meshes(node: Node, found: Dictionary) -> void:
 
 func _begin(mesh: MeshInstance3D) -> void:
 	if not mesh.mesh: return
+	if mesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY: return
 	var id := mesh.get_instance_id()
 	if unsupported.has(id): return
 	var materials: Array[BaseMaterial3D] = []
@@ -61,14 +62,42 @@ func _begin(mesh: MeshInstance3D) -> void:
 		copy.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_OPAQUE_ONLY
 		materials.append(copy)
 		originals.append(mesh.get_surface_override_material(surface))
-	entries[id] = {"ref": weakref(mesh), "override": mesh.material_override, "originals": originals, "materials": materials, "alphas": alphas, "shadow": mesh.cast_shadow, "opacity": 1.0, "hold": 0.0}
+	var shadow_proxy := _make_shadow_proxy(mesh)
+	# Retain materials until after the helper's rendering instance is freed.
+	var shadow_materials: Array[Material] = []
+	if shadow_proxy:
+		for surface in range(mesh.mesh.get_surface_count()):
+			shadow_materials.append(shadow_proxy.get_active_material(surface))
+	entries[id] = {"ref": weakref(mesh), "override": mesh.material_override, "originals": originals, "materials": materials, "alphas": alphas, "shadow": mesh.cast_shadow, "shadow_proxy": shadow_proxy, "shadow_materials": shadow_materials, "opacity": 1.0, "hold": 0.0}
 	mesh.material_override = null
 	for surface in range(materials.size()): mesh.set_surface_override_material(surface, materials[surface])
-	# Transparent shadow support varies by renderer; remove solid blocking shadows.
+	# The original materials cast unchanged shadows through the separate proxy.
 	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+func _make_shadow_proxy(source: MeshInstance3D) -> MeshInstance3D:
+	if source.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF: return null
+	var proxy := MeshInstance3D.new()
+	proxy.name = "OcclusionShadow"
+	proxy.mesh = source.mesh
+	proxy.layers = source.layers
+	proxy.extra_cull_margin = source.extra_cull_margin
+	proxy.custom_aabb = source.custom_aabb
+	proxy.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+	# Exclude the helper from future occlusion collection; it has no collision.
+	proxy.add_to_group("camera_occlusion_exempt")
+	for surface in range(source.mesh.get_surface_count()):
+		var material := source.get_active_material(surface)
+		if source.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED:
+			material = material.duplicate() if material else StandardMaterial3D.new()
+			material.cull_mode = BaseMaterial3D.CULL_DISABLED
+		proxy.set_surface_override_material(surface, material)
+	# Identity child transform follows the original mesh, including parent rotation.
+	source.add_child(proxy)
+	return proxy
 
 func _restore(id: int) -> void:
 	var entry: Dictionary = entries[id]
+	if is_instance_valid(entry.shadow_proxy): entry.shadow_proxy.free()
 	var mesh: MeshInstance3D = entry.ref.get_ref()
 	if is_instance_valid(mesh):
 		mesh.material_override = entry.override
