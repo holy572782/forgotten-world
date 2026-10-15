@@ -9,7 +9,7 @@ func _ready() -> void:
 	$Player.reset_motion($TestArena/PlayerSpawn.global_position)
 	$Player.movement_camera = $CameraRig.camera
 	$CameraRig.snap_to_target()
-	$TestArena/Preview/Instructions/Label.text = "M04 | FOLLOW / ORBIT CAMERA\nWASD / Left stick: move | Space / South button: jump\nQ / E / Right stick: orbit | W: screen forward\nBlue: ramp | Gray: wall | Orange: steps | F8: stop"
+	$TestArena/Preview/Instructions.visible = false # Main uses HUD; arena F6 retains its preview.
 
 func _physics_process(_delta: float) -> void:
 	if $Player.global_position.y < fall_reset_height:

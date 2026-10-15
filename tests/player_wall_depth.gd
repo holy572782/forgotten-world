@@ -7,6 +7,8 @@ func _run() -> void:
 	main = load("res://scenes/main.tscn").instantiate()
 	main.get_node("TestArena").transform = Transform3D.IDENTITY
 	root.add_child(main)
+	# Isolate the 3D pixel comparison from the live FPS/debug HUD.
+	main.get_node("HUD").visible = false
 	player = main.get_node("Player")
 	rig = main.get_node("CameraRig")
 	camera = rig.camera

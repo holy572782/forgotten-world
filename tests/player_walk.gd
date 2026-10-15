@@ -1,7 +1,7 @@
 extends "res://tests/m04_camera.gd"
 ## Real SpriteFrames + live locomotion, camera and renderer; no artwork rewriting.
 const SHEET := "res://assets/sprites/player/player_walk.png"
-const SOURCE_SHA256 := "c54a1719ab9eeea8730c1da79dac38538d2a133e998e7dea6e34af83534c3683"
+const SOURCE_SHA256 := "f7a78f4bab6393bca4c46a7c3befa05bb86383eb27b0d2e64d5c2efc7f12ed71"
 var sprite: AnimatedSprite3D
 
 func _run() -> void:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_controller"]
 [ext_resource type="Resource" path="res://resources/player_movement.tres" id="2_movement"]
@@ -8,6 +8,9 @@
 [ext_resource type="Shader" path="res://assets/shaders/player_depth.gdshader" id="5_depth"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player/player_walk.png" id="6_sheet"]
 
+[ext_resource type="Script" path="res://scripts/combat/health_component.gd" id="7_health"]
+[ext_resource type="Script" path="res://scripts/combat/attack_gauge_component.gd" id="8_gauge"]
+[ext_resource type="Script" path="res://scripts/player/attack_preview.gd" id="9_preview"]
 [sub_resource type="ShaderMaterial" id="Material_depth"]
 resource_local_to_scene = true
 shader = ExtResource("5_depth")
@@ -48,3 +51,12 @@ texture_filter = 0
 alpha_cut = 1
 sprite_frames = ExtResource("3_frames")
 animation = &"walk_down"
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("7_health")
+
+[node name="AttackGaugeComponent" type="Node" parent="."]
+script = ExtResource("8_gauge")
+
+[node name="AttackPreview" type="Node" parent="."]
+script = ExtResource("9_preview")
