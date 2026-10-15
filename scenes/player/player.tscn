@@ -1,9 +1,17 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_controller"]
 [ext_resource type="Resource" path="res://resources/player_movement.tres" id="2_movement"]
 [ext_resource type="SpriteFrames" path="res://assets/sprites/player/player_walk_frames.tres" id="3_frames"]
 [ext_resource type="Script" path="res://scripts/player/player_sprite.gd" id="4_sprite"]
+
+[ext_resource type="Shader" path="res://assets/shaders/player_depth.gdshader" id="5_depth"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player/player_walk.png" id="6_sheet"]
+
+[sub_resource type="ShaderMaterial" id="Material_depth"]
+resource_local_to_scene = true
+shader = ExtResource("5_depth")
+shader_parameter/sprite_sheet = ExtResource("6_sheet")
 
 [sub_resource type="CapsuleShape3D" id="Shape_body"]
 radius = 0.3
@@ -20,6 +28,8 @@ position = Vector3(0, 0.9, 0)
 shape = SubResource("Shape_body")
 
 [node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
+material_override = SubResource("Material_depth")
+cast_shadow = 0
 offset = Vector2(0, 23)
 pixel_size = 0.0375
 billboard = 1
@@ -27,5 +37,14 @@ texture_filter = 0
 alpha_cut = 1
 sprite_frames = ExtResource("3_frames")
 animation = &"walk_down"
-frame = 1
 script = ExtResource("4_sprite")
+
+[node name="Shadow" type="AnimatedSprite3D" parent="AnimatedSprite3D"]
+cast_shadow = 3
+offset = Vector2(0, 23)
+pixel_size = 0.0375
+billboard = 1
+texture_filter = 0
+alpha_cut = 1
+sprite_frames = ExtResource("3_frames")
+animation = &"walk_down"

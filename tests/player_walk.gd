@@ -25,9 +25,10 @@ func _run() -> void:
 	_check(sprite.billboard == BaseMaterial3D.BILLBOARD_ENABLED and not sprite.no_depth_test, "Billboard/depth retained")
 	var rows := [&"walk_down", &"walk_left", &"walk_right", &"walk_up"]
 	for row in range(4):
-		_check(sprite.sprite_frames.get_frame_count(rows[row]) == 3, "Three frames per direction")
-		for column in range(3):
-			var atlas: AtlasTexture = sprite.sprite_frames.get_frame_texture(rows[row], column)
+		_check(sprite.sprite_frames.get_frame_count(rows[row]) == 4, "Four playback slots per direction")
+		for slot in range(4):
+			var column: int = [1, 0, 1, 2][slot]
+			var atlas: AtlasTexture = sprite.sprite_frames.get_frame_texture(rows[row], slot)
 			_check(atlas.region == Rect2(column * 48, row * 48, 48, 48), "Exact frame region")
 			var rect := atlas.get_image().get_used_rect()
 			_check(rect.end.y == 47, "All twelve frames share foot baseline")
@@ -45,16 +46,18 @@ func _run() -> void:
 			held.clear()
 			await _ticks(30)
 			await process_frame
-			_check(not sprite.is_playing() and sprite.frame == 1 and sprite.animation == directions[action], "Idle center and last direction")
-	# All three frames advance naturally, rather than a still image labelled walking.
+			_check(not sprite.is_playing() and sprite.frame == 0 and sprite.animation == directions[action], "Idle center and last direction")
+	# Observe actual playback, including the wrap from right back to center.
 	await _reset(Vector3(0, 0, 6), 0)
 	held.move_down = 1.0
-	var frames_seen: Dictionary = {}
-	for tick in range(36):
+	var frames_seen: Array[int] = [sprite.frame]
+	for tick in range(75):
 		await _ticks(1)
 		await process_frame
-		frames_seen[sprite.frame] = true
-	_check(frames_seen.size() == 3, "Live animation visits all three frames")
+		if sprite.frame != frames_seen.back(): frames_seen.append(sprite.frame)
+	_check(frames_seen.size() >= 5, "Live animation completes a cycle")
+	for index in range(frames_seen.size()):
+		_check(frames_seen[index] == index % 4, "Live center/left/center/right sequence and wrap")
 	# Diagonal vectors are mapped to a nearest cardinal, without quantizing movement.
 	var controller = load("res://scripts/player/player_controller.gd")
 	for direction in [Vector2(1, 1), Vector2(1, -1), Vector2(-1, 1), Vector2(-1, -1)]:
@@ -78,7 +81,7 @@ func _run() -> void:
 	rig.snap_to_target()
 	await _ticks(3)
 	await process_frame
-	_check(player.facing_world == facing and sprite.animation != before and sprite.frame == 1, "Idle orbit preserves world facing")
+	_check(player.facing_world == facing and sprite.animation != before and sprite.frame == 0, "Idle orbit preserves world facing")
 	await _reset(Vector3(0, 0, 6), 0)
 	held.jump = 1.0
 	held.move_right = 1.0
@@ -111,7 +114,7 @@ func _run() -> void:
 	for animation_name in rows:
 		sprite.animation = animation_name
 		sprite.stop()
-		for index in range(3):
+		for index in range(4):
 			sprite.frame = index
 			await _image("%s_%d" % [animation_name, index])
 	if capture: await _check_pitch_proportions()
@@ -133,7 +136,7 @@ func _check_pitch_proportions() -> void:
 	sprite.reparent(stage, false)
 	sprite.position = Vector3.ZERO
 	sprite.animation = &"walk_down"
-	sprite.frame = 1
+	sprite.frame = 0
 	var view := Camera3D.new()
 	stage.add_child(view)
 	view.projection = Camera3D.PROJECTION_ORTHOGONAL

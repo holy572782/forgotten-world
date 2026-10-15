@@ -5,6 +5,18 @@ const DIRECTIONS: Array[StringName] = [&"walk_down", &"walk_right", &"walk_up", 
 @export_range(0.001, 0.2) var movement_threshold: float = 0.01
 @onready var body: CharacterBody3D = get_parent()
 
+func _ready() -> void:
+	var capsule: CapsuleShape3D = body.get_node("CollisionShape3D").shape
+	material_override.set_shader_parameter("body_radius", capsule.radius)
+	material_override.set_shader_parameter("body_height", capsule.height)
+	frame_changed.connect(_sync_shadow)
+	animation_changed.connect(_sync_shadow)
+	_sync_shadow()
+
+func _sync_shadow() -> void:
+	$Shadow.animation = animation
+	$Shadow.frame = frame
+
 func _process(_delta: float) -> void:
 	# Re-evaluate even while idle so orbiting shows the correct side of the body.
 	var sector := Controller.direction_sector(body.facing_world, body._movement_basis(), 4)
@@ -20,4 +32,5 @@ func _process(_delta: float) -> void:
 		play()
 	else:
 		stop()
-		frame = 1
+		# Slot 0 is the center pose in the center/left/center/right cycle.
+		frame = 0
