@@ -20,9 +20,9 @@ position = Vector3(0, 0.9, 0)
 shape = SubResource("Shape_body")
 
 [node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
-position = Vector3(0, 0.8625, 0)
+offset = Vector2(0, 23)
 pixel_size = 0.0375
-billboard = 2
+billboard = 1
 texture_filter = 0
 alpha_cut = 1
 sprite_frames = ExtResource("3_frames")

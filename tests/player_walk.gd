@@ -22,7 +22,7 @@ func _run() -> void:
 	_check(imported.get_image().get_data() == source.get_data(), "Imported texture pixels equal original PNG")
 	_check(not imported.get_image().has_mipmaps(), "No mipmaps")
 	_check(sprite.texture_filter == BaseMaterial3D.TEXTURE_FILTER_NEAREST, "Nearest filtering")
-	_check(sprite.billboard == BaseMaterial3D.BILLBOARD_FIXED_Y and not sprite.no_depth_test, "Billboard/depth retained")
+	_check(sprite.billboard == BaseMaterial3D.BILLBOARD_ENABLED and not sprite.no_depth_test, "Billboard/depth retained")
 	var rows := [&"walk_down", &"walk_left", &"walk_right", &"walk_up"]
 	for row in range(4):
 		_check(sprite.sprite_frames.get_frame_count(rows[row]) == 3, "Three frames per direction")
@@ -31,7 +31,7 @@ func _run() -> void:
 			_check(atlas.region == Rect2(column * 48, row * 48, 48, 48), "Exact frame region")
 			var rect := atlas.get_image().get_used_rect()
 			_check(rect.end.y == 47, "All twelve frames share foot baseline")
-			_check(absf(sprite.position.y + (24 - rect.end.y) * sprite.pixel_size) < 0.00001, "Opaque foot edge at body origin")
+			_check(sprite.position.is_zero_approx() and absf(sprite.offset.y + 24 - rect.end.y) < 0.00001, "Opaque foot edge at body origin")
 	# Screen direction remains consistent for all camera cardinal yaws.
 	var directions := {"move_down": &"walk_down", "move_right": &"walk_right", "move_up": &"walk_up", "move_left": &"walk_left"}
 	for yaw in [0, 90, 180, 270]:
@@ -84,7 +84,7 @@ func _run() -> void:
 	held.move_right = 1.0
 	await _ticks(18)
 	_check(player.position.y > 0.5, "Jump remains active")
-	_check(absf(sprite.global_position.y - player.global_position.y - 23 * sprite.pixel_size) < 0.0001, "Foot baseline follows jump")
+	_check(sprite.global_position.is_equal_approx(player.global_position), "Foot baseline follows jump")
 	await _image("jump")
 	held.clear()
 	await _ticks(60)
@@ -96,6 +96,17 @@ func _run() -> void:
 	await _image("wall")
 	# Capture the exact authored poses at the gameplay scale, without resizing artwork.
 	await _reset(Vector3(0, 0, 6), 0)
+	# Fixed orthographic scale isolates pitch foreshortening from perspective size.
+	rig.set_physics_process(false)
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	camera.size = 8.0
+	for pitch in [20, 45, 70]:
+		var angle := deg_to_rad(float(pitch))
+		camera.global_position = player.global_position + Vector3(0, sin(angle), cos(angle)) * 10
+		camera.look_at(player.global_position)
+		await _ticks(2)
+		_check(sprite.global_position.is_equal_approx(player.global_position), "Foot pivot at pitch " + str(pitch))
+		await _image("pitch_%d" % pitch)
 	sprite.set_process(false)
 	for animation_name in rows:
 		sprite.animation = animation_name
@@ -103,10 +114,45 @@ func _run() -> void:
 		for index in range(3):
 			sprite.frame = index
 			await _image("%s_%d" % [animation_name, index])
+	if capture: await _check_pitch_proportions()
 	for failure in failures: push_error(failure)
 	if failures.is_empty(): print("PASS player walk: original pixels, 12 atlas regions/feet, four yaws/directions, idle, live animation, diagonals, orbit, jump, B fade")
 	main.free()
 	quit(0 if failures.is_empty() else 1)
+
+func _check_pitch_proportions() -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(256, 256)
+	viewport.transparent_bg = true
+	viewport.own_world_3d = true
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	root.add_child(viewport)
+	var stage := Node3D.new()
+	viewport.add_child(stage)
+	# Use the actual production sprite, isolated from terrain/shadow pixels.
+	sprite.reparent(stage, false)
+	sprite.position = Vector3.ZERO
+	sprite.animation = &"walk_down"
+	sprite.frame = 1
+	var view := Camera3D.new()
+	stage.add_child(view)
+	view.projection = Camera3D.PROJECTION_ORTHOGONAL
+	view.size = 4
+	view.current = true
+	var sizes: Array[Vector2i] = []
+	for pitch in [20, 45, 70]:
+		var angle := deg_to_rad(float(pitch))
+		view.position = Vector3(0, sin(angle), cos(angle)) * 10
+		view.look_at(Vector3.ZERO)
+		for tick in range(3): await RenderingServer.frame_post_draw
+		var rendered := viewport.get_texture().get_image()
+		var bounds := rendered.get_used_rect()
+		sizes.append(bounds.size)
+		print("BILLBOARD pitch=", pitch, " alpha_bounds=", bounds)
+		_check(abs(bounds.end.y - 128) <= 1, "Visible feet stay at projected origin")
+	for size in sizes:
+		_check(size.x > 0 and (size - sizes[0]).length() <= 1, "Pitch preserves rendered width/height")
+	viewport.free()
 
 func _image(label: String) -> void:
 	if not capture: return

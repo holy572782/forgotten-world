@@ -198,7 +198,7 @@ func _ticks(count: int) -> void:
 		main._physics_process(STEP)
 		var sprite: AnimatedSprite3D = player.get_node("AnimatedSprite3D")
 		var texture := sprite.sprite_frames.get_frame_texture(sprite.animation, 1)
-		_check(absf(sprite.global_position.y - (texture.get_height() / 2.0 - 1.0) * sprite.pixel_size - player.global_position.y) < 0.0001, "Sprite feet follow body")
+		_check(sprite.global_position.is_equal_approx(player.global_position) and absf(sprite.offset.y - (texture.get_height() / 2.0 - 1.0)) < 0.0001, "Sprite feet follow body")
 
 func _reset(at: Vector3) -> void:
 	direction = Vector2.ZERO

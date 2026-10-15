@@ -35,10 +35,10 @@ func _run() -> void:
 	_check(player.is_on_floor(), "Spawn grounded")
 	var sprite: AnimatedSprite3D = player.get_node("AnimatedSprite3D")
 	var texture := sprite.sprite_frames.get_frame_texture(sprite.animation, 1)
-	_check(absf(sprite.position.y - (texture.get_height() / 2.0 - 1.0) * sprite.pixel_size) < 0.0001, "Sprite lower edge matches feet")
+	_check(sprite.position.is_zero_approx() and absf(sprite.offset.y - (texture.get_height() / 2.0 - 1.0)) < 0.0001, "Sprite lower edge matches feet")
 	var collider: CollisionShape3D = player.get_node("CollisionShape3D")
 	_check(absf(collider.position.y - collider.shape.height / 2.0) < 0.0001, "Capsule lower edge matches feet")
-	_check(sprite.billboard == BaseMaterial3D.BILLBOARD_FIXED_Y and not sprite.no_depth_test, "Y billboard and depth test")
+	_check(sprite.billboard == BaseMaterial3D.BILLBOARD_ENABLED and not sprite.no_depth_test, "Full billboard and depth test")
 	_check(player.collision_layer == 2 and player.collision_mask == 1, "3D collision layers")
 	camera.rotation = Vector3.ZERO
 	var directions: Array[Vector2] = [Vector2.UP, Vector2(1, -1), Vector2.RIGHT, Vector2(1, 1), Vector2.DOWN, Vector2(-1, 1), Vector2.LEFT, Vector2(-1, -1)]
