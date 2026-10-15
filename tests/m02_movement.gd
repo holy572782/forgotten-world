@@ -17,6 +17,8 @@ func _initialize() -> void:
 
 func _run() -> void:
 	main = load("res://scenes/main.tscn").instantiate()
+	# Fixed fixture coordinates; do not change the saved arena placement.
+	main.get_node("TestArena").transform = Transform3D.IDENTITY
 	player = main.get_node("Player")
 	root.add_child(main)
 	player.set_physics_process(false)
@@ -32,8 +34,8 @@ func _run() -> void:
 	await _ticks(10)
 	_check(player.is_on_floor(), "Spawn grounded")
 	var sprite: AnimatedSprite3D = player.get_node("AnimatedSprite3D")
-	var texture := sprite.sprite_frames.get_frame_texture(&"default", 0)
-	_check(absf(sprite.position.y - texture.get_height() * sprite.pixel_size / 2.0) < 0.0001, "Sprite lower edge matches feet")
+	var texture := sprite.sprite_frames.get_frame_texture(sprite.animation, 1)
+	_check(absf(sprite.position.y - (texture.get_height() / 2.0 - 1.0) * sprite.pixel_size) < 0.0001, "Sprite lower edge matches feet")
 	var collider: CollisionShape3D = player.get_node("CollisionShape3D")
 	_check(absf(collider.position.y - collider.shape.height / 2.0) < 0.0001, "Capsule lower edge matches feet")
 	_check(sprite.billboard == BaseMaterial3D.BILLBOARD_FIXED_Y and not sprite.no_depth_test, "Y billboard and depth test")

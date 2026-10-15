@@ -13,6 +13,8 @@ func _initialize() -> void:
 
 func _run() -> void:
 	main = load("res://scenes/main.tscn").instantiate()
+	# Fixed fixture coordinates; do not change the saved arena placement.
+	main.get_node("TestArena").transform = Transform3D.IDENTITY
 	root.add_child(main)
 	main.set_physics_process(false)
 	player = main.get_node("Player")
@@ -195,8 +197,8 @@ func _ticks(count: int) -> void:
 		player._physics_process(STEP)
 		main._physics_process(STEP)
 		var sprite: AnimatedSprite3D = player.get_node("AnimatedSprite3D")
-		var texture := sprite.sprite_frames.get_frame_texture(&"default", 0)
-		_check(absf(sprite.global_position.y - texture.get_height() * sprite.pixel_size / 2.0 - player.global_position.y) < 0.0001, "Sprite feet follow body")
+		var texture := sprite.sprite_frames.get_frame_texture(sprite.animation, 1)
+		_check(absf(sprite.global_position.y - (texture.get_height() / 2.0 - 1.0) * sprite.pixel_size - player.global_position.y) < 0.0001, "Sprite feet follow body")
 
 func _reset(at: Vector3) -> void:
 	direction = Vector2.ZERO

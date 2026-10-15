@@ -11,6 +11,8 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var main := load("res://scenes/main.tscn").instantiate() as Node3D
+	# Probe coordinates below refer to the original M01 fixture.
+	main.get_node("TestArena").transform = Transform3D.IDENTITY
 	root.add_child(main)
 	arena = main.get_node("TestArena")
 	probe = CharacterBody3D.new()

@@ -135,7 +135,7 @@ static func input_to_world(input_vector: Vector2, view_basis: Basis) -> Vector3:
 	var bounded := input_vector.limit_length()
 	return right * bounded.x - forward * bounded.y
 
-static func direction_sector(direction: Vector3, view_basis: Basis) -> int:
+static func direction_sector(direction: Vector3, view_basis: Basis, sector_count: int = 8) -> int:
 	var forward := horizontal_forward(view_basis)
 	var screen_direction := Vector2(direction.dot(forward.cross(Vector3.UP)), -direction.dot(forward))
-	return posmod(roundi(atan2(screen_direction.x, screen_direction.y) / (PI / 4.0)), 8)
+	return posmod(roundi(atan2(screen_direction.x, screen_direction.y) / (TAU / sector_count)), sector_count)

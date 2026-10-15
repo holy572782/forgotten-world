@@ -13,6 +13,9 @@ func _initialize() -> void:
 
 func _run() -> void:
 	main = load("res://scenes/main.tscn").instantiate()
+	# Fixed fixture coordinates; do not change the saved arena placement.
+	if not "--diagnose" in OS.get_cmdline_user_args():
+		main.get_node("TestArena").transform = Transform3D.IDENTITY
 	root.add_child(main)
 	player = main.get_node("Player")
 	if "--diagnose" in OS.get_cmdline_user_args():
