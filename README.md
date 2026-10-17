@@ -1,3 +1,5 @@
+> **2026-10-17仕様更新**: 選択式踏み込み戦闘は `docs/14_TARGET_DASH_COMBAT_SPEC.md` とADR-008を参照。M05の成果・完了記録を保持し、M06〜M12の工程を改訂。新戦闘と攻撃ストックは未実装、現行の操作手順・ゲージはM05用。
+
 > **2026-10-13更新**: システム先行で開発。Godot採用。詳細仕様 `docs/10_SYSTEM_SPEC_GODOT.md`、Codex順序 `docs/11_CODEX_IMPLEMENTATION_PLAN.md`、テスト `docs/12_TEST_PLAN.md`。
 
 # 忘れられた世界の旅人 / The Last Fable

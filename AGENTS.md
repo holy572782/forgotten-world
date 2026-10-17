@@ -2,7 +2,7 @@
 
 あなたは『忘れられた世界の旅人』の開発協力者。ゲームの世界観・コード・アセットを作る前に以下を順守すること。
 
-**現在の最優先**: 物語より操作と戦闘のプロトタイプ実装。`docs/10_SYSTEM_SPEC_GODOT.md`、`docs/11_CODEX_IMPLEMENTATION_PLAN.md`、`docs/12_TEST_PLAN.md` はゲーム制作タスクで必読。古い「エンジン未決定」記述よりADR-003を優先。
+**現在の最優先**: 物語より操作と戦闘のプロトタイプ実装。`docs/10_SYSTEM_SPEC_GODOT.md`、`docs/11_CODEX_IMPLEMENTATION_PLAN.md`、`docs/12_TEST_PLAN.md`、`docs/14_TARGET_DASH_COMBAT_SPEC.md` はゲーム制作タスクで必読。戦闘の変更方針はADR-008を参照。古い「エンジン未決定」記述よりADR-003を優先。
 
 ## 作業前の必読順
 `README.md` → `docs/00_PROJECT_CHARTER.md` → `docs/01_WORLD_BIBLE.md` → `docs/02_STORY_AND_CHARACTERS.md` → `docs/03_SEVEN_TRIALS.md` → `docs/04_GAME_DESIGN.md` → `docs/05_PRODUCTION_RULES.md` → `docs/08_DECISIONS.md`。対象技術に関する作業では `docs/06_TECH_AND_GITHUB.md` も読む。
@@ -32,7 +32,7 @@
 
 - マップ・背景・環境アートを制作・変更するときは、事前に `docs/13_ART_DIRECTION.md`（保存時の管理注記を含む）を参照する。
 - 同書は将来の制作資料であり、内容は提案・ユーザーレビュー待ち。既存ADR・仕様を優先し、矛盾は報告して未決定事項を独断で確定しない。
-- 現在はゲームシステム実装を最優先する。資料保存をアート制作開始の指示と解釈しない。次工程はM05「HP・攻撃ゲージ・HUD」のまま（ADR-007）。
+- 現在はゲームシステム実装を最優先する。資料保存をアート制作開始の指示と解釈しない。M05は試作範囲完了。次工程はM06「選択式踏み込み・単発攻撃・帰還・ストック移行」（ADR-008）。実装は別指示で着手する。
 
 ## 禁止する思い込み
 - エンジンはGodotに決定。**Godotの正確なバージョン、対応OS、ターゲット端末、課金、仲間人数、数値バランス、マップの完全シームレス性は未決定。**
