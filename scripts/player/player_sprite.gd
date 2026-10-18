@@ -4,10 +4,12 @@ const Controller = preload("res://scripts/player/player_controller.gd")
 const DIRECTIONS: Array[StringName] = [&"walk_down", &"walk_right", &"walk_up", &"walk_left"]
 const SIDES := ["down", "right", "up", "left"]
 signal attack_started
+signal attack_completed
 @export_range(0.001, 0.2) var movement_threshold: float = 0.01
 @export var land_duration: float = 0.12 # Provisional presentation timing only.
 var state: StringName = &"Idle"
 var _attacking := false
+var combat_pose: StringName = &""
 var _attack_facing := Vector3.BACK
 var _was_airborne := false
 var _land_remaining := 0.0
@@ -38,6 +40,8 @@ func _sync_shadow() -> void:
 	material_override.set_shader_parameter("sprite_sheet", texture.atlas)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if is_instance_valid(body.combat) and body.combat.is_busy():
+		return
 	if event.is_action_pressed("attack") and not event.is_echo():
 		request_attack_preview()
 
@@ -57,6 +61,7 @@ func request_attack_preview() -> bool:
 func _on_animation_finished() -> void:
 	if _attacking and String(animation).begins_with("attack_"):
 		_attacking = false
+		attack_completed.emit()
 		_process(0.0)
 
 func _process(delta: float) -> void:
@@ -67,6 +72,15 @@ func _process(delta: float) -> void:
 	_land_remaining = maxf(0.0, _land_remaining - delta)
 	var facing: Vector3 = _attack_facing if _attacking else body.facing_world
 	var sector := Controller.direction_sector(facing, body._movement_basis(), 4)
+	if not combat_pose.is_empty() and not _attacking:
+		state = combat_pose
+		if combat_pose == &"Attack":
+			return # Hold the final attack pose until the physics state starts Return.
+		_select_animation(StringName("jump_" + SIDES[sector]))
+		stop()
+		frame = 0 if combat_pose == &"Approach" else 1
+		_sync_shadow()
+		return
 	if _attacking:
 		_select_animation(StringName("attack_" + SIDES[sector]))
 		return

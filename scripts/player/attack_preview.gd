@@ -1,5 +1,5 @@
 extends Node
-## M05-only adapter. M06 can replace this with formal attack acceptance.
+## M05 gauge adapter retained through M06. Stock migration belongs to M07.
 var attack_start_gauge: float = 0.0
 
 func _ready() -> void:

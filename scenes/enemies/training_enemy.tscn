@@ -1,0 +1,53 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/targetable.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/combat/health_component.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/combat/combat_balance.gd" id="3"]
+[sub_resource type="Resource" id="Health"]
+script = ExtResource("3")
+max_hp = 40.0
+initial_hp = 40.0
+[sub_resource type="CapsuleMesh" id="BodyMesh"]
+radius = 0.4
+height = 1.5
+[sub_resource type="CapsuleShape3D" id="BodyShape"]
+radius = 0.4
+height = 1.5
+[sub_resource type="SphereMesh" id="MarkerMesh"]
+radius = 0.25
+height = 0.5
+[sub_resource type="SphereShape3D" id="MarkerShape"]
+radius = 0.25
+[sub_resource type="StandardMaterial3D" id="MarkerMaterial"]
+shading_mode = 0
+albedo_color = Color(1, 0.72, 0.12, 1)
+
+[node name="TrainingEnemy" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+[node name="Body" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.75, 0)
+mesh = SubResource("BodyMesh")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.75, 0)
+shape = SubResource("BodyShape")
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("2")
+balance = SubResource("Health")
+[node name="Targetable" type="Node3D" parent="."]
+script = ExtResource("1")
+[node name="HealthLabel" type="Label3D" parent="Targetable"]
+position = Vector3(0, 2.55, 0)
+billboard = 1
+font_size = 32
+pixel_size = 0.008
+[node name="Marker" type="Area3D" parent="Targetable"]
+position = Vector3(0, 2, 0)
+collision_layer = 8
+collision_mask = 0
+monitoring = false
+[node name="Mesh" type="MeshInstance3D" parent="Targetable/Marker"]
+mesh = SubResource("MarkerMesh")
+material_override = SubResource("MarkerMaterial")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Targetable/Marker"]
+shape = SubResource("MarkerShape")

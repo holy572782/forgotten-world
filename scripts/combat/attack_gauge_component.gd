@@ -20,7 +20,7 @@ func _process(delta: float) -> void:
 	if is_finite(delta) and delta > 0.0:
 		_set_value(_value + recovery_rate * delta)
 
-## Return the attack-start snapshot for the future M06 damage calculation.
+## Preserve the M05 preview snapshot; M06 damage does not scale with this value.
 func consume() -> float:
 	var snapshot := _value
 	_set_value(0.0)

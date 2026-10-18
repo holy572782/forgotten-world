@@ -45,7 +45,7 @@ theme_override_constants/separation = 5
 
 [node name="Title" type="Label" parent="Root/Panel/Margin/Rows"]
 layout_mode = 2
-text = "M05 | PLAYER PROTOTYPE"
+text = "M06 | TARGET DASH"
 
 [node name="HPLabel" type="Label" parent="Root/Panel/Margin/Rows"]
 layout_mode = 2
@@ -76,5 +76,6 @@ text = "FPS"
 [node name="Controls" type="Label" parent="Root/Panel/Margin/Rows"]
 layout_mode = 2
 text = "WASD: move | Space: jump
+Right click gold mark: attack
 J / Left click: attack preview
 Q / E: orbit | F8: stop"

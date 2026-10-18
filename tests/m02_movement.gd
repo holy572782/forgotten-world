@@ -39,7 +39,7 @@ func _run() -> void:
 	var collider: CollisionShape3D = player.get_node("CollisionShape3D")
 	_check(absf(collider.position.y - collider.shape.height / 2.0) < 0.0001, "Capsule lower edge matches feet")
 	_check(sprite.billboard == BaseMaterial3D.BILLBOARD_ENABLED and not sprite.no_depth_test, "Full billboard and depth test")
-	_check(player.collision_layer == 2 and player.collision_mask == 1, "3D collision layers")
+	_check(player.collision_layer == 2 and player.collision_mask == 5, "3D collision layers: terrain + M06 enemy bodies")
 	camera.rotation = Vector3.ZERO
 	var directions: Array[Vector2] = [Vector2.UP, Vector2(1, -1), Vector2.RIGHT, Vector2(1, 1), Vector2.DOWN, Vector2(-1, 1), Vector2.LEFT, Vector2(-1, -1)]
 	for direction in directions:

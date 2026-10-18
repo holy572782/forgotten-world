@@ -9,6 +9,7 @@ const MovementSettings = preload("res://scripts/player/player_movement.gd")
 var facing_world := Vector3.BACK
 ## Screen-relative sectors: down, down-right, right, up-right, up, up-left, left, down-left.
 var facing_index: int = 0
+var combat: Node
 var _coyote_remaining := 0.0
 var _buffer_remaining := 0.0
 var _jump_consumed := false
@@ -24,11 +25,17 @@ func _ready() -> void:
 	floor_stop_on_slope = true
 
 func _unhandled_input(event: InputEvent) -> void:
+	if is_instance_valid(combat) and combat.is_busy():
+		return
 	# Preserve short press/release taps between physics ticks, but ignore key repeat.
 	if event.is_action_pressed("jump") and not event.is_echo() and not _wait_for_jump_release:
 		_jump_requested = true
 
 func _physics_process(delta: float) -> void:
+	if is_instance_valid(combat):
+		combat.physics_step(delta)
+		if combat.is_busy():
+			return
 	var grounded := _floor_valid and is_on_floor() and not _jump_consumed
 	_update_jump_input(delta)
 	if grounded:
@@ -82,6 +89,8 @@ func _update_landing(was_grounded: bool) -> void:
 		_coyote_remaining = movement.coyote_time
 
 func reset_motion(at: Vector3) -> void:
+	if is_instance_valid(combat):
+		combat.cancel()
 	# Map/respawn code chooses the safe point; the controller only resets motion.
 	global_position = at
 	velocity = Vector3.ZERO
@@ -93,6 +102,14 @@ func reset_motion(at: Vector3) -> void:
 	_wait_for_jump_release = true
 	_floor_valid = false
 	reset_physics_interpolation()
+
+func clear_combat_input() -> void:
+	velocity = Vector3.ZERO
+	_buffer_remaining = 0.0
+	_jump_requested = false
+	_coyote_remaining = 0.0
+	_wait_for_jump_release = true
+	_jump_was_pressed = Input.is_action_pressed("jump")
 
 func _movement_basis() -> Basis:
 	var camera := movement_camera
