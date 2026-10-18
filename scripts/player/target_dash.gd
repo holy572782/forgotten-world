@@ -91,9 +91,12 @@ func pick_target(screen_position: Vector2) -> Node3D:
 	var ray := PhysicsRayQueryParameters3D.create(origin, origin + camera.project_ray_normal(screen_position) * 200.0, 1 | 4 | 8)
 	ray.collide_with_areas = true
 	var result := body.get_world_3d().direct_space_state.intersect_ray(ray)
-	if result.is_empty() or not result.collider is Area3D: return null
-	var candidate: Node = result.collider.get_parent()
-	if candidate is Target and candidate.marker.visible and can_select(candidate): return candidate
+	if result.is_empty(): return null
+	# Resolve only the frontmost collider. Never select through an unassigned body or wall.
+	for candidate in get_tree().get_nodes_in_group("combat_targets"):
+		if candidate is Target and candidate.accepts_click(result.collider):
+			if candidate.marker.visible and can_select(candidate): return candidate
+			return null
 	return null
 
 func can_select(candidate: Node3D) -> bool:

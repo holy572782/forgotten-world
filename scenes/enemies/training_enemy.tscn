@@ -36,6 +36,7 @@ script = ExtResource("2")
 balance = SubResource("Health")
 [node name="Targetable" type="Node3D" parent="."]
 script = ExtResource("1")
+click_collider_paths = Array[NodePath]([NodePath("..")])
 [node name="HealthLabel" type="Label3D" parent="Targetable"]
 position = Vector3(0, 2.55, 0)
 billboard = 1
