@@ -4,9 +4,8 @@
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
 [ext_resource type="Script" uid="uid://d048glycsrg6e" path="res://scripts/main.gd" id="3_main"]
 [ext_resource type="PackedScene" path="res://scenes/camera/camera_rig.tscn" id="4_camera"]
-
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="5_hud"]
-[ext_resource type="Script" path="res://scripts/player/target_dash.gd" id="6_dash"]
+[ext_resource type="Script" uid="uid://dur04w1lakbiu" path="res://scripts/player/target_dash.gd" id="6_dash"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/training_enemy.tscn" id="7_enemy"]
 
 [node name="Main" type="Node3D" unique_id=1095149286]
@@ -17,15 +16,15 @@ transform = Transform3D(1.1924881e-08, 0, -1, 0, 1, 0, 1, 0, 1.1924881e-08, 0, 0
 
 [node name="Player" parent="." unique_id=778295748 instance=ExtResource("2_player")]
 
-[node name="TargetDash" type="Node" parent="Player"]
+[node name="TargetDash" type="Node" parent="Player" unique_id=1130949288]
 script = ExtResource("6_dash")
 
-[node name="TrainingEnemy" parent="." instance=ExtResource("7_enemy")]
-position = Vector3(-3, 0, -2)
+[node name="TrainingEnemy" parent="." unique_id=1499488101 instance=ExtResource("7_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -2)
 
 [node name="CameraRig" parent="." unique_id=236761302 node_paths=PackedStringArray("target") instance=ExtResource("4_camera")]
 target = NodePath("../Player")
 
-[node name="HUD" parent="." node_paths=PackedStringArray("player", "camera_rig") instance=ExtResource("5_hud")]
+[node name="HUD" parent="." unique_id=488617702 node_paths=PackedStringArray("player", "camera_rig") instance=ExtResource("5_hud")]
 player = NodePath("../Player")
 camera_rig = NodePath("../CameraRig")
