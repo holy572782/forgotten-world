@@ -111,7 +111,7 @@ func _run() -> void:
 	for index in range(120):
 		_check(not combat.request_attack(target), "Busy rejects repeated attack")
 		if combat.state == combat.State.Attack:
-			_check(String(sprite.animation).begins_with("attack_"), "Attack image")
+			_check(String(sprite.animation).begins_with("walk_") if combat._waiting else String(sprite.animation).begins_with("attack_"), "Attack / inter-hit stance image")
 			_check(player.facing_world.dot((target.global_position - player.global_position).normalized()) > 0.99, "Faces target")
 		Input.action_press("move_left")
 		Input.action_press("jump")

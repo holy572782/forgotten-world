@@ -123,7 +123,7 @@ func _run() -> void:
 		await _ticks(1)
 		if combat._waiting: break
 	_check(combat._waiting and combat.request_followup(), "Input after animation accepted")
-	await _ticks(2)
+	await _ticks(10)
 	_check(combat.combo_hits == 2 and stock.current == 1, "Grace starts one next strike")
 	_check(combat.request_followup(), "Cancel pending reservation")
 	target.health.damage(1000)

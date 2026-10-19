@@ -22,6 +22,9 @@ script = ExtResource("6_dash")
 [node name="TrainingEnemy" parent="." unique_id=1499488101 instance=ExtResource("7_enemy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -2)
 
+[node name="TrainingEnemySecond" parent="." instance=ExtResource("7_enemy")]
+position = Vector3(-8, 0, -2)
+
 [node name="CameraRig" parent="." unique_id=236761302 node_paths=PackedStringArray("target") instance=ExtResource("4_camera")]
 target = NodePath("../Player")
 

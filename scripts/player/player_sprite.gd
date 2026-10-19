@@ -40,19 +40,25 @@ func _sync_shadow() -> void:
 	material_override.set_shader_parameter("sprite_sheet", texture.atlas)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if is_instance_valid(body.combat) and body.combat.is_busy():
+	# Combat owns attack input. Keep the legacy preview only in isolated fixtures.
+	if is_instance_valid(body.combat):
 		return
 	if OS.is_debug_build() and event.is_action_pressed("attack") and not event.is_echo():
 		request_attack_preview()
 
-func request_attack_preview() -> bool:
+func request_attack_preview(duration: float = 0.0) -> bool:
 	if _attacking:
 		return false
 	_attacking = true
 	_attack_facing = body.facing_world
 	state = &"Attack"
 	var sector := Controller.direction_sector(_attack_facing, body._movement_basis(), 4)
-	play(StringName("attack_" + SIDES[sector]))
+	var attack_animation := StringName("attack_" + SIDES[sector])
+	var original_duration := 0.0
+	for index in range(sprite_frames.get_frame_count(attack_animation)):
+		original_duration += sprite_frames.get_frame_duration(attack_animation, index) / sprite_frames.get_animation_speed(attack_animation)
+	speed_scale = original_duration / duration if duration > 0.0 else 1.0
+	play(attack_animation)
 	set_frame_and_progress(0, 0.0)
 	_sync_shadow()
 	attack_started.emit()
@@ -61,6 +67,7 @@ func request_attack_preview() -> bool:
 func _on_animation_finished() -> void:
 	if _attacking and String(animation).begins_with("attack_"):
 		_attacking = false
+		speed_scale = 1.0
 		attack_completed.emit()
 		_process(0.0)
 
@@ -76,6 +83,12 @@ func _process(delta: float) -> void:
 		state = combat_pose
 		if combat_pose == &"Attack":
 			return # Hold the final attack pose until the physics state starts Return.
+		if combat_pose == &"Stance":
+			_select_animation(DIRECTIONS[sector])
+			stop()
+			frame = 0
+			_sync_shadow()
+			return
 		_select_animation(StringName("jump_" + SIDES[sector]))
 		stop()
 		frame = 0 if combat_pose == &"Approach" else 1

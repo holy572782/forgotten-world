@@ -31,25 +31,10 @@ func _run() -> void:
 	await _reset(Vector3(0, 0, 6), 0)
 	await _ticks(10)
 	_check(sprite.state == &"Idle", "Idle after spawn")
-	for mouse in [false, true]:
-		var event: InputEvent
-		if mouse:
-			event = InputEventMouseButton.new()
-			event.button_index = MOUSE_BUTTON_LEFT
-			event.position = Vector2(40, 40) # Also exercise clicks over the HUD.
-		else:
-			event = InputEventKey.new()
-			event.physical_keycode = KEY_J
-		event.pressed = true
-		Input.parse_input_event(event)
-		Input.flush_buffered_events()
-		await process_frame
-		_check(sprite.state == &"Attack", "J / left mouse attack")
+	# M07 owns J/mouse; retain M05 animation checks through the presentation API.
+	for attempt in range(2):
+		_check(sprite.request_attack_preview(), "Preview API starts animation")
 		_check(not sprite.request_attack_preview(), "Reject overlapping attack")
-		event = event.duplicate()
-		event.pressed = false
-		Input.parse_input_event(event)
-		Input.flush_buffered_events()
 		held.move_right = 1.0
 		held.camera_right = 1.0
 		var seen: Array[int] = []
@@ -84,7 +69,7 @@ func _run() -> void:
 	held.clear()
 	_refresh()
 	for failure in failures: push_error(failure)
-	if failures.is_empty(): print("PASS M05 animations: 36 regions, source pixels, foot pivots, J/mouse, complete attack and return, orbit, jump/fall/land")
+	if failures.is_empty(): print("PASS M05 animations: 36 regions, source pixels, foot pivots, preview API, complete attack and return, orbit, jump/fall/land")
 	main.free()
 	quit(0 if failures.is_empty() else 1)
 

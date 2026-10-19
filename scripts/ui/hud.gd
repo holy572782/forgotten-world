@@ -11,9 +11,8 @@ extends CanvasLayer
 var stock: AttackStockComponent
 
 func _ready() -> void:
-	# Every Control ignores mouse input so left-click preview works over the HUD.
+	# The panel consumes mouse combat actions before unhandled combat input.
 	_ignore_mouse($Root)
-	# M06: only right-click is consumed over the panel; retain M05 preview input.
 	panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	panel.gui_input.connect(_panel_input)
 	get_viewport().size_changed.connect(_layout_panel)
@@ -35,7 +34,7 @@ func _ignore_mouse(node: Node) -> void:
 		_ignore_mouse(child)
 
 func _panel_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+	if event is InputEventMouseButton and (event.is_action("attack") or event.is_action("target_attack")):
 		panel.accept_event()
 
 func _layout_panel() -> void:

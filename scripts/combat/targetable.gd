@@ -6,9 +6,20 @@ extends Node3D
 @export var click_collider_paths: Array[NodePath] = []
 @onready var health: HealthComponent = get_node(health_path)
 @onready var marker: Area3D = $Marker
+var selected := false
+var _filled_mesh: ImmediateMesh
+var _hollow_mesh: ImmediateMesh
 
 func _ready() -> void:
 	add_to_group("combat_targets")
+	_filled_mesh = _make_marker(0.0)
+	_hollow_mesh = _make_marker(0.17)
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color(1.0, 0.72, 0.12)
+	material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	$Marker/Mesh.material_override = material
 	set_available(false)
 	health.hp_changed.connect(_update_label)
 	_update_label(health.current_hp, health.max_hp)
@@ -24,9 +35,22 @@ func accepts_click(collider: CollisionObject3D) -> bool:
 			return true
 	return false
 
-func set_available(available: bool) -> void:
+func set_available(available: bool, is_selected: bool = false) -> void:
+	selected = available and is_selected
+	$Marker/Mesh.mesh = _filled_mesh if selected else _hollow_mesh
 	marker.visible = available
 	marker.collision_layer = 8 if available else 0
+
+func _make_marker(inner_radius: float) -> ImmediateMesh:
+	var mesh := ImmediateMesh.new()
+	mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+	for index in range(32):
+		var a := Vector3(cos(TAU * index / 32.0), sin(TAU * index / 32.0), 0.0)
+		var b := Vector3(cos(TAU * (index + 1) / 32.0), sin(TAU * (index + 1) / 32.0), 0.0)
+		for vertex in [a * 0.25, b * 0.25, a * inner_radius, b * 0.25, b * inner_radius, a * inner_radius]:
+			mesh.surface_add_vertex(vertex)
+	mesh.surface_end()
+	return mesh
 
 func _update_label(current: float, maximum: float) -> void:
 	$HealthLabel.text = "TRAINING  %d / %d" % [ceili(current), ceili(maximum)]

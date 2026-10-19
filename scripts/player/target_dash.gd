@@ -23,6 +23,7 @@ var return_anchor := Vector3.ZERO
 var return_error := 0.0
 var last_result := ""
 var target: Node3D
+var selected_target: Node3D
 var _target_anchor := Vector3.ZERO
 var _destination := Vector3.ZERO
 var _travel_start := Vector3.ZERO
@@ -32,6 +33,8 @@ var _hit_pending := false
 var _hit_done := false
 var _attack_finished := false
 var _pending_click := false
+var _pending_selected_attack := false
+var _pending_cycles := 0
 var _click_position := Vector2.ZERO
 var _ring: MeshInstance3D
 @onready var body: CharacterBody3D = get_parent()
@@ -64,21 +67,34 @@ func is_busy() -> bool:
 	return state != State.Idle
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.is_action_pressed("target_attack"):
-		if not is_busy():
+	if event.is_echo(): return
+	if event.is_action_pressed("lock_on"):
+		if not is_busy(): _pending_cycles += 1
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("attack") or event.is_action_pressed("target_attack"):
+		if is_busy():
+			request_followup()
+		elif not _pending_click and not _pending_selected_attack and event is InputEventMouseButton:
 			_pending_click = true
 			_click_position = event.position
-		else:
-			request_followup()
+		elif not _pending_click:
+			_pending_selected_attack = true
 		get_viewport().set_input_as_handled()
 
 func physics_step(delta: float) -> void:
 	var was_busy := is_busy()
+	if not is_busy():
+		_refresh_selection()
+		for index in range(_pending_cycles): cycle_target()
+	_pending_cycles = 0
 	if _pending_click:
 		_pending_click = false
 		var selected := pick_target(_click_position)
 		if selected != null:
 			request_attack(selected)
+	elif _pending_selected_attack and not is_busy():
+		request_attack(selected_target)
+	_pending_selected_attack = false
 	if is_busy():
 		_elapsed += delta
 		match state:
@@ -90,16 +106,47 @@ func physics_step(delta: float) -> void:
 	_update_markers()
 
 func _update_markers() -> void:
+	if not is_busy(): _refresh_selection()
 	var near_enemy := false
 	for candidate in get_tree().get_nodes_in_group("combat_targets"):
 		if body.global_position.distance_to(candidate.global_position) <= equipped_weapon.attack_range + 2.0:
 			near_enemy = true
-		candidate.set_available(not is_busy() and can_select(candidate))
+		candidate.set_available(not is_busy() and can_select(candidate), candidate == selected_target)
 	_ring.visible = near_enemy and not is_busy() and body.is_on_floor()
 	var mesh: TorusMesh = _ring.mesh
 	if not is_equal_approx(mesh.outer_radius, equipped_weapon.attack_range + 0.025):
 		mesh.inner_radius = equipped_weapon.attack_range - 0.025
 		mesh.outer_radius = equipped_weapon.attack_range + 0.025
+
+func valid_candidates() -> Array[Node3D]:
+	var candidates: Array[Node3D] = []
+	for candidate in get_tree().get_nodes_in_group("combat_targets"):
+		if can_select(candidate): candidates.append(candidate)
+	# Scene paths provide a stable order independent of facing/camera/group iteration.
+	candidates.sort_custom(func(a: Node3D, b: Node3D): return String(a.get_path()) < String(b.get_path()))
+	return candidates
+
+func _refresh_selection() -> void:
+	if is_instance_valid(selected_target) and can_select(selected_target): return
+	selected_target = null
+	var best_dot := -2.0
+	var facing := Vector3(body.facing_world.x, 0.0, body.facing_world.z).normalized()
+	for candidate in valid_candidates():
+		var direction := candidate.global_position - body.global_position
+		direction.y = 0.0
+		var alignment := facing.dot(direction.normalized())
+		if alignment > best_dot:
+			best_dot = alignment
+			selected_target = candidate
+
+func cycle_target() -> void:
+	if is_busy(): return
+	var candidates := valid_candidates()
+	if candidates.is_empty():
+		selected_target = null
+		return
+	var index := candidates.find(selected_target)
+	selected_target = candidates[(index + 1) % candidates.size()]
 
 func pick_target(screen_position: Vector2) -> Node3D:
 	var camera := get_viewport().get_camera_3d()
@@ -143,6 +190,7 @@ func request_attack(candidate: Node3D) -> bool:
 	return_error = 0.0
 	last_result = ""
 	target = candidate
+	selected_target = candidate
 	_target_anchor = candidate.global_position
 	_destination = attack_position(candidate)
 	_face_target()
@@ -179,7 +227,8 @@ func _start_strike() -> void:
 	_attack_finished = false
 	sprite.combat_pose = &"Attack"
 	_set_state(State.Attack)
-	if not sprite.request_attack_preview():
+	var duration := _active_weapon.attack_duration / maxf(0.1, _active_weapon.attack_speed_multiplier)
+	if not sprite.request_attack_preview(duration):
 		_begin_return("Animation unavailable")
 		return
 	stock.spend(_active_weapon.stock_cost_per_hit)
@@ -240,11 +289,17 @@ func _on_frame() -> void:
 func _on_finished() -> void:
 	if state == State.Attack:
 		_attack_finished = true
+		_waiting = true
+		_grace_elapsed = 0.0
+		sprite.combat_pose = &"Stance"
 
 func _attack(delta: float) -> void:
 	body.velocity = Vector3.ZERO
 	if not _target_valid():
 		_begin_return("Target lost or moved")
+		return
+	if not Path.sight(body, target.global_position) or not Path.clear(body, body.global_position, settings, body.global_position):
+		_begin_return("Attack path blocked")
 		return
 	_face_target()
 	if _hit_pending and not _hit_done:
@@ -255,25 +310,25 @@ func _attack(delta: float) -> void:
 	if not _target_valid():
 		_begin_return("Target lost or defeated")
 		return
-	if not _attack_finished and _elapsed >= settings.attack_timeout:
+	var timeout := maxf(settings.attack_timeout, _active_weapon.attack_duration / maxf(0.1, _active_weapon.attack_speed_multiplier) + 0.5)
+	if not _attack_finished and _elapsed >= timeout:
 		_begin_return("Animation timeout")
 	elif _attack_finished:
 		if combo_hits >= _active_weapon.max_combo_hits or not stock.can_spend(_active_weapon.stock_cost_per_hit):
 			_begin_return("Combo finished")
-		elif queued:
-			_start_strike()
-		elif not _waiting:
-			_waiting = true
-			_grace_elapsed = 0.0
 		else:
 			_grace_elapsed += delta
-			if _grace_elapsed >= _active_weapon.combo_input_window: _begin_return("Input window ended")
+			if queued:
+				if _grace_elapsed >= _active_weapon.combo_stance_duration: _start_strike()
+			elif _grace_elapsed >= _active_weapon.combo_input_window:
+				_begin_return("Input window ended")
 
 func _begin_return(reason: String) -> void:
 	queued = false
 	_waiting = false
 	last_result = reason
 	sprite._attacking = false
+	sprite.speed_scale = 1.0
 	_begin_travel(State.Return, return_anchor, settings.return_speed)
 
 func _return(delta: float) -> void:
@@ -295,12 +350,17 @@ func _finish() -> void:
 
 func cancel() -> void:
 	_pending_click = false
+	_pending_selected_attack = false
+	_pending_cycles = 0
 	queued = false
 	if not is_busy(): return
 	last_result = "Cancelled"
 	sprite._attacking = false
+	sprite.speed_scale = 1.0
 	_finish()
 
 func _exit_tree() -> void:
 	queued = false
 	_pending_click = false
+	_pending_selected_attack = false
+	_pending_cycles = 0

@@ -76,6 +76,6 @@ text = "FPS"
 [node name="Controls" type="Label" parent="Root/Panel/Margin/Rows"]
 layout_mode = 2
 text = "WASD: move | Space: jump
-Right click: target / next hit
-J / Left: debug preview
-Q / E: orbit | F8: stop"
+Click: target / next | J: attack
+L: cycle target | Q / E: orbit
+F8: stop"
