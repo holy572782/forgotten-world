@@ -42,7 +42,7 @@ func _sync_shadow() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if is_instance_valid(body.combat) and body.combat.is_busy():
 		return
-	if event.is_action_pressed("attack") and not event.is_echo():
+	if OS.is_debug_build() and event.is_action_pressed("attack") and not event.is_echo():
 		request_attack_preview()
 
 func request_attack_preview() -> bool:

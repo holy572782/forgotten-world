@@ -8,7 +8,7 @@ extends CanvasLayer
 @onready var gauge_label: Label = $Root/Panel/Margin/Rows/GaugeLabel
 @onready var gauge_bar: ProgressBar = $Root/Panel/Margin/Rows/GaugeBar
 @onready var debug_label: Label = $Root/Panel/Margin/Rows/Debug
-var _gauge_value := 0.0
+var stock: AttackStockComponent
 
 func _ready() -> void:
 	# Every Control ignores mouse input so left-click preview works over the HUD.
@@ -22,11 +22,11 @@ func _ready() -> void:
 		set_process(false)
 		return
 	var health: HealthComponent = player.get_node("HealthComponent")
-	var gauge: AttackGaugeComponent = player.get_node("AttackGaugeComponent")
+	stock = player.get_node("AttackStockComponent")
 	health.hp_changed.connect(_on_hp_changed)
-	gauge.gauge_changed.connect(_on_gauge_changed)
+	stock.stock_changed.connect(_on_stock_changed)
 	_on_hp_changed(health.current_hp, health.max_hp)
-	_on_gauge_changed(gauge.value, gauge.maximum)
+	_on_stock_changed(stock.current, stock.maximum)
 
 func _ignore_mouse(node: Node) -> void:
 	if node is Control:
@@ -46,17 +46,20 @@ func _on_hp_changed(current: float, maximum: float) -> void:
 	hp_bar.value = current
 	hp_label.text = "HP  %d / %d" % [ceili(current), ceili(maximum)]
 
-func _on_gauge_changed(current: float, maximum: float) -> void:
-	_gauge_value = current
-	gauge_bar.max_value = maximum
-	gauge_bar.value = current
-	gauge_label.text = "ATTACK  %d / %d" % [floori(current), roundi(maximum)]
+func _on_stock_changed(current: int, maximum: int) -> void:
+	# Keep long future capacities within the panel; the number always shows all stock.
+	var icons := "◆".repeat(current) + "◇".repeat(maximum - current) if maximum <= 5 else ""
+	gauge_label.text = "ATTACK  %s  %d/%d" % [icons, current, maximum]
 
 func _process(_delta: float) -> void:
 	var sprite = player.get_node("AnimatedSprite3D")
 	var speed := player.velocity
 	var yaw := rad_to_deg(camera_rig.rotation.y) if is_instance_valid(camera_rig) else 0.0
-	var detail := "Gauge: %.2f" % _gauge_value
+	gauge_bar.max_value = 1.0
+	gauge_bar.value = stock.recovery_progress
+	var detail := ""
 	if is_instance_valid(player.combat):
-		detail = "Return offset: %.2fm" % player.combat.return_error
-	debug_label.text = "FPS: %d\nState: %s | Ground: %s\nVelocity: %.2f, %.2f, %.2f\nYaw: %.1f | %s" % [Engine.get_frames_per_second(), sprite.state, str(player.is_on_floor()), speed.x, speed.y, speed.z, yaw, detail]
+		var c = player.combat
+		var names := ["FREE", "APPROACH", "ATTACK", "RETURN"]
+		detail = "\n%s%s | Hit %d/%d | Queue %d\nRegen %.0f%% | Return %.2fm" % [names[c.state], " WAIT" if c._waiting else "", c.combo_hits, c.equipped_weapon.max_combo_hits, int(c.queued), stock.recovery_progress * 100.0, c.return_error]
+	debug_label.text = "FPS: %d | %s | Ground: %s\nSpeed: %.1f | Yaw: %.1f%s" % [Engine.get_frames_per_second(), sprite.state, str(player.is_on_floor()), speed.length(), yaw, detail]

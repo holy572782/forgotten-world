@@ -8,6 +8,11 @@ func _run() -> void:
 	Engine.max_fps = 60
 	main = load("res://scenes/main.tscn").instantiate()
 	main.get_node("TestArena").transform = Transform3D.IDENTITY
+	_legacy_player(main.get_node("Player"))
+	var old_hud = main.get_node("HUD")
+	old_hud.set_script(load("res://tests/fixtures/m05_legacy_hud.gd"))
+	old_hud.player = main.get_node("Player")
+	old_hud.camera_rig = main.get_node("CameraRig")
 	root.add_child(main)
 	player = main.get_node("Player")
 	rig = main.get_node("CameraRig")
@@ -108,6 +113,7 @@ func _run() -> void:
 	gauge.set_process(true)
 	# Shared balance Resources do not share mutable runtime state.
 	var other: Node = load("res://scenes/player/player.tscn").instantiate()
+	_legacy_player(other)
 	root.add_child(other)
 	health.damage(25.0)
 	gauge.consume()
@@ -137,3 +143,14 @@ func _run() -> void:
 	if failures.is_empty(): print("PASS M05 HP/gauge/HUD: clamps, signals, zero transition, 1.2s at 30/60, preview snapshots, low gauge, instance isolation, screen fixed, resize")
 	main.free()
 	quit(0 if failures.is_empty() else 1)
+
+# Historical M05 adapter exists only in this test; the shipped scene uses stocks.
+func _legacy_player(node: Node) -> void:
+	var gauge := Node.new()
+	gauge.name = "AttackGaugeComponent"
+	gauge.set_script(load("res://scripts/combat/attack_gauge_component.gd"))
+	node.add_child(gauge)
+	var preview := Node.new()
+	preview.name = "AttackPreview"
+	preview.set_script(load("res://scripts/player/attack_preview.gd"))
+	node.add_child(preview)

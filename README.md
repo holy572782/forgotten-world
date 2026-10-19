@@ -1,3 +1,4 @@
+> **M07（2026-10-19）**: 攻撃ストック・武器別コンボ・予約1個を実装。初期片手剣は3段、ストック最大3。ユーザー手動確認待ち。最新手順は末尾M07節。M06の試作完了記録は維持。
 > **M06完了（2026-10-18、試作範囲）**: 壁によるマーク非表示・壁越し攻撃拒否を含む最終手動検証が合格。過去の自動／実描画検査と合わせて完了を記録。ゲームパッド・長時間性能・複雑な地形・大型ボス等の未検証は継続。次工程はM07「攻撃ストック・最大3段コンボ・入力予約1個」（HUD移行を含む）、未着手・別指示待ち。
 
 > **2026-10-18実装更新**: M06の右クリック対象選択・単発踏み込み攻撃・自動帰還を追加。最新手順は末尾M06節。ストック移行は今回の指示によりM07へ延期。M06は最終手動受入済み（試作範囲）。
@@ -410,3 +411,30 @@ $godotExe = 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe'
 ```
 
 終了コードだけでなくPASSとSCRIPT ERROR／Parse Errorの有無を確認してください。実描画画像は`.godot/m06_60fps_state_*.png`／`m06_30fps_state_*.png`。検証結果と未実施事項はdocs/12_TEST_PLAN.mdとdocs/DEVELOPMENT_STATUS.mdの最新M06記録を参照。過去節の入力表・未実装表記は当時の履歴です。
+## M07：ストック・武器別コンボ（操作確認待ち）
+
+F5でmainを起動し、範囲内の敵の体または金色マークを右クリック。踏み込み中／攻撃中にもう一度右クリックすると次の1撃を予約する。Queue 1の間はさらに押しても予約は増えない。次の斬撃が始まりQueue 0に戻れば次を予約できる。初期片手剣は最大3段・合計30ダメージ。初段のクリックを予約にも流用しない。
+
+追加入力を止めると、攻撃終了後のATTACK WAIT（仮0.5秒）から帰還。3段またはストック不足では最終攻撃後に帰還する。FREEに戻ると1.5秒に1ストック回復。J／左クリック／パッド西はデバッグビルドの表示確認のみで、ダメージ・ストック消費なし。
+
+手動確認：1段→帰還、次に2段、回復後に3段、4回目拒否を確認。長押しでは連撃せず、ストック0では攻撃できないこと、回復後に再攻撃できること、壁越し拒否、Q/E回転中の攻撃、帰還後のWASD／Spaceを確認する。敵HP40なので死亡後はF8→F5で再起動する。M07の正式完了判定はこの操作確認後。
+
+### Resourceの変更方法
+
+- 武器定義：scripts/combat/weapon_data.gd。初期データ：resources/weapons/one_handed_sword.tres。Inspectorのmax_combo_hitsだけで上限変更可能（初期値はスクリプトから継承）。威力10／開始範囲5m／猶予0.5秒／消費1もここが唯一の所有者。
+- 取得：`player.get_node("TargetDash").equipped_weapon`。main内Player/TargetDashのequipped_weaponにResourceを指定するか、FREEで参照を差し替える。戦闘中の代入は拒否する。装備UIはない。
+- 検査専用：tests/fixtures/weapon_1.tres（大槌相当）、weapon_2.tres（大剣相当）、weapon_5.tres（短剣相当）。正式な武器ラインナップではない。槍4段もResource値で表現可能。
+- ストック：resources/attack_stock_settings.tresのmaximum／initial／recovery_seconds。武器5段でも最大ストック3なら3回まで。両方5にした検査では5回可能。検査はインスタンスの複製を変更するので保存済みの初期設定は3のまま。
+- 攻撃速度倍率・animation_profileは将来用で動作未接続。全段で同じ48px攻撃画像を使う。装備UI・入手・インベントリ・保存・成長・特殊消費は後工程。
+
+### 再現コマンド（PowerShell、リポジトリ直下）
+
+```powershell
+$godotExe = 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe'
+& $godotExe --headless --path . --editor --quit
+& $godotExe --headless --path . --script res://tests/m07_combo.gd
+& $godotExe --path . --resolution 1152x720 --script res://tests/m07_combo.gd -- --capture
+& $godotExe --path . --resolution 1152x720 --script res://tests/m07_combo.gd -- --fps30
+```
+
+各終了コード、PASSとSCRIPT ERROR／Parse Error／シェーダーエラーを確認。M00〜M06はtests/m0*.gdの各検査を同様に指定する。旧m05_hudは検査専用の旧ゲージ・HUD接続を生成し、本編はストックのみ使用する。結果と環境エラー・未検証項目はdocs/12_TEST_PLAN.mdとdocs/DEVELOPMENT_STATUS.mdを参照。

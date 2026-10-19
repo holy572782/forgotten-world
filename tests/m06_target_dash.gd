@@ -34,6 +34,8 @@ func _ticks(count: int) -> void:
 			root.get_texture().get_image().save_png("res://.godot/m06_%dfps_state_%d.png" % [Engine.max_fps, combat.state])
 
 func _settle(at: Vector3) -> void:
+	combat.stock.set_recovery_allowed(true)
+	combat.stock.advance(10.0)
 	player.reset_motion(at)
 	main.get_node("CameraRig").snap_to_target()
 	await _ticks(12)
@@ -78,6 +80,7 @@ func _run() -> void:
 	player = main.get_node("Player")
 	combat = player.get_node("TargetDash")
 	combat.settings = combat.settings.duplicate()
+	combat.equipped_weapon = combat.equipped_weapon.duplicate()
 	sprite = player.get_node("AnimatedSprite3D")
 	enemy = main.get_node("TrainingEnemy")
 	target = enemy.get_node("Targetable")
@@ -105,7 +108,7 @@ func _run() -> void:
 	_check(combat.state == combat.State.Approach and sprite.state == &"Approach", "Right click starts approach")
 	_check(sprite.sprite_frames.get_frame_texture(sprite.animation, sprite.frame).atlas.resource_path.ends_with("player_jump.png"), "Approach jump image")
 	_check(player.global_position.distance_to(origin) > 0.01 and player.global_position.distance_to(origin) < 3.0, "Visible intermediate position")
-	for index in range(80):
+	for index in range(120):
 		_check(not combat.request_attack(target), "Busy rejects repeated attack")
 		if combat.state == combat.State.Attack:
 			_check(String(sprite.animation).begins_with("attack_"), "Attack image")
@@ -138,10 +141,10 @@ func _run() -> void:
 	await _settle(origin - Vector3(6, 0, 0))
 	_check(not target.marker.visible and not combat.request_attack(target), "Out of range rejected")
 	await _settle(origin)
-	combat.settings.attack_radius = 2.0
+	combat.equipped_weapon.attack_range = 2.0
 	await _ticks(2)
 	_check(not target.marker.visible, "Resource radius applied")
-	combat.settings.attack_radius = 5.0
+	combat.equipped_weapon.attack_range = 5.0
 	await _ticks(2)
 	# Wall and step in the actual route must both reject selection.
 	var midpoint := origin.lerp(target.global_position, 0.5)

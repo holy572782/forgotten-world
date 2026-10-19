@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1"]
+[resource]
+script = ExtResource("1")
+weapon_id = &"test_combo_5"
+display_name = "Test 5 hits"
+max_combo_hits = 5
