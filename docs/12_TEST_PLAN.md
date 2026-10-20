@@ -527,3 +527,25 @@ K・パッド東単独でStep／Returnが発生しないこと、Step enum・ste
 ログ・画像は.gitignore対象の.godot以下：m08_return_headless.log、m08_return_regression_*.log（21本）、m08_return_render60.log／render30.log、m08_return_editor.log／main.log、m08_return_*.png。全最終ログにゲームのSCRIPT ERROR／Parse Error／SHADER ERRORなし。既存のuser://ログ書込・証明書ストア読取・エディター設定保存エラーは継続。M04閉鎖箱試験のCamera safety警告は想定結果として区別する。
 
 未実行：新操作のユーザーF5確認・主観的な受付／帰還感、実機パッド、長時間性能・入力遅延、複雑地形・多数敵・大型敵。既存の矢印斜め＋Space、壁際の画像部分重なり保留、影品質等を解消済みにしない。再現コマンドと現行F5手順はREADME末尾ADR-014節。M08検証待ち、M09未着手、commit・push未実行。
+
+## M08 鉄の盾スプライト追加検査（2026-10-21）
+
+`tests/m08_guard_sprite.gd`：提供PNGとのSHA256・RGBA画素一致、144×192、アルファの全画素集計、全12矩形と可視範囲・下余白、4方向×4カメラYaw、中央コマ静止、48px足元、Shader sheetとShadow同期、Guard解除／構え／接近／帰還／攻撃への切替、盾固有offsetと復帰、未設定／欠落Frames／null atlasの安全なフォールバック、プレイヤー間のResource分離、M04の壁フェード下のGuardを検査する。`tests/m08_defense.gd`の各tickにも実戦闘Guardだけに盾画像が出る条件を追加し、HP0・resetを含む既存割り込み手順をそのまま通す。
+
+PowerShellでプロジェクトルートから実行（各プロセスは順次実行）：
+```powershell
+$godot = 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe'
+& $godot --headless --path . --editor --import --quit --log-file .godot/m08_guard_import.log
+& $godot --headless --path . --script tests/m08_guard_sprite.gd --log-file .godot/m08_guard_headless.log
+& $godot --path . --script tests/m08_guard_sprite.gd --log-file .godot/m08_guard_render.log -- --capture
+$cases = rg --files tests -g 'm0*.gd' -g 'player_walk.gd' | Where-Object { $_ -notmatch 'fixtures|m08_guard_sprite' } | Sort-Object
+foreach ($case in $cases) {
+    $caseName = [IO.Path]::GetFileNameWithoutExtension($case)
+    & $godot --headless --path . --script $case --log-file ('.godot/m08_shield_regression_' + $caseName + '.log')
+    if ($LASTEXITCODE -ne 0) { throw ('Failed: ' + $case) }
+}
+& $godot --path . --script tests/m08_defense.gd --log-file .godot/m08_shield_combat60.log -- --capture
+& $godot --path . --script tests/m08_defense.gd --log-file .godot/m08_shield_combat30.log -- --capture --fps30
+```
+
+実描画出力 `.godot/m08_shield_0.png`〜`3.png` は下・右・上・左。実シーン／深度Shaderで描画して4枚を目視する。`m08_shield_wall.png`は既存M04の壁背後でのGuard表示。ヘッドレスのPASSだけで見た目の合格にしない。敵の自動攻撃は未実装のため被ダメージはHealthComponent経由の既存検査を用いる。環境・今回の実行結果は進捗ログ、F5と残存の実機確認は `m08_guard_sprite_audit.md`。M00〜M08の既存手動項目と実機パッド・長時間性能・複雑地形の残件は継続する。

@@ -1,0 +1,122 @@
+[gd_resource type="SpriteFrames" load_steps=14 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/player/iron_shield_guard.png" id="1_sheet"]
+
+[sub_resource type="AtlasTexture" id="Atlas_0_0"]
+atlas = ExtResource("1_sheet")
+region = Rect2(0, 0, 48, 48)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Atlas_0_1"]
+atlas = ExtResource("1_sheet")
+region = Rect2(48, 0, 48, 48)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Atlas_0_2"]
+atlas = ExtResource("1_sheet")
+region = Rect2(96, 0, 48, 48)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Atlas_1_0"]
+atlas = ExtResource("1_sheet")
+region = Rect2(0, 48, 48, 48)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Atlas_1_1"]
+atlas = ExtResource("1_sheet")
+region = Rect2(48, 48, 48, 48)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Atlas_1_2"]
+atlas = ExtResource("1_sheet")
+region = Rect2(96, 48, 48, 48)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Atlas_2_0"]
+atlas = ExtResource("1_sheet")
+region = Rect2(0, 96, 48, 48)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Atlas_2_1"]
+atlas = ExtResource("1_sheet")
+region = Rect2(48, 96, 48, 48)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Atlas_2_2"]
+atlas = ExtResource("1_sheet")
+region = Rect2(96, 96, 48, 48)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Atlas_3_0"]
+atlas = ExtResource("1_sheet")
+region = Rect2(0, 144, 48, 48)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Atlas_3_1"]
+atlas = ExtResource("1_sheet")
+region = Rect2(48, 144, 48, 48)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Atlas_3_2"]
+atlas = ExtResource("1_sheet")
+region = Rect2(96, 144, 48, 48)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("Atlas_0_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_0_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_0_2")
+}],
+"loop": false,
+"name": &"guard_down",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("Atlas_1_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_1_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_1_2")
+}],
+"loop": false,
+"name": &"guard_left",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("Atlas_2_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_2_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_2_2")
+}],
+"loop": false,
+"name": &"guard_right",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("Atlas_3_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_3_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("Atlas_3_2")
+}],
+"loop": false,
+"name": &"guard_up",
+"speed": 1.0
+}]

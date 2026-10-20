@@ -40,6 +40,10 @@ func _neutral() -> void:
 func _ticks(count: int) -> void:
 	for i in range(count):
 		await super._ticks(1)
+		if combat.state == combat.State.Guard:
+			_check(String(sprite.animation).begins_with("guard_") and sprite.frame == 1, "Actual combat Guard displays equipped shield")
+		else:
+			_check(not String(sprite.animation).begins_with("guard_"), "Shield cleared outside actual combat Guard")
 		if combat._combat_cycle and combat.is_busy():
 			_check(rig.follow_locked, "Camera held through combat/guard/return")
 			_check(rig.global_position.distance_to(rig.follow_anchor) < 0.00001, "Follow origin fixed each tick")

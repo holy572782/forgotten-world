@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_controller"]
 [ext_resource type="Resource" path="res://resources/player_movement.tres" id="2_movement"]
@@ -10,6 +10,7 @@
 
 [ext_resource type="Script" path="res://scripts/combat/health_component.gd" id="7_health"]
 [ext_resource type="Script" path="res://scripts/combat/attack_stock_component.gd" id="8_gauge"]
+[ext_resource type="Resource" path="res://resources/shields/iron_shield.tres" id="9_shield"]
 [sub_resource type="ShaderMaterial" id="Material_depth"]
 resource_local_to_scene = true
 shader = ExtResource("5_depth")
@@ -40,6 +41,7 @@ alpha_cut = 1
 sprite_frames = ExtResource("3_frames")
 animation = &"walk_down"
 script = ExtResource("4_sprite")
+equipped_shield = ExtResource("9_shield")
 
 [node name="Shadow" type="AnimatedSprite3D" parent="AnimatedSprite3D"]
 cast_shadow = 3

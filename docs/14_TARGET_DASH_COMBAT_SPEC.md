@@ -259,3 +259,7 @@
 - 帰還を無敵化しない。HealthComponent.damageによる通常ダメージを有効にし、Guard正面±60度・倍率0.5、背面／攻撃元不明の通常ダメージ、静止歩行コマは維持する。defense_settings.tresはガード倍率・角度・防御後追撃猶予用として継続し、ステップ専用値は持たない。
 - M07の照準・●○・手動選択・クリック／J／L・3体連撃・予約1個・武器／ストック、48pxの画像・SpriteFrames、通常ジャンプ、M04方式B・影・壁際判定・通常の範囲円非表示を維持。新PNG、敵AI、装備UI、M09以降は追加しない。
 - 旧Stepソースと旧tests/m08_defense.gdは変更前コミットad124a5e7343d11339c6fd8f884edba4d9843ea6、合格記録はADR-013と12／DEVELOPMENT_STATUSに保持。現行検査は今回の方向帰還とガードへ更新する。
+
+### M08 防御画像の正式素材接続（2026-10-21）
+
+Guard中の表示のみ、鉄の盾Resourceのguard_*へ切り替える。PlayerSpriteが既存combat_poseとカメラ基準の4方向を参照し、TargetDash側に装備分岐や新しい状態は追加しない。I解除、Recover、追撃、Approach、Return、FREEで既存画像へ戻す。M05の足元・null atlas・影同期、M07のストック・コンボ・カメラ、ADR-014の軽減／方向帰還を維持する。参照不正時は旧Guard画像へ戻し、Guard判定は有効なまま。矩形・表示データ・検証手順は `m08_guard_sprite_audit.md`。ユーザー手動検証待ち。
