@@ -17,6 +17,7 @@ func _run() -> void:
 		"jump": [["key", KEY_SPACE], ["button", JOY_BUTTON_A]],
 		"attack": [["key", KEY_J], ["mouse", MOUSE_BUTTON_LEFT], ["button", JOY_BUTTON_X]],
 		"dodge": [["key", KEY_K], ["button", JOY_BUTTON_B]],
+		"guard": [["key", KEY_I], ["button", JOY_BUTTON_LEFT_SHOULDER]],
 		"target_attack": [["mouse", MOUSE_BUTTON_RIGHT]],
 		"camera_left": [["key", KEY_Q], ["axis", JOY_AXIS_RIGHT_X, -1.0]],
 		"camera_right": [["key", KEY_E], ["axis", JOY_AXIS_RIGHT_X, 1.0]],
@@ -57,7 +58,7 @@ func _run() -> void:
 		_check(instance is Node3D, "Main scene root must be Node3D")
 		instance.free()
 	if failures.is_empty():
-		print("PASS M00: 13 actions, %d bindings, deadzones, synthetic press/release, 60 physics ticks, main scene" % checked_events)
+		print("PASS M00: 14 actions, %d bindings, deadzones, synthetic press/release, 60 physics ticks, main scene" % checked_events)
 	else:
 		for failure in failures:
 			push_error(failure)

@@ -83,10 +83,10 @@ func _process(delta: float) -> void:
 		state = combat_pose
 		if combat_pose == &"Attack":
 			return # Hold the final attack pose until the physics state starts Return.
-		if combat_pose == &"Stance":
+		if combat_pose == &"Stance" or combat_pose == &"Guard":
 			_select_animation(DIRECTIONS[sector])
 			stop()
-			frame = 0
+			frame = 1 if combat_pose == &"Guard" else 0
 			_sync_shadow()
 			return
 		_select_animation(StringName("jump_" + SIDES[sector]))

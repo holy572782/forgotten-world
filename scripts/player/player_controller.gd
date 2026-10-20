@@ -34,7 +34,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	if is_instance_valid(combat):
 		combat.physics_step(delta)
-		if combat.is_busy():
+		if combat.motion_owned_tick:
 			return
 	var grounded := _floor_valid and is_on_floor() and not _jump_consumed
 	_update_jump_input(delta)

@@ -3,12 +3,13 @@ extends Node
 const Settings = preload("res://scripts/combat/target_dash_settings.gd")
 const Path = preload("res://scripts/combat/dash_path.gd")
 const Target = preload("res://scripts/combat/targetable.gd")
-enum State { Idle, Approach, Attack, Return }
+enum State { Idle, Approach, Attack, Return, Guard, Step, Recover }
 signal state_changed(next: int)
 signal hit(target: Node)
 signal attack_accepted(attack_id: int, combo: int)
 signal attack_rejected(reason: String)
 @export var settings: Settings = preload("res://resources/target_dash_settings.tres")
+@export var defense: Resource = preload("res://resources/defense_settings.tres")
 @export var camera_rig: Node3D
 @export var show_debug_attack_range: bool = false
 @export var equipped_weapon: WeaponData = preload("res://resources/weapons/one_handed_sword.tres"):
@@ -39,6 +40,14 @@ var _elapsed := 0.0
 var _hit_pending := false
 var _hit_done := false
 var _attack_finished := false
+var motion_owned_tick := false
+var _combat_cycle := false
+var _resume_return := false
+var _step_consumed := false
+var _step_cooldown := 0.0
+var _pending_step := false
+var _pending_guard := false
+var _wait_defense_release := false
 var _pending_click := false
 var _pending_selected_attack := false
 var _click_position := Vector2.ZERO
@@ -54,6 +63,7 @@ func _ready() -> void:
 	sprite.frame_changed.connect(_on_frame)
 	sprite.attack_completed.connect(_on_finished)
 	body.get_node("HealthComponent").depleted.connect(func(_source: Node): cancel())
+	body.get_node("HealthComponent").damage_filter = filter_damage
 	_ring = MeshInstance3D.new()
 	_ring.visible = false
 	var mesh := TorusMesh.new()
@@ -95,7 +105,14 @@ func is_busy() -> bool:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_echo(): return
-	if event.is_action_pressed("lock_on"):
+	if event.is_action_released("dodge"): _step_consumed = false
+	if event.is_action_pressed("guard"):
+		_pending_guard = true
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("dodge"):
+		_pending_step = true
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("lock_on"):
 		cycle_target()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("attack") or event.is_action_pressed("target_attack"):
@@ -115,8 +132,21 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func physics_step(delta: float) -> void:
 	var was_busy := is_busy()
+	motion_owned_tick = was_busy
+	_step_cooldown = maxf(0.0, _step_cooldown - delta)
+	if body.get_node("HealthComponent").current_hp <= 0.0:
+		cancel()
+		body.clear_combat_input()
+		stock.set_recovery_allowed(false)
+		motion_owned_tick = true
+		_update_markers()
+		return
 	if not is_busy():
 		_refresh_selection(delta)
+	var interrupted := _defense_input()
+	if interrupted:
+		_pending_click = false
+		_pending_selected_attack = false
 	if _pending_click:
 		_pending_click = false
 		var selected := pick_target(_click_position)
@@ -126,7 +156,7 @@ func physics_step(delta: float) -> void:
 		request_attack(selected_target)
 	_pending_selected_attack = false
 	if is_busy():
-		if state != State.Return:
+		if state == State.Approach or state == State.Attack:
 			if not is_instance_valid(target):
 				_begin_return("Target lost")
 			elif not _framed(target):
@@ -136,9 +166,140 @@ func physics_step(delta: float) -> void:
 			State.Approach: _approach(delta)
 			State.Attack: _attack(delta)
 			State.Return: _return(delta)
+			State.Guard: _guard()
+			State.Step: _step(delta)
+			State.Recover: _recover(delta)
+	motion_owned_tick = motion_owned_tick or is_busy() or interrupted
 	stock.set_recovery_allowed(not was_busy and not is_busy() and body.get_node("HealthComponent").current_hp > 0.0)
 	stock.advance(delta)
 	_update_markers()
+
+func _defense_input() -> bool:
+	var guard_pressed := Input.is_action_pressed("guard")
+	var step_pressed := Input.is_action_pressed("dodge")
+	var guard_request := guard_pressed or _pending_guard
+	var step_request := step_pressed or _pending_step
+	_pending_guard = false
+	_pending_step = false
+	if not step_pressed: _step_consumed = false
+	if _wait_defense_release:
+		if not guard_pressed and not step_pressed: _wait_defense_release = false
+		return false
+	# A held guard owns this tick; discard simultaneous step and attack requests.
+	if guard_request:
+		if step_request: _step_consumed = true
+		if state != State.Guard:
+			if not _defense_grounded(true): return _reject("Guard rejected: airborne or unsafe floor")
+			_interrupt_attack()
+			_set_state(State.Guard)
+			_show_defense_pose(&"Guard")
+		return true
+	if step_request and not _step_consumed:
+		var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+		if input.is_zero_approx():
+			last_result = "Step rejected: direction required"
+			return false
+		_step_consumed = true
+		if state == State.Step or _step_cooldown > 0.0:
+			return _reject("Step rejected: reinput delay")
+		if not _defense_grounded(): return _reject("Step rejected: airborne or unsafe floor")
+		var direction: Vector3 = body.input_to_world(input, body._movement_basis()).normalized()
+		var destination: Vector3 = body.global_position + direction * defense.step_distance
+		if not Path.clear(body, destination, settings, body.global_position):
+			return _reject("Step rejected: wall, ledge or uneven floor")
+		_interrupt_attack()
+		_begin_travel(State.Step, destination, defense.step_distance / maxf(0.02, defense.step_duration))
+		_duration = maxf(0.02, defense.step_duration)
+		_step_cooldown = defense.step_reinput_delay
+		_show_defense_pose(&"Step")
+		return true
+	return false
+
+func _defense_grounded(allow_slope: bool = false) -> bool:
+	# Combat travel uses move_and_collide, whose floor flag is stale; validate
+	# the actual capsule footprint as well. Airborne FREE input is rejected.
+	if state == State.Idle and (not body.is_on_floor() or body.velocity.y > 0.0): return false
+	if state == State.Idle and allow_slope: return true
+	return Path.clear(body, body.global_position, settings, body.global_position)
+
+func _interrupt_attack() -> void:
+	_resume_return = _resume_return or state == State.Return
+	queued = false
+	queued_attack_target = null
+	_waiting = false
+	_hit_pending = false
+	# A paid strike keeps its ID and hit history. Only _start_strike resets them.
+	sprite._attacking = false
+	sprite.stop()
+	sprite.speed_scale = 1.0
+	body.clear_combat_input()
+	_pending_click = false
+	_pending_selected_attack = false
+	stock.set_recovery_allowed(false)
+	last_result = "Attack interrupted" if _combat_cycle else ""
+
+func _show_defense_pose(pose: StringName) -> void:
+	_face_defense_target()
+	sprite.combat_pose = pose
+	sprite._process(0.0)
+
+func _face_defense_target() -> void:
+	var candidate := selected_target if is_instance_valid(selected_target) and selected_target.alive() else target
+	if not is_instance_valid(candidate) or not candidate.alive(): return
+	var facing: Vector3 = candidate.global_position - body.global_position
+	facing.y = 0.0
+	if not facing.is_zero_approx(): body.facing_world = facing.normalized()
+	body.facing_index = body.direction_sector(body.facing_world, body._movement_basis())
+
+func _guard() -> void:
+	body.velocity = Vector3.ZERO
+	_face_defense_target()
+	if not Input.is_action_pressed("guard"): _after_defense()
+
+func _step(delta: float) -> void:
+	_face_defense_target()
+	if not _move_travel(delta):
+		last_result = "Step stopped: route became unsafe"
+		_after_defense()
+	elif _elapsed >= _duration:
+		_after_defense()
+
+func _after_defense() -> void:
+	body.velocity = Vector3.ZERO
+	if not _combat_cycle:
+		_finish()
+	elif _resume_return:
+		_begin_return("Resume interrupted return")
+	elif combo_hits >= _active_weapon.max_combo_hits or not stock.can_spend(_active_weapon.stock_cost_per_hit):
+		_begin_return("No follow-up available")
+	else:
+		_set_state(State.Recover)
+		sprite.combat_pose = &"Stance"
+		sprite._process(0.0)
+
+func _recover(_delta: float) -> void:
+	body.velocity = Vector3.ZERO
+	if queued:
+		_advance_queued()
+	elif _elapsed >= defense.followup_window:
+		_begin_return("Defense follow-up window ended")
+
+func step_invulnerable() -> bool:
+	# Always leave a vulnerable tail, including unusually short configured steps.
+	var end: float = minf(defense.step_invulnerability_start + defense.step_invulnerability_duration, _duration - 0.02)
+	return state == State.Step and defense.step_invulnerability_enabled and _elapsed >= defense.step_invulnerability_start and _elapsed < end
+
+func filter_damage(amount: float, source: Node) -> float:
+	if step_invulnerable(): return 0.0
+	# Unknown/freed/nonspatial or colocated sources get full damage, never a free guard.
+	if state != State.Guard or not is_instance_valid(source) or not source is Node3D: return amount
+	var direction: Vector3 = source.global_position - body.global_position
+	direction.y = 0.0
+	if direction.is_zero_approx(): return amount
+	var facing := Vector3(body.facing_world.x, 0.0, body.facing_world.z).normalized()
+	if facing.dot(direction.normalized()) >= cos(deg_to_rad(defense.guard_half_angle_degrees)) - 0.000001:
+		return amount * defense.guard_damage_multiplier
+	return amount
 
 func _update_markers() -> void:
 	var near_enemy := false
@@ -276,7 +437,7 @@ func _candidate_valid(candidate: Node3D) -> bool:
 	return can_combo_select(candidate) if is_busy() else can_select(candidate)
 
 func can_combo_select(candidate: Node3D) -> bool:
-	if state != State.Approach and state != State.Attack: return false
+	if state != State.Approach and state != State.Attack and state != State.Recover: return false
 	var unpaid := 1 if state == State.Approach else 0
 	if combo_hits + unpaid >= _active_weapon.max_combo_hits: return false
 	if not stock.can_spend(_active_weapon.stock_cost_per_hit * (1 + unpaid)): return false
@@ -308,6 +469,8 @@ func attack_position(candidate: Node3D) -> Vector3:
 func request_attack(candidate: Node3D) -> bool:
 	if is_busy() or not can_select(candidate): return _reject("Invalid target, state or stock")
 	_active_weapon = equipped_weapon.duplicate()
+	_combat_cycle = true
+	_resume_return = false
 	combo_hits = 0
 	queued = false
 	queued_attack_target = null
@@ -336,9 +499,9 @@ func _reject(reason: String) -> bool:
 	return false
 
 func request_followup(candidate: Node3D = null, replace: bool = false) -> bool:
-	if state != State.Approach and state != State.Attack: return _reject("Not accepting input")
+	if state != State.Approach and state != State.Attack and state != State.Recover: return _reject("Not accepting input")
 	if queued and not replace: return _reject("Queue full")
-	if not _target_valid(): return _reject("Target lost")
+	if state != State.Recover and not _target_valid(): return _reject("Target lost")
 	if candidate == null:
 		if not is_instance_valid(selected_target): return _reject("Selected target lost")
 		candidate = selected_target
@@ -359,7 +522,7 @@ func _advance_queued() -> void:
 	var next := queued_attack_target
 	queued = false
 	queued_attack_target = null
-	if next != target:
+	if next != target or body.global_position.distance_to(attack_position(next)) > 0.05 or state == State.Recover:
 		target = next
 		_target_anchor = target.global_position
 		_waiting = false
@@ -504,10 +667,12 @@ func _return(delta: float) -> void:
 		_finish()
 
 func _finish() -> void:
+	return_error = body.global_position.distance_to(return_anchor) if _combat_cycle else 0.0
+	_combat_cycle = false
+	_resume_return = false
 	queued = false
 	queued_attack_target = null
 	_waiting = false
-	return_error = body.global_position.distance_to(return_anchor)
 	target = null
 	sprite.combat_pose = &""
 	body.clear_combat_input()
@@ -517,6 +682,9 @@ func _finish() -> void:
 	sprite._process(0.0)
 
 func cancel() -> void:
+	_pending_guard = false
+	_pending_step = false
+	_wait_defense_release = true
 	_pending_click = false
 	_pending_selected_attack = false
 	queued = false
@@ -528,6 +696,7 @@ func cancel() -> void:
 	_finish()
 
 func _exit_tree() -> void:
+	if is_instance_valid(body): body.get_node("HealthComponent").damage_filter = Callable()
 	queued = false
 	queued_attack_target = null
 	if is_instance_valid(camera_rig): camera_rig.release_follow()

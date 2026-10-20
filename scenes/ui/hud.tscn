@@ -45,7 +45,7 @@ theme_override_constants/separation = 5
 
 [node name="Title" type="Label" parent="Root/Panel/Margin/Rows"]
 layout_mode = 2
-text = "M07 | STOCK / COMBO"
+text = "M08 | GUARD / STEP"
 
 [node name="HPLabel" type="Label" parent="Root/Panel/Margin/Rows"]
 layout_mode = 2
@@ -75,7 +75,9 @@ text = "FPS"
 
 [node name="Controls" type="Label" parent="Root/Panel/Margin/Rows"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 12
 text = "WASD: move | Space: jump
 Click: target / next | J: attack
 L: cycle target | Q / E: orbit
+I: guard | K + direction: step
 F8: stop"

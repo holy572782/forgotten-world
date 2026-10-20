@@ -59,7 +59,7 @@ func _process(_delta: float) -> void:
 	var detail := ""
 	if is_instance_valid(player.combat):
 		var c = player.combat
-		var names := ["FREE", "APPROACH", "ATTACK", "RETURN"]
+		var names := ["FREE", "APPROACH", "ATTACK", "RETURN", "GUARD", "STEP", "RECOVER"]
 		detail = "\n%s%s | Hit %d/%d | Queue %d\nRegen %.0f%% | Return %.2fm" % [names[c.state], " WAIT" if c._waiting else "", c.combo_hits, c.equipped_weapon.max_combo_hits, int(c.queued), stock.recovery_progress * 100.0, c.return_error]
 		detail += "\n" + c.last_result.left(32)
 		debug_label.tooltip_text = c.last_result
