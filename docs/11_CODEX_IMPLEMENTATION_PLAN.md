@@ -157,3 +157,7 @@ M07の複数攻撃・予約、M08の防御／ステップ、M09の敵AIをM06で
 - 設定：TargetDashSettings.auto_aim_half_angle_degrees=60、auto_aim_distance_hysteresis=0.3m、auto_aim_distance_tie=0.05mを追加。aim_hysteresis_degrees=12、aim_stability_seconds=0.12、manual_aim_release_degrees=35は再利用。すべて試作値。
 - Lによる手動指定は35度の明確な向き変更／対象失効まで優先。左／右クリックの直接指定と戦闘中のselected_target／queued_attack_target、Lによる予約対象変更、最大予約1個、ストック消費時点は維持。戦闘中は自動照準を更新しない。
 - TargetDash.show_debug_attack_range=falseが既定。GodotでmainのPlayer/TargetDashを選び、InspectorのShow Debug Attack Rangeをtrueにすれば、従来のFREE・接地・敵近傍条件で水色円とRangeCenterGuidesを表示できる。起動直後も非表示。通常プレイの金色●○は維持。攻撃半径・WeaponData.attack_range・Path.sight／clearや安全帰還は表示フラグを参照しない。
+
+## M07保守追記：壁接触時の攻撃対象判定（2026-10-20）
+
+M07の既存実装への局所修正。通常移動後の微小接触は最大2mmの標準物理解消後に全経路を検査し、安全な同側攻撃を許可する。壁越し・体が角に当たる経路・深い重なりは拒否する。PathとTargetDash移動開始の判定を揃え、既存の選択・連撃・カメラ・ストックを維持する。tests/m07_wall_contact.gdと既存M00〜M07回帰を実行し、結果を12へ記録する。受入はREADME末尾のF5手順でユーザーが確認するまで保留。M07検証待ち、M08未着手、工程番号・M06完了履歴は変更しない。

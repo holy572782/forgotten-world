@@ -401,7 +401,14 @@ func _face_target() -> void:
 func _begin_travel(next: State, destination: Vector3, speed: float) -> void:
 	_travel_start = body.global_position
 	_destination = destination
-	_duration = clampf(_travel_start.distance_to(destination) / maxf(speed, 0.1), settings.minimum_travel_time, maxf(settings.minimum_travel_time, settings.maximum_travel_time))
+	var resolved := Path.contact_position(body, destination, settings)
+	if resolved.is_finite() and Path.clear(body, destination, settings, _travel_start):
+		# Apply only the bounded native recovery already accepted by Path.clear.
+		# Plan from/to those safe positions so interpolation cannot steer back into contact.
+		body.move_and_collide(Vector3.ZERO, false, body.safe_margin)
+		_travel_start = body.global_position
+		_destination = resolved
+	_duration = clampf(_travel_start.distance_to(_destination) / maxf(speed, 0.1), settings.minimum_travel_time, maxf(settings.minimum_travel_time, settings.maximum_travel_time))
 	_set_state(next)
 	sprite.combat_pose = &"Approach" if next == State.Approach else &"Return"
 	sprite._process(0.0)
@@ -436,7 +443,7 @@ func _move_travel(delta: float) -> bool:
 	if not Path.clear(body, next, settings, body.global_position): return false
 	var motion := next - body.global_position
 	body.velocity = motion / maxf(delta, 0.0001)
-	var collision := body.move_and_collide(motion)
+	var collision := body.move_and_collide(motion, false, body.safe_margin)
 	return collision == null
 
 func _on_frame() -> void:

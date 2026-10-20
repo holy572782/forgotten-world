@@ -233,3 +233,12 @@
 - 設定：TargetDashSettings.auto_aim_half_angle_degrees=60、auto_aim_distance_hysteresis=0.3m、auto_aim_distance_tie=0.05mを追加。aim_hysteresis_degrees=12、aim_stability_seconds=0.12、manual_aim_release_degrees=35は再利用。すべて試作値。
 - Lによる手動指定は35度の明確な向き変更／対象失効まで優先。左／右クリックの直接指定と戦闘中のselected_target／queued_attack_target、Lによる予約対象変更、最大予約1個、ストック消費時点は維持。戦闘中は自動照準を更新しない。
 - TargetDash.show_debug_attack_range=falseが既定。GodotでmainのPlayer/TargetDashを選び、InspectorのShow Debug Attack Rangeをtrueにすれば、従来のFREE・接地・敵近傍条件で水色円とRangeCenterGuidesを表示できる。起動直後も非表示。通常プレイの金色●○は維持。攻撃半径・WeaponData.attack_range・Path.sight／clearや安全帰還は表示フラグを参照しない。
+
+## M07壁接触時の安全経路修正（2026-10-20）
+
+同側の敵を壁密着時だけ拒否する不具合を修正。詳細はADR-008実装修正追記と12の壁接触検証節を参照。M07検証待ち・M08未着手を維持する。
+
+- Path.sightの視線レイは変更なし。Path.clearは標準test_moveのゼロ移動による接触解消位置を始点・終点に使用する。解消ベクトルの長さがTargetDashSettings.contact_recovery_limit（試作2mm）を超えれば拒否する。
+- 接触解消後に元サイズのカプセルのintersect_shape、全経路cast_motion、同じsafe_marginの実体test_move、既存の足場5点サンプリングをすべて実施。形状クエリの追加余白は0、物理移動のsafe_margin=1mmを共通基準とする。カプセル縮小、壁の除外、衝突の無効化は行わない。
+- TargetDashは接近・次段接近・帰還開始時に同じ経路を検査し、move_and_collideのゼロ移動で接触解消してから補間する。各移動tickでも経路を再検査する。return_anchorは最初の位置のまま、安全な解消位置への帰還誤差を従来どおり記録する。
+- 攻撃半径、武器・ストック、距離優先照準、予約、カメラ、InputMap、保存済み地形・Playerコリジョンは変更しない。壁部分重なりの表示問題の保留方針とは別件。ユーザーF5で壁際の同側攻撃・角・連撃帰還を確認する。
