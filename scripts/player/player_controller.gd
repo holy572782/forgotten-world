@@ -134,6 +134,10 @@ func require_movement_release() -> void:
 	sample_movement_input()
 	_wait_for_move_release = not movement_neutral
 
+func resume_movement_input() -> void:
+	# Completed Return hands current held input back to normal locomotion.
+	_wait_for_move_release = false
+
 func clear_combat_input() -> void:
 	velocity = Vector3.ZERO
 	_buffer_remaining = 0.0

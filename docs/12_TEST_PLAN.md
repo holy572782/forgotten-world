@@ -21,7 +21,7 @@
 - [ ] T06 1攻撃受理で1ストック消費、0で拒否し、拒否／予約で重複消費しない（M07自動範囲とユーザー試作受入済み。個別条件の網羅は未確認。旧ゲージ威力差試験から改訂）
 - [x] T07 1攻撃1対象の重複ヒット防止（M06試作範囲：自動検査と2026-10-18の主要手動検証合格、末尾参照）
 - [ ] T08 最大3ストック（仮）・予約1個・1入力1斬撃・入力停止後帰還（M07）
-- [ ] T09 防御・新規方向入力による即時帰還・保持開始／帰還後の解放待ち・被弾・帰還中Guardを確認（M08、ADR-014。旧Stepは履歴）
+- [ ] T09 防御・新規方向入力による即時帰還・保持開始／帰還後の保持方向移動・被弾・帰還中Guardを確認（M08、ADR-014。旧Stepは履歴）
 - [ ] T10 敵の追跡/予兆/攻撃/帰還/死亡（M09）
 - [ ] T11 敵接触で別戦闘シーンへ移行しない（M09）
 - [ ] T12 10〜15分の通しプレイで詰まない（M10）
@@ -549,3 +549,23 @@ foreach ($case in $cases) {
 ```
 
 実描画出力 `.godot/m08_shield_0.png`〜`3.png` は下・右・上・左。実シーン／深度Shaderで描画して4枚を目視する。`m08_shield_wall.png`は既存M04の壁背後でのGuard表示。ヘッドレスのPASSだけで見た目の合格にしない。敵の自動攻撃は未実装のため被ダメージはHealthComponent経由の既存検査を用いる。環境・今回の実行結果は進捗ログ、F5と残存の実機確認は `m08_guard_sprite_audit.md`。M00〜M08の既存手動項目と実機パッド・長時間性能・複雑地形の残件は継続する。
+
+## M08 帰還後の保持方向移動（2026-10-21）
+
+今回のユーザー指示により、上記2026-10-20の9〜10項目中「帰還後に保持キーで歩かない」は旧受入条件となる。現在の期待は「帰還中は再開始せず、到着後は現在の保持方向へ通常歩行」。旧検査の合格履歴は保持する。
+
+`tests/m08_defense.gd`を更新：接近・攻撃・命中後・構え・Recoverから帰還し、到着時の元地点とカメラ解除を確認してから保持キーによる歩行を検査。連打中も帰還補間・所要時間は不変。4カメラYaw×キーボード斜め／合成左スティックで、帰還途中に方向を変えても帰還先は不変、到着後の最初の通常物理tickで現在の方向へ移動することを検査する。到着前に解放した場合の静止、HP0／resetでの水平移動抑止、既存の防御・追撃・ストック・盾表示も継続する。
+
+PowerShell、プロジェクトルートから順次実行：
+```powershell
+$godot = 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe'
+& $godot --headless --path . --script tests/m08_defense.gd --log-file .godot/m08_resume_headless.log
+& $godot --path . --script tests/m08_defense.gd --log-file .godot/m08_resume_render60.log -- --capture
+& $godot --path . --script tests/m08_defense.gd --log-file .godot/m08_resume_render30.log -- --capture --fps30
+foreach ($caseName in @('m02_movement','m03_jump','m06_target_dash','m07_chain','m08_guard_sprite')) {
+    & $godot --headless --path . --script ('tests/' + $caseName + '.gd') --log-file ('.godot/m08_resume_' + $caseName + '.log')
+    if ($LASTEXITCODE -ne 0) { throw ('Failed: ' + $caseName) }
+}
+```
+
+F5受入はREADME末尾のA保持・途中D変更・到着前解放を実施する。合成パッド試験と実機操作を区別し、主観的な切り替わり・実機パッドは手動検証待ち。今回の実行結果はDEVELOPMENT_STATUSの最新ログ。

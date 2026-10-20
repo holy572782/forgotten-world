@@ -630,13 +630,15 @@ func _begin_return(reason: String) -> void:
 func _return(delta: float) -> void:
 	if not _move_travel(delta):
 		last_result += "; return blocked, stopped at safe position"
-		_finish()
+		_finish(true)
 	elif _elapsed >= _duration:
-		_finish()
+		_finish(true)
 
-func _finish() -> void:
+func _finish(resume_held_movement: bool = false) -> void:
 	return_error = body.global_position.distance_to(return_anchor) if _combat_cycle else 0.0
-	if _combat_cycle: body.require_movement_release()
+	if _combat_cycle:
+		if resume_held_movement: body.resume_movement_input()
+		else: body.require_movement_release()
 	_combat_cycle = false
 	_return_input_armed = false
 	_resume_return = false

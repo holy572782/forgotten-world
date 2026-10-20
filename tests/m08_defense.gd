@@ -148,10 +148,11 @@ func _run() -> void:
 		await _capture_pose(stage)
 		await _wait_idle()
 		var at := player.global_position
-		await _ticks(6)
-		_check(player.global_position.distance_to(at) < 0.00001,stage+" held key cannot walk after return")
-		_check(return_starts == returns_before+1 and hits == delivered,stage+" one return, no canceled hit")
 		_check(at.distance_to(expected_anchor) < 0.03 and not rig.follow_locked,stage+" safe original return and release")
+		var held_direction: Vector3 = player.input_to_world(Input.get_vector("move_left","move_right","move_up","move_down"),player._movement_basis())
+		await _ticks(6)
+		_check((player.global_position-at).dot(held_direction) > 0.01,stage+" held key resumes walking after return")
+		_check(return_starts == returns_before+1 and hits == delivered,stage+" one return, no canceled hit")
 		_neutral()
 		await _ticks(1)
 		_key(KEY_D)
@@ -258,8 +259,41 @@ func _run() -> void:
 	_check(seconds <= duration+0.12,"No arrival delay from repeated input")
 	before_position = player.global_position
 	await _ticks(6)
-	_check(player.global_position.distance_to(before_position) < 0.00001,"Held A blocked after Return")
+	_check(player.global_position.x < before_position.x-0.01,"Held A resumes after Return without release")
 	print("RETURN cap=",Engine.max_fps," seconds=",seconds," planned=",duration," error=",combat.return_error)
+	# Arrival uses CURRENT input, including camera-relative diagonals and analog.
+	for yaw in [0.0,90.0,180.0,270.0]:
+		for analog in [false,true]:
+			await _start("attack")
+			rig.rotation.y = deg_to_rad(yaw)
+			await _ticks(2)
+			_key(KEY_A)
+			await _ticks(1)
+			_check(combat.state == combat.State.Return,"Direction starts Return before changing held input")
+			_key(KEY_A,false)
+			if analog: _stick(0.7,0.7)
+			else:
+				_key(KEY_D)
+				_key(KEY_S)
+			await _wait_idle()
+			var arrived := player.global_position
+			_check(arrived.distance_to(expected_anchor) < 0.03,"Changed held direction does not alter destination")
+			var direction: Vector3 = player.input_to_world(Input.get_vector("move_left","move_right","move_up","move_down"),player._movement_basis()).normalized()
+			await _ticks(1)
+			_check((player.global_position-arrived).dot(direction) > 0.0001,"Held input moves on first normal physics tick")
+			await _ticks(5)
+			var displacement := player.global_position-arrived
+			displacement.y = 0.0
+			_check(displacement.normalized().dot(direction) > 0.99 and displacement.length() > 0.01,"Current camera-relative diagonal resumes yaw="+str(yaw)+" analog="+str(analog))
+			_check(not combat.is_busy() and not rig.follow_locked,"Walking after Return keeps FREE camera")
+	await _start("attack")
+	_key(KEY_A)
+	await _ticks(1)
+	_neutral()
+	await _wait_idle()
+	before_position = player.global_position
+	await _ticks(6)
+	_check(player.global_position.distance_to(before_position) < 0.00001,"Released input stays stopped after Return")
 	# Guard still takes precedence over direction and attack in both event orders.
 	for guard_first in [false,true]:
 		await _start("attack")
@@ -387,11 +421,13 @@ func _run() -> void:
 			if phase == "return": _key(KEY_A)
 			else: _key(KEY_I)
 			await _ticks(1)
+			_key(KEY_D) # Held before reset/death, rather than a fresh press afterwards.
 			if death: health.damage(1000)
 			else: player.reset_motion(origin)
 			_key(KEY_D)
 			await _ticks(2)
 			_check(not combat.is_busy() and not rig.follow_locked and not combat.queued and sprite.combat_pose == &"","Death/reset clears " + phase)
+			_check(Vector2(player.velocity.x,player.velocity.z).is_zero_approx(),"Death/reset does not resume held movement " + phase + " death=" + str(death))
 			if death: _check(not combat.stock._recovery_allowed,"Dead stock recovery inhibited")
 	await _fresh(origin)
 	for i in range(1,accepted_ids.size()): _check(accepted_ids[i] > accepted_ids[i-1],"Monotonic unique attack IDs")
