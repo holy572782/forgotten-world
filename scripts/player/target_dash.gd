@@ -42,6 +42,7 @@ var _pending_click := false
 var _pending_selected_attack := false
 var _click_position := Vector2.ZERO
 var _ring: MeshInstance3D
+var _range_guides: MeshInstance3D
 @onready var body: CharacterBody3D = get_parent()
 @onready var stock: AttackStockComponent = body.get_node("AttackStockComponent")
 @onready var sprite: AnimatedSprite3D = body.get_node("AnimatedSprite3D")
@@ -67,6 +68,25 @@ func _ready() -> void:
 	_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	body.add_child.call_deferred(_ring)
 	_ring.position.y = 0.04
+	_range_guides = MeshInstance3D.new()
+	_range_guides.name = "RangeCenterGuides"
+	_range_guides.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var guide_material := material.duplicate() as StandardMaterial3D
+	guide_material.albedo_color.a = 0.22
+	_range_guides.material_override = guide_material
+	_ring.add_child(_range_guides)
+	_update_range_guides()
+
+func _update_range_guides() -> void:
+	# Perspective shifts the ellipse's apparent center, not its world origin.
+	# Ground-plane diameters reveal that origin without moving the range boundary.
+	var guides := ImmediateMesh.new()
+	guides.surface_begin(Mesh.PRIMITIVE_LINES)
+	for axis in [Vector3.RIGHT, Vector3.FORWARD]:
+		guides.surface_add_vertex(-axis * equipped_weapon.attack_range)
+		guides.surface_add_vertex(axis * equipped_weapon.attack_range)
+	guides.surface_end()
+	_range_guides.mesh = guides
 
 func is_busy() -> bool:
 	return state != State.Idle
@@ -129,6 +149,7 @@ func _update_markers() -> void:
 	if not is_equal_approx(mesh.outer_radius, equipped_weapon.attack_range + 0.025):
 		mesh.inner_radius = equipped_weapon.attack_range - 0.025
 		mesh.outer_radius = equipped_weapon.attack_range + 0.025
+		_update_range_guides()
 
 func valid_candidates() -> Array[Node3D]:
 	var candidates: Array[Node3D] = []
