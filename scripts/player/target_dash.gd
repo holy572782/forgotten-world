@@ -3,7 +3,7 @@ extends Node
 const Settings = preload("res://scripts/combat/target_dash_settings.gd")
 const Path = preload("res://scripts/combat/dash_path.gd")
 const Target = preload("res://scripts/combat/targetable.gd")
-enum State { Idle, Approach, Attack, Return, Guard, Step, Recover }
+enum State { Idle, Approach, Attack, Return, Guard, Recover }
 signal state_changed(next: int)
 signal hit(target: Node)
 signal attack_accepted(attack_id: int, combo: int)
@@ -43,9 +43,9 @@ var _attack_finished := false
 var motion_owned_tick := false
 var _combat_cycle := false
 var _resume_return := false
-var _step_consumed := false
-var _step_cooldown := 0.0
-var _pending_step := false
+var _return_input_armed := false
+var _return_press_seen := 0
+var _return_neutral_seen := 0
 var _pending_guard := false
 var _wait_defense_release := false
 var _pending_click := false
@@ -105,12 +105,8 @@ func is_busy() -> bool:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_echo(): return
-	if event.is_action_released("dodge"): _step_consumed = false
 	if event.is_action_pressed("guard"):
 		_pending_guard = true
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("dodge"):
-		_pending_step = true
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("lock_on"):
 		cycle_target()
@@ -133,7 +129,6 @@ func _unhandled_input(event: InputEvent) -> void:
 func physics_step(delta: float) -> void:
 	var was_busy := is_busy()
 	motion_owned_tick = was_busy
-	_step_cooldown = maxf(0.0, _step_cooldown - delta)
 	if body.get_node("HealthComponent").current_hp <= 0.0:
 		cancel()
 		body.clear_combat_input()
@@ -143,7 +138,12 @@ func physics_step(delta: float) -> void:
 		return
 	if not is_busy():
 		_refresh_selection(delta)
+	# Consume intent even in Guard/Return: it must not be deferred until exit.
+	var direction_return := _direction_return_requested()
 	var interrupted := _defense_input()
+	if not interrupted and direction_return:
+		_begin_return("Direction input: return to start")
+		interrupted = true
 	if interrupted:
 		_pending_click = false
 		_pending_selected_attack = false
@@ -167,59 +167,40 @@ func physics_step(delta: float) -> void:
 			State.Attack: _attack(delta)
 			State.Return: _return(delta)
 			State.Guard: _guard()
-			State.Step: _step(delta)
 			State.Recover: _recover(delta)
 	motion_owned_tick = motion_owned_tick or is_busy() or interrupted
 	stock.set_recovery_allowed(not was_busy and not is_busy() and body.get_node("HealthComponent").current_hp > 0.0)
 	stock.advance(delta)
 	_update_markers()
 
+func _direction_return_requested() -> bool:
+	var new_press: bool = body.movement_press_serial != _return_press_seen
+	if body.movement_neutral_serial != _return_neutral_seen:
+		_return_input_armed = true
+	_return_press_seen = body.movement_press_serial
+	_return_neutral_seen = body.movement_neutral_serial
+	return _combat_cycle and _return_input_armed and new_press and state in [State.Approach, State.Attack, State.Recover]
+
 func _defense_input() -> bool:
 	var guard_pressed := Input.is_action_pressed("guard")
-	var step_pressed := Input.is_action_pressed("dodge")
 	var guard_request := guard_pressed or _pending_guard
-	var step_request := step_pressed or _pending_step
 	_pending_guard = false
-	_pending_step = false
-	if not step_pressed: _step_consumed = false
 	if _wait_defense_release:
-		if not guard_pressed and not step_pressed: _wait_defense_release = false
+		if not guard_pressed: _wait_defense_release = false
 		return false
-	# A held guard owns this tick; discard simultaneous step and attack requests.
 	if guard_request:
-		if step_request: _step_consumed = true
 		if state != State.Guard:
-			if not _defense_grounded(true): return _reject("Guard rejected: airborne or unsafe floor")
+			if not _defense_grounded(): return _reject("Guard rejected: airborne or unsafe floor")
 			_interrupt_attack()
 			_set_state(State.Guard)
 			_show_defense_pose(&"Guard")
 		return true
-	if step_request and not _step_consumed:
-		var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-		if input.is_zero_approx():
-			last_result = "Step rejected: direction required"
-			return false
-		_step_consumed = true
-		if state == State.Step or _step_cooldown > 0.0:
-			return _reject("Step rejected: reinput delay")
-		if not _defense_grounded(): return _reject("Step rejected: airborne or unsafe floor")
-		var direction: Vector3 = body.input_to_world(input, body._movement_basis()).normalized()
-		var destination: Vector3 = body.global_position + direction * defense.step_distance
-		if not Path.clear(body, destination, settings, body.global_position):
-			return _reject("Step rejected: wall, ledge or uneven floor")
-		_interrupt_attack()
-		_begin_travel(State.Step, destination, defense.step_distance / maxf(0.02, defense.step_duration))
-		_duration = maxf(0.02, defense.step_duration)
-		_step_cooldown = defense.step_reinput_delay
-		_show_defense_pose(&"Step")
-		return true
 	return false
 
-func _defense_grounded(allow_slope: bool = false) -> bool:
+func _defense_grounded() -> bool:
 	# Combat travel uses move_and_collide, whose floor flag is stale; validate
 	# the actual capsule footprint as well. Airborne FREE input is rejected.
-	if state == State.Idle and (not body.is_on_floor() or body.velocity.y > 0.0): return false
-	if state == State.Idle and allow_slope: return true
+	if state == State.Idle: return body.is_on_floor() and body.velocity.y <= 0.0
 	return Path.clear(body, body.global_position, settings, body.global_position)
 
 func _interrupt_attack() -> void:
@@ -256,14 +237,6 @@ func _guard() -> void:
 	_face_defense_target()
 	if not Input.is_action_pressed("guard"): _after_defense()
 
-func _step(delta: float) -> void:
-	_face_defense_target()
-	if not _move_travel(delta):
-		last_result = "Step stopped: route became unsafe"
-		_after_defense()
-	elif _elapsed >= _duration:
-		_after_defense()
-
 func _after_defense() -> void:
 	body.velocity = Vector3.ZERO
 	if not _combat_cycle:
@@ -284,13 +257,7 @@ func _recover(_delta: float) -> void:
 	elif _elapsed >= defense.followup_window:
 		_begin_return("Defense follow-up window ended")
 
-func step_invulnerable() -> bool:
-	# Always leave a vulnerable tail, including unusually short configured steps.
-	var end: float = minf(defense.step_invulnerability_start + defense.step_invulnerability_duration, _duration - 0.02)
-	return state == State.Step and defense.step_invulnerability_enabled and _elapsed >= defense.step_invulnerability_start and _elapsed < end
-
 func filter_damage(amount: float, source: Node) -> float:
-	if step_invulnerable(): return 0.0
 	# Unknown/freed/nonspatial or colocated sources get full damage, never a free guard.
 	if state != State.Guard or not is_instance_valid(source) or not source is Node3D: return amount
 	var direction: Vector3 = source.global_position - body.global_position
@@ -470,6 +437,10 @@ func request_attack(candidate: Node3D) -> bool:
 	if is_busy() or not can_select(candidate): return _reject("Invalid target, state or stock")
 	_active_weapon = equipped_weapon.duplicate()
 	_combat_cycle = true
+	body.sample_movement_input()
+	_return_press_seen = body.movement_press_serial
+	_return_neutral_seen = body.movement_neutral_serial
+	_return_input_armed = body.movement_neutral
 	_resume_return = false
 	combo_hits = 0
 	queued = false
@@ -651,12 +622,9 @@ func _attack(delta: float) -> void:
 				_begin_return("Input window ended")
 
 func _begin_return(reason: String) -> void:
-	queued = false
-	queued_attack_target = null
-	_waiting = false
+	if not _combat_cycle or state == State.Return: return
+	_interrupt_attack()
 	last_result = reason
-	sprite._attacking = false
-	sprite.speed_scale = 1.0
 	_begin_travel(State.Return, return_anchor, settings.return_speed)
 
 func _return(delta: float) -> void:
@@ -668,7 +636,9 @@ func _return(delta: float) -> void:
 
 func _finish() -> void:
 	return_error = body.global_position.distance_to(return_anchor) if _combat_cycle else 0.0
+	if _combat_cycle: body.require_movement_release()
 	_combat_cycle = false
+	_return_input_armed = false
 	_resume_return = false
 	queued = false
 	queued_attack_target = null
@@ -683,7 +653,7 @@ func _finish() -> void:
 
 func cancel() -> void:
 	_pending_guard = false
-	_pending_step = false
+	_return_input_armed = false
 	_wait_defense_release = true
 	_pending_click = false
 	_pending_selected_attack = false

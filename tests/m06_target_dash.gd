@@ -113,7 +113,8 @@ func _run() -> void:
 		if combat.state == combat.State.Attack:
 			_check(String(sprite.animation).begins_with("walk_") if combat._waiting else String(sprite.animation).begins_with("attack_"), "Attack / inter-hit stance image")
 			_check(player.facing_world.dot((target.global_position - player.global_position).normalized()) > 0.99, "Faces target")
-		Input.action_press("move_left")
+		# ADR-014 gives new movement input a Return meaning. Direction cancellation
+		# is covered by M08; keep this legacy case focused on one complete strike.
 		Input.action_press("jump")
 		await _ticks(1)
 		if not combat.is_busy(): break

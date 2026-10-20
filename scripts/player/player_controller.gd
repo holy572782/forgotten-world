@@ -17,6 +17,13 @@ var _jump_requested := false
 var _jump_was_pressed := false
 var _wait_for_jump_release := false
 var _floor_valid := false
+## One owner for movement intent, sampled at events AND physics ticks. Counters
+## preserve a press/release tap even if both events precede the next physics tick.
+var movement_press_serial := 0
+var movement_neutral_serial := 0
+var movement_neutral := true
+var _movement_active := false
+var _wait_for_move_release := false
 
 func _ready() -> void:
 	floor_max_angle = deg_to_rad(movement.max_slope_degrees)
@@ -25,6 +32,7 @@ func _ready() -> void:
 	floor_stop_on_slope = true
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_echo(): sample_movement_input()
 	if is_instance_valid(combat) and combat.is_busy():
 		return
 	# Preserve short press/release taps between physics ticks, but ignore key repeat.
@@ -32,6 +40,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_jump_requested = true
 
 func _physics_process(delta: float) -> void:
+	sample_movement_input()
 	if is_instance_valid(combat):
 		combat.physics_step(delta)
 		if combat.motion_owned_tick:
@@ -101,7 +110,29 @@ func reset_motion(at: Vector3) -> void:
 	_jump_was_pressed = Input.is_action_pressed("jump")
 	_wait_for_jump_release = true
 	_floor_valid = false
+	require_movement_release()
 	reset_physics_interpolation()
+
+func sample_movement_input() -> void:
+	var strength := Input.get_vector("move_left", "move_right", "move_up", "move_down", 0.0).length()
+	# Opposing held keys must not count as releasing every movement action.
+	for action in ["move_left", "move_right", "move_up", "move_down"]:
+		strength = maxf(strength, Input.get_action_raw_strength(action))
+	var release := clampf(movement.combat_direction_release_threshold, 0.0, 0.99)
+	var press := clampf(movement.combat_direction_press_threshold, release + 0.01, 1.0)
+	var neutral := strength <= release
+	if neutral:
+		if not movement_neutral: movement_neutral_serial += 1
+		_movement_active = false
+		_wait_for_move_release = false
+	elif strength >= press and not _movement_active:
+		_movement_active = true
+		movement_press_serial += 1
+	movement_neutral = neutral
+
+func require_movement_release() -> void:
+	sample_movement_input()
+	_wait_for_move_release = not movement_neutral
 
 func clear_combat_input() -> void:
 	velocity = Vector3.ZERO
@@ -120,6 +151,7 @@ func _movement_basis() -> Basis:
 func _update_horizontal(delta: float, view_basis: Basis, grounded: bool) -> void:
 	# get_vector caps diagonals and retains analog strength and radial deadzone.
 	var input_vector := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if _wait_for_move_release: input_vector = Vector2.ZERO
 	var desired := input_to_world(input_vector, view_basis) * movement.speed
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
 	var rate := movement.deceleration if input_vector.is_zero_approx() else movement.acceleration
