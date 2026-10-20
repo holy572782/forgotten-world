@@ -3,7 +3,7 @@ extends "res://tests/m06_target_dash.gd"
 func _run() -> void:
 	root.size = Vector2i(1152, 720)
 	Engine.max_fps = 60
-	main = load("res://scenes/main.tscn").instantiate()
+	main = preload("res://tests/fixtures/combat_scene.gd").create()
 	root.add_child(main)
 	player = main.get_node("Player")
 	combat = player.get_node("TargetDash")

@@ -10,6 +10,9 @@ extends Resource
 @export_range(0.05, 0.3) var path_sample_spacing: float = 0.15
 @export_range(0.5, 5.0) var attack_timeout: float = 2.0
 @export_category("M07 aiming prototype")
+@export_range(1.0, 180.0) var auto_aim_half_angle_degrees: float = 60.0
+@export_range(0.0, 2.0) var auto_aim_distance_hysteresis: float = 0.3
+@export_range(0.0, 0.2) var auto_aim_distance_tie: float = 0.05
 @export_range(0.0, 90.0) var aim_hysteresis_degrees: float = 12.0
 @export_range(0.0, 1.0) var aim_stability_seconds: float = 0.12
 @export_range(1.0, 180.0) var manual_aim_release_degrees: float = 35.0

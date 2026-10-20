@@ -26,7 +26,7 @@ func _ticks(count: int) -> void:
 func _run() -> void:
 	root.size = Vector2i(1152,720)
 	Engine.max_fps = 30 if "--fps30" in OS.get_cmdline_user_args() else 60
-	main = load("res://scenes/main.tscn").instantiate()
+	main = preload("res://tests/fixtures/combat_scene.gd").create()
 	# Use a named fixture so cyclic-order assertions remain independent of demo setup.
 	main.get_node("TrainingEnemySecond").free()
 	main.get_node("TrainingEnemyThird").free()

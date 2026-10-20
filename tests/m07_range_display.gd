@@ -28,7 +28,7 @@ func _measure(label: String) -> void:
 func _run() -> void:
 	root.size = Vector2i(1152,720)
 	Engine.max_fps = 60
-	main = load("res://scenes/main.tscn").instantiate()
+	main = preload("res://tests/fixtures/combat_scene.gd").create()
 	root.add_child(main)
 	player = main.get_node("Player")
 	combat = player.get_node("TargetDash")
@@ -38,6 +38,12 @@ func _run() -> void:
 	enemy.position = Vector3(-3,0,-2)
 	target = enemy.get_node("Targetable")
 	await _ticks(20)
+	_check(not combat._ring.visible and not combat._range_guides.is_visible_in_tree(), "Default gameplay hides range and guides")
+	var available_before: Array[Node3D] = combat.valid_candidates()
+	combat.show_debug_attack_range = true
+	await _ticks(2)
+	_check(combat._ring.visible and combat._range_guides.is_visible_in_tree(), "Debug toggle shows both")
+	_check(combat.valid_candidates() == available_before, "Display does not change candidates")
 	var rig: Node3D = main.get_node("CameraRig")
 	for angle in [0,90,180,270]:
 		rig.rotation.y = deg_to_rad(angle)

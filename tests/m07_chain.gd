@@ -46,10 +46,11 @@ func _start() -> bool:
 func _run() -> void:
 	Engine.max_fps = 30 if "--fps30" in OS.get_cmdline_user_args() else 60
 	root.size = Vector2i(1152,720)
-	main = load("res://scenes/main.tscn").instantiate()
+	main = preload("res://tests/fixtures/combat_scene.gd").create()
 	root.add_child(main)
 	player = main.get_node("Player")
 	combat = player.get_node("TargetDash")
+	combat.show_debug_attack_range = "--debug-range" in OS.get_cmdline_user_args()
 	sprite = player.get_node("AnimatedSprite3D")
 	enemy = main.get_node("TrainingEnemy")
 	target = enemy.get_node("Targetable")
@@ -66,12 +67,13 @@ func _run() -> void:
 	_face(target)
 	await _ticks(2)
 	_check(combat.selected_target == target, "Front target selected")
-	combat.selected_target = c
+	# ADR-012: B is nearer inside the forward cone; keep it through angle jitter.
+	combat.selected_target = b
 	var boundary := ((b.global_position-player.global_position).normalized()+(c.global_position-player.global_position).normalized()).normalized()
 	for i in range(20):
 		player.facing_world = boundary.rotated(Vector3.UP, deg_to_rad(1 if i % 2 else -1))
 		await _ticks(1)
-		_check(combat.selected_target == c, "Automatic hysteresis prevents boundary flicker")
+		_check(combat.selected_target == b, "Distance-priority selection prevents boundary flicker")
 	_face(b)
 	await _ticks(15)
 	_check(combat.selected_target == b, "Clear facing change selects new target")

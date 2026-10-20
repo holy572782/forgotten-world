@@ -10,6 +10,7 @@ signal attack_accepted(attack_id: int, combo: int)
 signal attack_rejected(reason: String)
 @export var settings: Settings = preload("res://resources/target_dash_settings.tres")
 @export var camera_rig: Node3D
+@export var show_debug_attack_range: bool = false
 @export var equipped_weapon: WeaponData = preload("res://resources/weapons/one_handed_sword.tres"):
 	set(value):
 		if value != null and not is_busy(): equipped_weapon = value
@@ -54,6 +55,7 @@ func _ready() -> void:
 	sprite.attack_completed.connect(_on_finished)
 	body.get_node("HealthComponent").depleted.connect(func(_source: Node): cancel())
 	_ring = MeshInstance3D.new()
+	_ring.visible = false
 	var mesh := TorusMesh.new()
 	mesh.inner_radius = equipped_weapon.attack_range - 0.025
 	mesh.outer_radius = equipped_weapon.attack_range + 0.025
@@ -144,7 +146,7 @@ func _update_markers() -> void:
 		if body.global_position.distance_to(candidate.global_position) <= equipped_weapon.attack_range + 2.0:
 			near_enemy = true
 		candidate.set_available(_candidate_valid(candidate), candidate == selected_target)
-	_ring.visible = near_enemy and not is_busy() and body.is_on_floor()
+	_ring.visible = show_debug_attack_range and near_enemy and not is_busy() and body.is_on_floor()
 	var mesh: TorusMesh = _ring.mesh
 	if not is_equal_approx(mesh.outer_radius, equipped_weapon.attack_range + 0.025):
 		mesh.inner_radius = equipped_weapon.attack_range - 0.025
@@ -160,30 +162,20 @@ func valid_candidates() -> Array[Node3D]:
 	return candidates
 
 func _refresh_selection(delta: float = 0.0) -> void:
+	if is_busy(): return
 	var current_valid := is_instance_valid(selected_target) and can_select(selected_target)
 	var facing := Vector3(body.facing_world.x, 0.0, body.facing_world.z).normalized()
 	if _manual_selection and current_valid:
 		if rad_to_deg(facing.angle_to(_manual_facing)) < settings.manual_aim_release_degrees: return
 		_manual_selection = false
-	var best: Node3D
-	var best_angle := INF
-	for candidate in valid_candidates():
-		var direction := candidate.global_position - body.global_position
-		direction.y = 0.0
-		var angle := rad_to_deg(facing.angle_to(direction.normalized()))
-		if angle < best_angle:
-			best_angle = angle
-			best = candidate
+	var best := _best_auto_target(valid_candidates(), facing)
 	if not current_valid:
 		selected_target = best
 		_manual_selection = false
 		_aim_candidate = null
 		_aim_elapsed = 0.0
 		return
-	var current_direction := selected_target.global_position - body.global_position
-	current_direction.y = 0.0
-	var current_angle := rad_to_deg(facing.angle_to(current_direction.normalized()))
-	if best == selected_target or current_angle - best_angle <= settings.aim_hysteresis_degrees:
+	if best == selected_target or not _auto_target_improves(best, facing):
 		_aim_candidate = null
 		_aim_elapsed = 0.0
 		return
@@ -195,6 +187,48 @@ func _refresh_selection(delta: float = 0.0) -> void:
 		selected_target = best
 		_aim_candidate = null
 		_aim_elapsed = 0.0
+
+func _aim_distance(candidate: Node3D) -> float:
+	var direction := candidate.global_position - body.global_position
+	return Vector2(direction.x, direction.z).length()
+
+func _aim_angle(candidate: Node3D, facing: Vector3) -> float:
+	var direction := candidate.global_position - body.global_position
+	direction.y = 0.0
+	return rad_to_deg(facing.angle_to(direction.normalized()))
+
+func _best_auto_target(candidates: Array[Node3D], facing: Vector3) -> Node3D:
+	var front: Array[Node3D] = []
+	var nearest := INF
+	for candidate in candidates:
+		if _aim_angle(candidate, facing) <= settings.auto_aim_half_angle_degrees:
+			front.append(candidate)
+			nearest = minf(nearest, _aim_distance(candidate))
+	var pool := front if not front.is_empty() else candidates
+	var best: Node3D
+	var best_angle := INF
+	# candidates arrive in stable NodePath order. Compare the near-distance band
+	# against its minimum, avoiding a non-transitive approximate-distance sort.
+	for candidate in pool:
+		if not front.is_empty() and _aim_distance(candidate) > nearest + settings.auto_aim_distance_tie: continue
+		var angle := _aim_angle(candidate, facing)
+		if best == null or (angle < best_angle and not is_equal_approx(angle, best_angle)):
+			best = candidate
+			best_angle = angle
+	return best
+
+func _auto_target_improves(candidate: Node3D, facing: Vector3) -> bool:
+	if candidate == null: return false
+	var next_angle := _aim_angle(candidate, facing)
+	var current_angle := _aim_angle(selected_target, facing)
+	if next_angle <= settings.auto_aim_half_angle_degrees:
+		# Entry uses the strict cone; only the existing selection gets an exit band.
+		if current_angle > settings.auto_aim_half_angle_degrees + settings.aim_hysteresis_degrees: return true
+		var gain := _aim_distance(selected_target) - _aim_distance(candidate)
+		if gain > settings.auto_aim_distance_hysteresis: return true
+		return absf(gain) <= settings.auto_aim_distance_tie and current_angle - next_angle > settings.aim_hysteresis_degrees
+	# No forward candidate: keep the existing angle-only fallback hysteresis.
+	return current_angle - next_angle > settings.aim_hysteresis_degrees
 
 func _select_manually(candidate: Node3D) -> void:
 	selected_target = candidate
