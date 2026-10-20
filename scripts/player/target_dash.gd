@@ -9,12 +9,14 @@ signal hit(target: Node)
 signal attack_accepted(attack_id: int, combo: int)
 signal attack_rejected(reason: String)
 @export var settings: Settings = preload("res://resources/target_dash_settings.tres")
+@export var camera_rig: Node3D
 @export var equipped_weapon: WeaponData = preload("res://resources/weapons/one_handed_sword.tres"):
 	set(value):
 		if value != null and not is_busy(): equipped_weapon = value
 var combo_hits := 0
 var attack_id := 0
 var queued := false
+var queued_attack_target: Node3D
 var _waiting := false
 var _grace_elapsed := 0.0
 var _active_weapon: WeaponData
@@ -24,6 +26,10 @@ var return_error := 0.0
 var last_result := ""
 var target: Node3D
 var selected_target: Node3D
+var _manual_selection := false
+var _manual_facing := Vector3.ZERO
+var _aim_candidate: Node3D
+var _aim_elapsed := 0.0
 var _target_anchor := Vector3.ZERO
 var _destination := Vector3.ZERO
 var _travel_start := Vector3.ZERO
@@ -34,7 +40,6 @@ var _hit_done := false
 var _attack_finished := false
 var _pending_click := false
 var _pending_selected_attack := false
-var _pending_cycles := 0
 var _click_position := Vector2.ZERO
 var _ring: MeshInstance3D
 @onready var body: CharacterBody3D = get_parent()
@@ -69,11 +74,16 @@ func is_busy() -> bool:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_echo(): return
 	if event.is_action_pressed("lock_on"):
-		if not is_busy(): _pending_cycles += 1
+		cycle_target()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("attack") or event.is_action_pressed("target_attack"):
 		if is_busy():
-			request_followup()
+			if event is InputEventMouseButton:
+				var candidate := pick_target(event.position)
+				if candidate != null: request_followup(candidate, true)
+				else: _reject("No valid click target")
+			else:
+				request_followup()
 		elif not _pending_click and not _pending_selected_attack and event is InputEventMouseButton:
 			_pending_click = true
 			_click_position = event.position
@@ -84,9 +94,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func physics_step(delta: float) -> void:
 	var was_busy := is_busy()
 	if not is_busy():
-		_refresh_selection()
-		for index in range(_pending_cycles): cycle_target()
-	_pending_cycles = 0
+		_refresh_selection(delta)
 	if _pending_click:
 		_pending_click = false
 		var selected := pick_target(_click_position)
@@ -96,6 +104,11 @@ func physics_step(delta: float) -> void:
 		request_attack(selected_target)
 	_pending_selected_attack = false
 	if is_busy():
+		if state != State.Return:
+			if not is_instance_valid(target):
+				_begin_return("Target lost")
+			elif not _framed(target):
+				_begin_return("Target or player outside view")
 		_elapsed += delta
 		match state:
 			State.Approach: _approach(delta)
@@ -106,12 +119,11 @@ func physics_step(delta: float) -> void:
 	_update_markers()
 
 func _update_markers() -> void:
-	if not is_busy(): _refresh_selection()
 	var near_enemy := false
 	for candidate in get_tree().get_nodes_in_group("combat_targets"):
 		if body.global_position.distance_to(candidate.global_position) <= equipped_weapon.attack_range + 2.0:
 			near_enemy = true
-		candidate.set_available(not is_busy() and can_select(candidate), candidate == selected_target)
+		candidate.set_available(_candidate_valid(candidate), candidate == selected_target)
 	_ring.visible = near_enemy and not is_busy() and body.is_on_floor()
 	var mesh: TorusMesh = _ring.mesh
 	if not is_equal_approx(mesh.outer_radius, equipped_weapon.attack_range + 0.025):
@@ -121,32 +133,64 @@ func _update_markers() -> void:
 func valid_candidates() -> Array[Node3D]:
 	var candidates: Array[Node3D] = []
 	for candidate in get_tree().get_nodes_in_group("combat_targets"):
-		if can_select(candidate): candidates.append(candidate)
+		if _candidate_valid(candidate): candidates.append(candidate)
 	# Scene paths provide a stable order independent of facing/camera/group iteration.
 	candidates.sort_custom(func(a: Node3D, b: Node3D): return String(a.get_path()) < String(b.get_path()))
 	return candidates
 
-func _refresh_selection() -> void:
-	if is_instance_valid(selected_target) and can_select(selected_target): return
-	selected_target = null
-	var best_dot := -2.0
+func _refresh_selection(delta: float = 0.0) -> void:
+	var current_valid := is_instance_valid(selected_target) and can_select(selected_target)
 	var facing := Vector3(body.facing_world.x, 0.0, body.facing_world.z).normalized()
+	if _manual_selection and current_valid:
+		if rad_to_deg(facing.angle_to(_manual_facing)) < settings.manual_aim_release_degrees: return
+		_manual_selection = false
+	var best: Node3D
+	var best_angle := INF
 	for candidate in valid_candidates():
 		var direction := candidate.global_position - body.global_position
 		direction.y = 0.0
-		var alignment := facing.dot(direction.normalized())
-		if alignment > best_dot:
-			best_dot = alignment
-			selected_target = candidate
+		var angle := rad_to_deg(facing.angle_to(direction.normalized()))
+		if angle < best_angle:
+			best_angle = angle
+			best = candidate
+	if not current_valid:
+		selected_target = best
+		_manual_selection = false
+		_aim_candidate = null
+		_aim_elapsed = 0.0
+		return
+	var current_direction := selected_target.global_position - body.global_position
+	current_direction.y = 0.0
+	var current_angle := rad_to_deg(facing.angle_to(current_direction.normalized()))
+	if best == selected_target or current_angle - best_angle <= settings.aim_hysteresis_degrees:
+		_aim_candidate = null
+		_aim_elapsed = 0.0
+		return
+	if _aim_candidate != best:
+		_aim_candidate = best
+		_aim_elapsed = 0.0
+	_aim_elapsed += delta
+	if _aim_elapsed >= settings.aim_stability_seconds:
+		selected_target = best
+		_aim_candidate = null
+		_aim_elapsed = 0.0
+
+func _select_manually(candidate: Node3D) -> void:
+	selected_target = candidate
+	_manual_selection = true
+	_manual_facing = Vector3(body.facing_world.x, 0.0, body.facing_world.z).normalized()
+	_aim_candidate = null
+	_aim_elapsed = 0.0
 
 func cycle_target() -> void:
-	if is_busy(): return
+	if state == State.Return: return
 	var candidates := valid_candidates()
 	if candidates.is_empty():
 		selected_target = null
 		return
 	var index := candidates.find(selected_target)
-	selected_target = candidates[(index + 1) % candidates.size()]
+	_select_manually(candidates[(index + 1) % candidates.size()])
+	if queued: queued_attack_target = selected_target
 
 func pick_target(screen_position: Vector2) -> Node3D:
 	var camera := get_viewport().get_camera_3d()
@@ -159,7 +203,7 @@ func pick_target(screen_position: Vector2) -> Node3D:
 	# Resolve only the frontmost collider. Never select through an unassigned body or wall.
 	for candidate in get_tree().get_nodes_in_group("combat_targets"):
 		if candidate is Target and candidate.accepts_click(result.collider):
-			if candidate.marker.visible and can_select(candidate): return candidate
+			if _candidate_valid(candidate): return candidate
 			return null
 	return null
 
@@ -173,6 +217,33 @@ func can_select(candidate: Node3D) -> bool:
 	if absf(difference.y) > settings.floor_tolerance: return false
 	return Path.sight(body, candidate.global_position) and Path.clear(body, attack_position(candidate), settings, body.global_position)
 
+func _candidate_valid(candidate: Node3D) -> bool:
+	return can_combo_select(candidate) if is_busy() else can_select(candidate)
+
+func can_combo_select(candidate: Node3D) -> bool:
+	if state != State.Approach and state != State.Attack: return false
+	var unpaid := 1 if state == State.Approach else 0
+	if combo_hits + unpaid >= _active_weapon.max_combo_hits: return false
+	if not stock.can_spend(_active_weapon.stock_cost_per_hit * (1 + unpaid)): return false
+	return _next_target_safe(candidate)
+
+func _next_target_safe(candidate: Node3D) -> bool:
+	if not is_instance_valid(candidate) or not candidate is Target or not candidate.alive(): return false
+	var difference := candidate.global_position - return_anchor
+	if Vector2(difference.x, difference.z).length() > _active_weapon.attack_range: return false
+	if not _framed(candidate): return false
+	return Path.sight(body, candidate.global_position) and Path.clear(body, attack_position(candidate), settings, body.global_position)
+
+func _framed(candidate: Node3D) -> bool:
+	if not is_instance_valid(candidate): return false
+	if not is_instance_valid(camera_rig): return true
+	var destination := attack_position(candidate)
+	var points: Array[Vector3] = []
+	for base in [body.global_position, destination, candidate.global_position]:
+		points.append(base + Vector3.UP * 0.1)
+		points.append(base + Vector3.UP * 1.7)
+	return camera_rig.frames_points(points, settings.screen_margin)
+
 func attack_position(candidate: Node3D) -> Vector3:
 	var direction := candidate.global_position - body.global_position
 	direction.y = 0.0
@@ -184,16 +255,19 @@ func request_attack(candidate: Node3D) -> bool:
 	_active_weapon = equipped_weapon.duplicate()
 	combo_hits = 0
 	queued = false
+	queued_attack_target = null
 	_waiting = false
 	stock.set_recovery_allowed(false)
 	return_anchor = body.global_position
 	return_error = 0.0
 	last_result = ""
 	target = candidate
-	selected_target = candidate
+	_select_manually(candidate)
 	_target_anchor = candidate.global_position
 	_destination = attack_position(candidate)
 	_face_target()
+	_manual_facing = body.facing_world
+	if is_instance_valid(camera_rig): camera_rig.hold_follow()
 	body.clear_combat_input()
 	_hit_done = false
 	_hit_pending = false
@@ -202,24 +276,49 @@ func request_attack(candidate: Node3D) -> bool:
 	return true
 
 func _reject(reason: String) -> bool:
+	last_result = reason
 	attack_rejected.emit(reason)
 	return false
 
-func request_followup() -> bool:
+func request_followup(candidate: Node3D = null, replace: bool = false) -> bool:
 	if state != State.Approach and state != State.Attack: return _reject("Not accepting input")
-	if queued or not _target_valid(): return _reject("Queue full or target lost")
+	if queued and not replace: return _reject("Queue full")
+	if not _target_valid(): return _reject("Target lost")
+	if candidate == null:
+		if not is_instance_valid(selected_target): return _reject("Selected target lost")
+		candidate = selected_target
 	# Approach has not paid for the first strike yet; reserve room for both strikes.
 	var pending_first := 1 if state == State.Approach else 0
 	if combo_hits + pending_first >= _active_weapon.max_combo_hits: return _reject("Combo limit")
 	if not stock.can_spend(_active_weapon.stock_cost_per_hit * (1 + pending_first)): return _reject("No stock")
+	if not _next_target_safe(candidate): return _reject("Next target unsafe or offscreen")
+	_select_manually(candidate)
 	queued = true
+	queued_attack_target = candidate
 	return true
+
+func _advance_queued() -> void:
+	if not is_instance_valid(queued_attack_target) or not _next_target_safe(queued_attack_target):
+		_begin_return("Queued target lost or unsafe")
+		return
+	var next := queued_attack_target
+	queued = false
+	queued_attack_target = null
+	if next != target:
+		target = next
+		_target_anchor = target.global_position
+		_waiting = false
+		_face_target()
+		_begin_travel(State.Approach, attack_position(target), settings.approach_speed)
+	else:
+		_start_strike()
 
 func _start_strike() -> void:
 	if not _target_valid() or combo_hits >= _active_weapon.max_combo_hits or not stock.can_spend(_active_weapon.stock_cost_per_hit):
 		_begin_return("Strike no longer available")
 		return
 	queued = false
+	queued_attack_target = null
 	_waiting = false
 	_grace_elapsed = 0.0
 	_hit_done = false
@@ -269,8 +368,11 @@ func _approach(delta: float) -> void:
 		_begin_return("Approach blocked")
 	elif _elapsed >= _duration:
 		var reserved := queued
+		var reserved_target := queued_attack_target
 		_start_strike()
-		if state == State.Attack: queued = reserved
+		if state == State.Attack:
+			queued = reserved
+			queued_attack_target = reserved_target
 
 func _move_travel(delta: float) -> bool:
 	var fraction := clampf(_elapsed / _duration, 0.0, 1.0)
@@ -319,12 +421,13 @@ func _attack(delta: float) -> void:
 		else:
 			_grace_elapsed += delta
 			if queued:
-				if _grace_elapsed >= _active_weapon.combo_stance_duration: _start_strike()
+				if _grace_elapsed >= _active_weapon.combo_stance_duration: _advance_queued()
 			elif _grace_elapsed >= _active_weapon.combo_input_window:
 				_begin_return("Input window ended")
 
 func _begin_return(reason: String) -> void:
 	queued = false
+	queued_attack_target = null
 	_waiting = false
 	last_result = reason
 	sprite._attacking = false
@@ -340,19 +443,22 @@ func _return(delta: float) -> void:
 
 func _finish() -> void:
 	queued = false
+	queued_attack_target = null
 	_waiting = false
 	return_error = body.global_position.distance_to(return_anchor)
 	target = null
 	sprite.combat_pose = &""
 	body.clear_combat_input()
+	if is_instance_valid(camera_rig): camera_rig.release_follow()
+	_manual_facing = body.facing_world
 	_set_state(State.Idle)
 	sprite._process(0.0)
 
 func cancel() -> void:
 	_pending_click = false
 	_pending_selected_attack = false
-	_pending_cycles = 0
 	queued = false
+	queued_attack_target = null
 	if not is_busy(): return
 	last_result = "Cancelled"
 	sprite._attacking = false
@@ -361,6 +467,7 @@ func cancel() -> void:
 
 func _exit_tree() -> void:
 	queued = false
+	queued_attack_target = null
+	if is_instance_valid(camera_rig): camera_rig.release_follow()
 	_pending_click = false
 	_pending_selected_attack = false
-	_pending_cycles = 0

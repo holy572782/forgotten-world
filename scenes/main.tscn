@@ -16,14 +16,18 @@ transform = Transform3D(1.1924881e-08, 0, -1, 0, 1, 0, 1, 0, 1.1924881e-08, 0, 0
 
 [node name="Player" parent="." unique_id=778295748 instance=ExtResource("2_player")]
 
-[node name="TargetDash" type="Node" parent="Player" unique_id=1130949288]
+[node name="TargetDash" type="Node" parent="Player" unique_id=1130949288 node_paths=PackedStringArray("camera_rig")]
 script = ExtResource("6_dash")
+camera_rig = NodePath("../../CameraRig")
 
 [node name="TrainingEnemy" parent="." unique_id=1499488101 instance=ExtResource("7_enemy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -2)
 
 [node name="TrainingEnemySecond" parent="." instance=ExtResource("7_enemy")]
 position = Vector3(-8, 0, -2)
+
+[node name="TrainingEnemyThird" parent="." instance=ExtResource("7_enemy")]
+position = Vector3(-5.5, 0, -4)
 
 [node name="CameraRig" parent="." unique_id=236761302 node_paths=PackedStringArray("target") instance=ExtResource("4_camera")]
 target = NodePath("../Player")

@@ -29,6 +29,7 @@ func _run() -> void:
 	main = load("res://scenes/main.tscn").instantiate()
 	# Use a named fixture so cyclic-order assertions remain independent of demo setup.
 	main.get_node("TrainingEnemySecond").free()
+	main.get_node("TrainingEnemyThird").free()
 	root.add_child(main)
 	player = main.get_node("Player")
 	combat = player.get_node("TargetDash")
@@ -81,12 +82,14 @@ func _run() -> void:
 	await _ticks(2)
 	_check(combat.target == target and combat.combo_hits == 0, "Left click starts approach to explicit body")
 	var anchor: Vector3 = combat.return_anchor
-	_tap("lock_on")
 	_click(camera.unproject_position(second.global_position + Vector3.UP * 0.75),MOUSE_BUTTON_LEFT)
-	_check(combat.queued and combat.stock.current == 3, "Click other enemy reserves same target without spending")
+	# ADR-011 allows changing the next target. Keep this older case a same-target
+	# regression; m07_chain verifies A -> B -> C and queued replacement separately.
+	_click(camera.unproject_position(enemy.global_position + Vector3.UP * 0.75),MOUSE_BUTTON_LEFT)
+	_check(combat.queued and combat.stock.current == 3, "Replace next target back to same enemy without spending")
 	for i in range(5): _tap("attack")
 	await _ticks(2)
-	_check(combat.target == target and combat.selected_target == target, "Combo target fixed; L ignored")
+	_check(combat.target == target and combat.selected_target == target, "Active target unchanged after queue replacement")
 	for i in range(120):
 		await _ticks(1)
 		if combat.combo_hits == 2: break
@@ -150,6 +153,7 @@ func _run() -> void:
 	var previous = combat.selected_target
 	Input.parse_input_event(pad)
 	Input.flush_buffered_events()
+	pad = pad.duplicate()
 	pad.pressed = false
 	Input.parse_input_event(pad)
 	Input.flush_buffered_events()
@@ -161,6 +165,7 @@ func _run() -> void:
 	Input.flush_buffered_events()
 	await _ticks(2)
 	_check(combat.is_busy() and combat.target == combat.selected_target, "Pad west starts selected attack")
+	pad = pad.duplicate()
 	pad.pressed = false
 	Input.parse_input_event(pad)
 	Input.flush_buffered_events()

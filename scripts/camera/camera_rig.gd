@@ -15,6 +15,30 @@ var _mode := -1
 var _reset_eye := true
 var _excluded: Array[RID] = []
 var _normal_cull_mask: int
+var follow_locked := false
+var follow_anchor := Vector3.ZERO
+var _resuming_follow := false
+
+func hold_follow() -> void:
+	if follow_locked: return
+	follow_anchor = global_position
+	follow_locked = true
+	_resuming_follow = false
+
+func release_follow() -> void:
+	if not follow_locked: return
+	follow_locked = false
+	_resuming_follow = true
+	if is_instance_valid(target): _last_target_position = target.global_position
+
+func frames_points(points: Array[Vector3], margin: float) -> bool:
+	if safety_failed: return false
+	var size := camera.get_viewport().get_visible_rect().size
+	var bounds := Rect2(size * margin, size * (1.0 - 2.0 * margin))
+	for point in points:
+		if camera.is_position_behind(point) or not bounds.has_point(camera.unproject_position(point)):
+			return false
+	return true
 
 func _ready() -> void:
 	process_physics_priority = 2
@@ -49,10 +73,14 @@ func _physics_process(delta: float) -> void:
 	if not is_instance_valid(target):
 		fader.restore_all()
 		return
-	if target.global_position.distance_to(_last_target_position) > settings.teleport_distance:
+	if follow_locked:
+		global_position = follow_anchor
+	elif not _resuming_follow and target.global_position.distance_to(_last_target_position) > settings.teleport_distance:
 		snap_to_target()
 	else:
 		global_position = global_position.lerp(target.global_position + settings.target_offset, 1.0 - exp(-settings.follow_smoothing * delta))
+		if global_position.distance_to(target.global_position + settings.target_offset) < 0.01:
+			_resuming_follow = false
 	_last_target_position = target.global_position
 	if _mode == 1: _update_eye(delta)
 
@@ -74,6 +102,8 @@ func _update_eye(delta: float) -> void:
 
 func snap_to_target() -> void:
 	if not is_instance_valid(target): return
+	follow_locked = false
+	_resuming_follow = false
 	global_position = target.global_position + settings.target_offset
 	_last_target_position = target.global_position
 	_reset_eye = true
