@@ -353,3 +353,11 @@ WeaponData.attack_visualにWeaponAttackVisualDataを参照し、attack_framesと
 手動報告による地面埋没・敵との前後問題を、剣のmaterial_overrideだけで修正する。本体の既存player_depth.gdshaderは変更しない。新actor_attachment_depth.gdshaderへ本体と同じカプセル寸法と現在フレームのシートを渡し、見た目の位置を変えず所有者の奥行きを使う。剣の画素で画面深度をワールド座標へ復元し、足元+0.015m以下の面を床／下方地形として床への埋没を補正する。それより上の壁・敵は画素ごとの深度で遮蔽する。
 
 足元が不透明な地形で隠れる場合は、床補正による壁の下からの漏れを抑止する。地形layer1へのray（最大16層、非表示・既存ALPHAフェード面を除外）を使い、敵layer4は含めない。no_depth_testはfalse、priorityは0のまま。layer_depth_bias=0.000002は所有者付属レイヤーの競合回避用で、物理位置の前進や壁無視ではない。既存の独立管理・同倍率・同期・戦闘・防御・カメラは維持。実装記録はm09_weapon_depth_audit.md。
+
+### 敵撃破後の攻撃サイクル維持（2026-10-21、ADR-020）
+
+以前の「対象喪失／死亡時に即帰還」を本節で更新する。開始時に武器と予定回数=min(max_combo_hits・その時点で支払える回数)を固定する。combo_hits／attack_idは実斬撃専用、_sequence_slotsは対象なしで経過した分も含む時間進行専用。命中後に対象が死亡・解放されても現在の一撃の完了を待つ。生存予約先へは従来の1個予約・安全判定・踏み込みで継続する。
+
+対象がない残りの各回はattack_duration/attack_speed_multiplierと段間combo_stance_durationをStance（歩行0コマ、停止）で保つ。剣の再生・命中・ID・消費はなく、予定の最後でReturnへ移る。接近中に消失した場合も安全停止して接近残時間＋未開始サイクルを待機へ置き換える。参照の有効性・生存確認後だけ座標を読む。
+
+待機中も生存敵の入力予約を受理する。予約なし自動攻撃、生存対象での従来のcombo_input_window、実斬撃時支払い・戦闘中回復停止は変更しない。生存対象の移動・画面外・経路不成立、方向帰還・Guard・HP0／reset、アニメ異常timeoutと敵の死亡処理を維持する。詳細はm09_defeat_return_audit.md。

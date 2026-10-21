@@ -41,6 +41,11 @@ var _elapsed := 0.0
 var _hit_pending := false
 var _hit_done := false
 var _attack_finished := false
+var _planned_hits := 0
+var _sequence_slots := 0 # Includes silent slots after a target disappears.
+var _target_lost := false
+var _empty_slot := false
+var _empty_duration := 0.0
 var strike_facing := Vector3.FORWARD
 var motion_owned_tick := false
 var _combat_cycle := false
@@ -159,9 +164,7 @@ func physics_step(delta: float) -> void:
 	_pending_selected_attack = false
 	if is_busy():
 		if state == State.Approach or state == State.Attack:
-			if not is_instance_valid(target):
-				_begin_return("Target lost")
-			elif not _framed(target):
+			if _target_alive() and not _target_lost and not _framed(target):
 				_begin_return("Target or player outside view")
 		_elapsed += delta
 		match state:
@@ -211,6 +214,7 @@ func _interrupt_attack() -> void:
 	queued_attack_target = null
 	_waiting = false
 	_hit_pending = false
+	_empty_slot = false
 	# A paid strike keeps its ID and hit history. Only _start_strike resets them.
 	sprite._attacking = false
 	sprite.stop()
@@ -245,7 +249,7 @@ func _after_defense() -> void:
 		_finish()
 	elif _resume_return:
 		_begin_return("Resume interrupted return")
-	elif combo_hits >= _active_weapon.max_combo_hits or not stock.can_spend(_active_weapon.stock_cost_per_hit):
+	elif _sequence_slots >= _planned_hits or not stock.can_spend(_active_weapon.stock_cost_per_hit):
 		_begin_return("No follow-up available")
 	else:
 		_set_state(State.Recover)
@@ -408,7 +412,7 @@ func _candidate_valid(candidate: Node3D) -> bool:
 func can_combo_select(candidate: Node3D) -> bool:
 	if state != State.Approach and state != State.Attack and state != State.Recover: return false
 	var unpaid := 1 if state == State.Approach else 0
-	if combo_hits + unpaid >= _active_weapon.max_combo_hits: return false
+	if _sequence_slots + unpaid >= _planned_hits: return false
 	if not stock.can_spend(_active_weapon.stock_cost_per_hit * (1 + unpaid)): return false
 	return _next_target_safe(candidate)
 
@@ -438,6 +442,10 @@ func attack_position(candidate: Node3D) -> Vector3:
 func request_attack(candidate: Node3D) -> bool:
 	if is_busy() or not can_select(candidate): return _reject("Invalid target, state or stock")
 	_active_weapon = equipped_weapon.duplicate()
+	_planned_hits = mini(_active_weapon.max_combo_hits, int(stock.current / maxi(1, _active_weapon.stock_cost_per_hit)))
+	_sequence_slots = 0
+	_target_lost = false
+	_empty_slot = false
 	_combat_cycle = true
 	body.sample_movement_input()
 	_return_press_seen = body.movement_press_serial
@@ -474,13 +482,13 @@ func _reject(reason: String) -> bool:
 func request_followup(candidate: Node3D = null, replace: bool = false) -> bool:
 	if state != State.Approach and state != State.Attack and state != State.Recover: return _reject("Not accepting input")
 	if queued and not replace: return _reject("Queue full")
-	if state != State.Recover and not _target_valid(): return _reject("Target lost")
+	if state != State.Recover and _target_alive() and not _target_lost and not _target_valid(): return _reject("Target moved")
 	if candidate == null:
 		if not is_instance_valid(selected_target): return _reject("Selected target lost")
 		candidate = selected_target
 	# Approach has not paid for the first strike yet; reserve room for both strikes.
 	var pending_first := 1 if state == State.Approach else 0
-	if combo_hits + pending_first >= _active_weapon.max_combo_hits: return _reject("Combo limit")
+	if _sequence_slots + pending_first >= _planned_hits: return _reject("Combo limit")
 	if not stock.can_spend(_active_weapon.stock_cost_per_hit * (1 + pending_first)): return _reject("No stock")
 	if not _next_target_safe(candidate): return _reject("Next target unsafe or offscreen")
 	_select_manually(candidate)
@@ -489,13 +497,20 @@ func request_followup(candidate: Node3D = null, replace: bool = false) -> bool:
 	return true
 
 func _advance_queued() -> void:
-	if not is_instance_valid(queued_attack_target) or not _next_target_safe(queued_attack_target):
-		_begin_return("Queued target lost or unsafe")
+	if not is_instance_valid(queued_attack_target) or not queued_attack_target.alive():
+		queued = false
+		queued_attack_target = null
+		_start_empty_slot()
+		return
+	if not _next_target_safe(queued_attack_target):
+		_begin_return("Queued target unsafe")
 		return
 	var next := queued_attack_target
 	queued = false
 	queued_attack_target = null
-	if next != target or body.global_position.distance_to(attack_position(next)) > 0.05 or state == State.Recover:
+	_target_lost = false
+	_empty_slot = false
+	if not _target_alive() or next != target or body.global_position.distance_to(attack_position(next)) > 0.05 or state == State.Recover:
 		target = next
 		_target_anchor = target.global_position
 		_waiting = false
@@ -505,7 +520,10 @@ func _advance_queued() -> void:
 		_start_strike()
 
 func _start_strike() -> void:
-	if not _target_valid() or combo_hits >= _active_weapon.max_combo_hits or not stock.can_spend(_active_weapon.stock_cost_per_hit):
+	if not _target_alive():
+		_start_empty_slot()
+		return
+	if not _target_valid() or _sequence_slots >= _planned_hits or not stock.can_spend(_active_weapon.stock_cost_per_hit):
 		_begin_return("Strike no longer available")
 		return
 	queued = false
@@ -515,18 +533,45 @@ func _start_strike() -> void:
 	_hit_done = false
 	_hit_pending = false
 	_attack_finished = false
+	_target_lost = false
+	_empty_slot = false
 	sprite.combat_pose = &"Attack"
 	strike_facing = body.facing_world
 	_set_state(State.Attack)
-	var duration := _active_weapon.attack_duration / maxf(0.1, _active_weapon.attack_speed_multiplier)
-	if not sprite.request_attack_preview(duration):
+	if not sprite.request_attack_preview(_strike_duration()):
 		_begin_return("Animation unavailable")
 		return
 	stock.spend(_active_weapon.stock_cost_per_hit)
 	combo_hits += 1
+	_sequence_slots += 1
 	attack_id += 1
 	_hit_pending = sprite.frame == settings.hit_frame
 	attack_accepted.emit(attack_id, combo_hits)
+
+func _strike_duration() -> float:
+	return _active_weapon.attack_duration / maxf(0.1, _active_weapon.attack_speed_multiplier)
+
+func _start_empty_slot(approach_remaining: float = 0.0) -> void:
+	# Preserve the weapon's planned rhythm, without an animation, ID, hit or cost.
+	if _sequence_slots >= _planned_hits:
+		_begin_return("Attack sequence finished")
+		return
+	_target_lost = true
+	_empty_slot = true
+	target = null
+	_sequence_slots += 1
+	_empty_duration = _strike_duration() + approach_remaining
+	_attack_finished = false
+	_hit_pending = false
+	_waiting = true
+	_grace_elapsed = 0.0
+	body.velocity = Vector3.ZERO
+	sprite._attacking = false
+	sprite.stop()
+	sprite.speed_scale = 1.0
+	sprite.combat_pose = &"Stance"
+	_set_state(State.Attack)
+	sprite._process(0.0)
 
 func _face_target() -> void:
 	if not is_instance_valid(target): return
@@ -555,10 +600,16 @@ func _set_state(next: State) -> void:
 	_elapsed = 0.0
 	state_changed.emit(state)
 
+func _target_alive() -> bool:
+	return is_instance_valid(target) and target.alive()
+
 func _target_valid() -> bool:
-	return is_instance_valid(target) and target.alive() and target.global_position.distance_to(_target_anchor) < 0.05
+	return _target_alive() and target.global_position.distance_to(_target_anchor) < 0.05
 
 func _approach(delta: float) -> void:
+	if not _target_alive():
+		_start_empty_slot(maxf(0.0, _duration - _elapsed))
+		return
 	if not _target_valid():
 		_begin_return("Target lost or moved")
 		return
@@ -597,7 +648,7 @@ func _on_finished() -> void:
 func _strike_targets() -> Array[Node3D]:
 	var recipients: Array[Node3D] = []
 	if _active_weapon.hit_shape == WeaponData.HitShape.SINGLE_TARGET:
-		if body.global_position.distance_to(target.global_position) <= settings.stop_distance + 0.1 and Path.sight(body,target.global_position):
+		if _target_alive() and body.global_position.distance_to(target.global_position) <= settings.stop_distance + 0.1 and Path.sight(body,target.global_position):
 			recipients.append(target)
 		return recipients
 	for candidate in get_tree().get_nodes_in_group("combat_targets"):
@@ -615,14 +666,16 @@ func _strike_targets() -> Array[Node3D]:
 
 func _attack(delta: float) -> void:
 	body.velocity = Vector3.ZERO
-	if not _target_valid():
-		_begin_return("Target lost or moved")
-		return
-	if not Path.sight(body, target.global_position) or not Path.clear(body, body.global_position, settings, body.global_position):
+	if not Path.clear(body, body.global_position, settings, body.global_position):
 		_begin_return("Attack path blocked")
 		return
-	_face_target()
-	if _hit_pending and not _hit_done:
+	if not _target_alive(): _target_lost = true
+	if not _target_lost:
+		if not _target_valid() or not Path.sight(body, target.global_position):
+			_begin_return("Target moved or attack path blocked")
+			return
+		_face_target()
+	if _hit_pending and not _hit_done and not _target_lost:
 		_hit_done = true
 		# Snapshot before damage signals can kill/free targets. One HP owner per swing,
 		# including multiple selectable parts that share the same HealthComponent.
@@ -636,15 +689,26 @@ func _attack(delta: float) -> void:
 			damaged[hp.get_instance_id()] = true
 			hp.damage(_active_weapon.base_damage,body)
 			if is_instance_valid(victim): hit.emit(victim)
-	if not _target_valid():
-		_begin_return("Target lost or defeated")
-		return
-	var timeout := maxf(settings.attack_timeout, _active_weapon.attack_duration / maxf(0.1, _active_weapon.attack_speed_multiplier) + 0.5)
+	# Damage/death callbacks can free the target or cancel the player's cycle.
+	if state != State.Attack: return
+	if not _target_alive(): _target_lost = true
+	if _empty_slot and not _attack_finished and _elapsed >= _empty_duration:
+		_attack_finished = true
+		_grace_elapsed = 0.0
+	var timeout := maxf(settings.attack_timeout, _strike_duration() + 0.5)
+	if _empty_slot and not _attack_finished: return
 	if not _attack_finished and _elapsed >= timeout:
 		_begin_return("Animation timeout")
 	elif _attack_finished:
-		if combo_hits >= _active_weapon.max_combo_hits or not stock.can_spend(_active_weapon.stock_cost_per_hit):
+		if _sequence_slots >= _planned_hits:
 			_begin_return("Combo finished")
+		elif _target_lost:
+			_grace_elapsed += delta
+			if _grace_elapsed >= _active_weapon.combo_stance_duration:
+				if queued: _advance_queued()
+				else: _start_empty_slot()
+		elif not stock.can_spend(_active_weapon.stock_cost_per_hit):
+			_begin_return("No stock")
 		else:
 			_grace_elapsed += delta
 			if queued:
