@@ -616,3 +616,44 @@ M09は検証待ち。指示書36項目と自動検査の対応、初回失敗と
 - 既存24本（M00〜M08全22本＋player_walk／player_wall_depth）はすべてPASS・終了0。m07_chainで静止3体連撃、m07_comboで武器／ストック行列、M04のカメラ／影、M08の盾／割り込みを回帰。既存検査ソースは変更していない。
 - ログは.godot/m09_headless／render60／render30／timing60／timing30.log、m09_reg_*.log、regression_batch_0〜2.json。最終ログにSCRIPT ERROR／Parse Error／SHADER ERRORなし。環境の証明書ストア・エディター設定保存・GLES3キャッシュ保存ERRORと、M04閉鎖箱の期待Camera safety警告を残して記録する。
 - 画像では予兆・構え・マーク・敵状態・弾を目視。ユーザーのF5実キー操作とA／Bの操作感、実機パッド、長時間性能、複雑地形、大型敵、多数敵は未実行。従来の個別未報告条件を補作しない。
+
+## 主人公の被ダメージ表示（2026-10-21）
+
+この節の初回結果は導入時の履歴。同日の追加指示によるGuard中表示の抑止は、末尾の「武器別薙ぎ払い・Guard中表示」節を優先する。
+
+`tests/player_damage_visual.gd` は提供画像の当日修正版とゲーム内コピーの一致、無損失RGBA、48px×全12切り出し、4方向×4カメラYaw、3コマの実再生、終了／再被弾／回復、欠落時の復帰、影とdepth shader、壁フェードを検査する。実攻撃のApproach／Attack／Return中にHPを減らし、元アニメの1命中・命中フレーム・帰還地点が保たれること、防御中の10→5軽減と鉄の盾復帰、HP0と回復、標準DASH_MELEE敵の実命中による表示も確認する。
+
+```powershell
+$godotExe = 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe'
+& $godotExe --headless --path . --script res://tests/player_damage_visual.gd --log-file .godot/player_damage_headless.log
+& $godotExe --path . --script res://tests/player_damage_visual.gd --log-file .godot/player_damage_render60.log -- --capture
+& $godotExe --path . --script res://tests/player_damage_visual.gd --log-file .godot/player_damage_render30.log -- --fps30 --capture
+```
+
+- 最新版SHA256：`b84b6be96752bf2fe8da2f47cd374ac35b96074cbed62dad89325fe92c93997a`。Godot 4.7.2.stable.official.ed1daf0bf／Windows、物理60Hz、実描画1152×720・Compatibility／GTX1080。1プロセスずつ実行。
+- ヘッドレス136、実描画60／30上限各144 assertionsでPASS・終了0。表示時間の観測値は約0.317／0.333秒（0.3秒タイマーにフレーム観測差を含む）。敵の命中、4方向、盾復帰、壁フェードの実描画を目視。
+- 初回はインポート既定の透明RGB補正とAtlasのclip未設定で画素／切り出し検査に失敗。補正と自動3D圧縮を無効、filter_clipを有効にして再インポート後に合格。後から届いた修正版にも同じ設定を適用し、上記全実行を再合格。
+- 既存7本：m05_animation_transitions／m07_chain／m08_defense／m08_guard_sprite／m09_enemy_dash／player_wall_depth／m04_shadowsをヘッドレスでPASS・終了0。初期PNGでの回帰後、コード不変のまま最新版PNGで新検査を再実行。ログは.godot/player_damage_reg_*.log、結果一覧はplayer_damage_reg_results.json。
+- 最終検査にSCRIPT ERROR／Parse Error／SHADER ERRORなし。環境の証明書ストアERROR、インポート時のエディター設定保存ERRORを区別する。ログ・画像はGit除外の.godot以下。
+- ユーザーのF5手動確認、遠距離弾での見え方、表示時間・表情の受入、実機パッド・長時間性能は未実行。README末尾の手順で確認する。正式な死亡／リスポーンや被弾硬直は対象外。M09は引き続き検証待ち。
+
+## 武器別薙ぎ払い・Guard中表示（2026-10-21、ADR-017）
+
+最終結果：Godot 4.7.2.stable.official.ed1daf0bf／Windows、物理60Hz。ヘッドレスの既存29本＋weapon_sweepの**30本すべてPASS・終了0**。一覧は`.godot/weapon_reg_results.json`、ログは`weapon_reg_*.log`。新しい範囲検査はヘッドレス173、実描画60上限183／30上限146 assertionsでPASS・終了0（描画の観測回数で件数が変動）。Guardを含むplayer_damage_visualはヘッドレス139・実描画60／30上限各147でPASS・終了0。描画は1152×720・Compatibility／OpenGL3.3・GTX1080。
+
+4カメラYawで剣の3段階と3体のHP減少、被弾直後の盾維持を画像で目視。ログはweapon_sweep_render60／render30、weapon_guard_render60／render30。最終ログにSCRIPT ERROR／Parse Error／SHADER ERRORなし。既存の証明書ストア、GLES3キャッシュ保存、エディター設定保存の環境ERRORは別記し、M04の意図したCamera safety警告も保持する。初回のframes_pointsへの非型付きArray渡しと、検査用SHA256の転記誤りは修正して再合格。元PNGの変更なし。1プロセスずつ実行し、ユーザー手動操作や性能保証とは区別する。
+
+`tests/weapon_sweep.gd`は実際の移動・3コマ再生・命中フレームを通す。16px原画像のSHA256／全画素を確認し、距離と角度の組み合わせ（1.4m／100度→3体、1.2m／100度→1体、1.4m／60度→1体、2.2m／100度→4体）で命中数が変わることを検査する。背後・側面・高低差・壁・元の帰還地点中心の半径外、命中前に離脱した敵を拒否する。1振り1消費／1段、武器複製、共有HP重複排除、選択対象の撃破と同時命中、巻き込みで倒れた予約先の安全帰還、旧単体モード、防御割り込み、4カメラYawでの右→前→左の振り、画像欠落を確認する。
+
+`tests/player_damage_visual.gd`はGuard中の10→5軽減と背面10→10を維持しつつダメージ画像を出さないこと、防御解除後には出ること、既に再生中でもGuard移行で消すことを追加検査する。初回の「Guard被弾でもダメージ画像を出す」という期待だけをユーザーの最新指定に合わせて更新し、通常被弾・攻撃継続・影／壁・HP0／回復等の条件は維持する。
+
+```powershell
+$godotExe = 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe'
+& $godotExe --headless --path . --script res://tests/weapon_sweep.gd --log-file .godot/weapon_sweep_headless.log
+& $godotExe --path . --script res://tests/weapon_sweep.gd --log-file .godot/weapon_sweep_render60.log -- --capture
+& $godotExe --path . --script res://tests/weapon_sweep.gd --log-file .godot/weapon_sweep_render30.log -- --fps30 --capture
+& $godotExe --path . --script res://tests/player_damage_visual.gd --log-file .godot/weapon_guard_render60.log -- --capture
+& $godotExe --path . --script res://tests/player_damage_visual.gd --log-file .godot/weapon_guard_render30.log -- --fps30 --capture
+```
+
+手動：F8で停止→F5で近接被弾／防御中の盾維持を確認。範囲確認は`scenes/tests/weapon_sweep_trial.tscn`を開きF6、中央を左クリック（中央を選択済みならJ）。前方3体のHP40→30・ストック3→2・元位置帰還を確認。範囲1.4m／100度は仮値で、武器別データを変えれば狭い／広い範囲を比較できる。ユーザー操作感、実機パッド、長時間性能、多数敵・複雑地形・大型敵・正式な他武器は未実行。M09検証待ちを継続する。

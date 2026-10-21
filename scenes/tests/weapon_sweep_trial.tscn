@@ -1,0 +1,21 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/main.tscn" id="1_main"]
+
+[node name="WeaponSweepTrial" instance=ExtResource("1_main")]
+
+[node name="TrainingEnemy" parent="."]
+transform = Transform3D(1,0,0,0,1,0,0,0,1,-6,0,-2)
+
+[node name="TrainingEnemy2" parent="."]
+visible = false
+collision_layer = 0
+
+[node name="TrainingEnemySecond" parent="."]
+transform = Transform3D(1,0,0,0,1,0,0,0,1,-5.1,0,-1.9)
+
+[node name="TrainingEnemyThird" parent="."]
+transform = Transform3D(1,0,0,0,1,0,0,0,1,-6.9,0,-1.9)
+
+[node name="PracticeSelector" parent="."]
+initial_mode = 0

@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_controller"]
 [ext_resource type="Resource" path="res://resources/player_movement.tres" id="2_movement"]
@@ -11,10 +11,19 @@
 [ext_resource type="Script" path="res://scripts/combat/health_component.gd" id="7_health"]
 [ext_resource type="Script" path="res://scripts/combat/attack_stock_component.gd" id="8_gauge"]
 [ext_resource type="Resource" path="res://resources/shields/iron_shield.tres" id="9_shield"]
+[ext_resource type="SpriteFrames" path="res://assets/sprites/player/player_damage_frames.tres" id="10_damage"]
+[ext_resource type="Script" path="res://scripts/player/player_damage_visual.gd" id="11_damage"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player/player_damage.png" id="12_damage"]
+[ext_resource type="Script" path="res://scripts/player/weapon_swing_visual.gd" id="13_weapon"]
 [sub_resource type="ShaderMaterial" id="Material_depth"]
 resource_local_to_scene = true
 shader = ExtResource("5_depth")
 shader_parameter/sprite_sheet = ExtResource("6_sheet")
+
+[sub_resource type="ShaderMaterial" id="Material_damage"]
+resource_local_to_scene = true
+shader = ExtResource("5_depth")
+shader_parameter/sprite_sheet = ExtResource("12_damage")
 
 [sub_resource type="CapsuleShape3D" id="Shape_body"]
 radius = 0.3
@@ -58,3 +67,30 @@ script = ExtResource("7_health")
 
 [node name="AttackStockComponent" type="Node" parent="."]
 script = ExtResource("8_gauge")
+
+[node name="DamageVisual" type="AnimatedSprite3D" parent="."]
+visible = false
+material_override = SubResource("Material_damage")
+cast_shadow = 0
+offset = Vector2(0, 23)
+pixel_size = 0.0375
+billboard = 1
+texture_filter = 0
+alpha_cut = 1
+sprite_frames = ExtResource("10_damage")
+animation = &"damage_down"
+script = ExtResource("11_damage")
+
+[node name="WeaponSwing" type="Sprite3D" parent="."]
+visible = false
+script = ExtResource("13_weapon")
+
+[node name="Shadow" type="AnimatedSprite3D" parent="DamageVisual"]
+cast_shadow = 3
+offset = Vector2(0, 23)
+pixel_size = 0.0375
+billboard = 1
+texture_filter = 0
+alpha_cut = 1
+sprite_frames = ExtResource("10_damage")
+animation = &"damage_down"

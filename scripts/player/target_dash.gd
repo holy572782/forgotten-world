@@ -3,6 +3,7 @@ extends Node
 const Settings = preload("res://scripts/combat/target_dash_settings.gd")
 const Path = preload("res://scripts/combat/dash_path.gd")
 const Target = preload("res://scripts/combat/targetable.gd")
+const Sweep = preload("res://scripts/combat/melee_sweep.gd")
 enum State { Idle, Approach, Attack, Return, Guard, Recover }
 signal state_changed(next: int)
 signal hit(target: Node)
@@ -40,6 +41,7 @@ var _elapsed := 0.0
 var _hit_pending := false
 var _hit_done := false
 var _attack_finished := false
+var strike_facing := Vector3.FORWARD
 var motion_owned_tick := false
 var _combat_cycle := false
 var _resume_return := false
@@ -514,6 +516,7 @@ func _start_strike() -> void:
 	_hit_pending = false
 	_attack_finished = false
 	sprite.combat_pose = &"Attack"
+	strike_facing = body.facing_world
 	_set_state(State.Attack)
 	var duration := _active_weapon.attack_duration / maxf(0.1, _active_weapon.attack_speed_multiplier)
 	if not sprite.request_attack_preview(duration):
@@ -591,6 +594,25 @@ func _on_finished() -> void:
 		_grace_elapsed = 0.0
 		sprite.combat_pose = &"Stance"
 
+func _strike_targets() -> Array[Node3D]:
+	var recipients: Array[Node3D] = []
+	if _active_weapon.hit_shape == WeaponData.HitShape.SINGLE_TARGET:
+		if body.global_position.distance_to(target.global_position) <= settings.stop_distance + 0.1 and Path.sight(body,target.global_position):
+			recipients.append(target)
+		return recipients
+	for candidate in get_tree().get_nodes_in_group("combat_targets"):
+		if not candidate is Target or not candidate.alive(): continue
+		# The original cycle boundary remains fixed even for incidental victims.
+		var from_anchor: Vector3 = candidate.global_position - return_anchor
+		if Vector2(from_anchor.x,from_anchor.z).length() > _active_weapon.attack_range: continue
+		if not Sweep.contains(body.global_position,strike_facing,candidate.global_position,_active_weapon): continue
+		if not Path.sight(body,candidate.global_position): continue
+		var points: Array[Vector3] = [candidate.global_position+Vector3.UP*0.1,candidate.global_position+Vector3.UP*1.7]
+		if is_instance_valid(camera_rig) and not camera_rig.frames_points(points,settings.screen_margin): continue
+		recipients.append(candidate)
+	recipients.sort_custom(func(a: Node3D,b: Node3D): return String(a.get_path()) < String(b.get_path()))
+	return recipients
+
 func _attack(delta: float) -> void:
 	body.velocity = Vector3.ZERO
 	if not _target_valid():
@@ -602,9 +624,18 @@ func _attack(delta: float) -> void:
 	_face_target()
 	if _hit_pending and not _hit_done:
 		_hit_done = true
-		if body.global_position.distance_to(target.global_position) <= settings.stop_distance + 0.1 and Path.sight(body, target.global_position):
-			target.health.damage(_active_weapon.base_damage, body)
-			hit.emit(target)
+		# Snapshot before damage signals can kill/free targets. One HP owner per swing,
+		# including multiple selectable parts that share the same HealthComponent.
+		var paid_id := attack_id
+		var damaged: Dictionary = {}
+		for victim in _strike_targets():
+			if state != State.Attack or attack_id != paid_id: break
+			if not is_instance_valid(victim) or not victim.alive(): continue
+			var hp: HealthComponent = victim.health
+			if damaged.has(hp.get_instance_id()): continue
+			damaged[hp.get_instance_id()] = true
+			hp.damage(_active_weapon.base_damage,body)
+			if is_instance_valid(victim): hit.emit(victim)
 	if not _target_valid():
 		_begin_return("Target lost or defeated")
 		return
