@@ -347,3 +347,9 @@ WeaponSwingは提供16px画像を無加工で使い、既存3コマの進行に�
 WeaponSwingをAnimatedSprite3Dとし、主人公のtransform・billboard・pixel_size・offsetを参照する。全方向offset=0では両画像中心を一致させる。112／48のサイズ比でscaleやpixel_sizeを補正しない。主人公と同じ0.0375m/px、offset(0,23)を継承し、112pxキャンバスの周囲の透明部分も維持する。攻撃開始・フレーム／方向変更時と各描画tickに、主人公のanimation・frame・frame_progressを同期する。剣側のタイマーや命中／終了通知は戦闘へ接続しない。
 
 WeaponData.attack_visualにWeaponAttackVisualDataを参照し、attack_framesと4方向のピクセルoffset（+X右・+Y上、初期0）を指定する。他武器はこの参照で差し替える。フレーム不足・null Atlas・参照欠落は剣だけ非表示、主人公の攻撃を継続する。Guard・Return・待機・ダメージ表示中の剣非表示は前回仕様を維持する。元画像の一部で手元と柄に隙間が見えるため、原寸・中央合わせを保ってユーザー確認待ちとする。詳細はm09_iron_sword_animation_audit.md。
+
+### 分離武器の深度（2026-10-21、ADR-019）
+
+手動報告による地面埋没・敵との前後問題を、剣のmaterial_overrideだけで修正する。本体の既存player_depth.gdshaderは変更しない。新actor_attachment_depth.gdshaderへ本体と同じカプセル寸法と現在フレームのシートを渡し、見た目の位置を変えず所有者の奥行きを使う。剣の画素で画面深度をワールド座標へ復元し、足元+0.015m以下の面を床／下方地形として床への埋没を補正する。それより上の壁・敵は画素ごとの深度で遮蔽する。
+
+足元が不透明な地形で隠れる場合は、床補正による壁の下からの漏れを抑止する。地形layer1へのray（最大16層、非表示・既存ALPHAフェード面を除外）を使い、敵layer4は含めない。no_depth_testはfalse、priorityは0のまま。layer_depth_bias=0.000002は所有者付属レイヤーの競合回避用で、物理位置の前進や壁無視ではない。既存の独立管理・同倍率・同期・戦闘・防御・カメラは維持。実装記録はm09_weapon_depth_audit.md。

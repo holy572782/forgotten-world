@@ -667,3 +667,12 @@ $godotExe = 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe'
 - Godot 4.7.2／Windows、物理60Hz、1プロセスずつ、描画1152×720・Compatibility／GTX1080。ログは.godot/iron_sword_headless／render60／render30／damage／reg_*.log、結果一覧はiron_sword_results.json。最終SCRIPT ERROR／Parse Error／SHADER ERRORなし。証明書ストア／設定保存の環境ERRORを区別する。
 - TargetDash・Controller・Path・PlayerSprite・DamageVisual・主人公PNG／Frames・盾／防御リソースはHEADと差分なし。武器の数値・時間も変更なし。
 - 中央・倍率・各コマ・Q/E同期は描画でも確認。元配置では上向きの一部に柄と手元の隙間があるため、画像無加工・中央一致のまま要レビューとして残す。ユーザーのF5／F6手動6項目・実機パッド・長時間性能・多数／大型敵・複雑地形は未実行。M09検証待ち、M10別指示待ち。
+
+## 鉄の剣の深度修正（2026-10-21、ADR-019）
+
+手動報告の床埋没・敵との前後関係を描画で再現し修正した。新`tests/weapon_depth.gd`は本番スプライトを静止させ、全12コマで地面なしと地面ありの剣の差分画素集合が完全一致すること、不透明全面／部分／近接壁、既存ALPHA=0.3の壁、敵前後と足元のみの遮蔽、段差／崖の4カメラYaw、診断no_depthの復元を検査。37 assertions、PASS・終了0。下向きは旧0→1059画素、横向き後半は旧565→1062画素。詳細と再現コマンドは [深度修正記録](m09_weapon_depth_audit.md)。
+
+- 実戦経路iron_sword_animationは最終実描画60上限2113・30上限1154 assertionsでPASS・終了0。Q/E実入力・フレーム同期・原画と倍率・武器交換・命中／消費／帰還・被弾／盾を維持。観測tick数により件数は変動する。
+- 関連9種類（m04_camera／m04_occlusion／m04_shadows／m07_chain／m08_defense／m08_guard_sprite／m09_enemy_dash／weapon_sweep／player_damage_visual）ヘッドレスPASS・終了0。最終調整後にm04_occlusion／m09_enemy_dash／weapon_sweepと上記実描画2条件を再実行し合格。合計11種類で、全スイートの再実行ではない。
+- 環境はGodot4.7.2／Windows／Compatibility／GTX1080、1プロセスずつ。`.godot/weapon_depth_fixed.log`、`weapon_depth_live60／live30.log`、`weapon_depth_reg_*.log`、`weapon_depth_final_*.log`、結果一覧`weapon_depth_results.json`／`weapon_depth_final_results.json`。最終コード／Shaderエラーなし。証明書・GLES3キャッシュ・設定保存の環境ERRORとM04の期待警告は別記。
+- ユーザーの修正版F5／F6実操作・操作感の受入、任意の透明Shader／交差地形、長時間性能、実機パッドは未実行。README末尾で4方向3コマ、Q/E、敵近傍、壁、段差／崖、連撃・帰還・防御・敵AIを再確認する。M09検証待ちを維持。
