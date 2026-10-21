@@ -7,6 +7,7 @@ func _run() -> void:
 	capture = "--capture" in OS.get_cmdline_user_args()
 	Engine.max_fps = 60
 	main = load("res://scenes/main.tscn").instantiate()
+	main.get_node("PracticeSelector").initial_mode = 0 # Isolate this legacy trial from the F5 enemy.
 	main.get_node("TestArena").transform = Transform3D.IDENTITY
 	_legacy_player(main.get_node("Player"))
 	var old_hud = main.get_node("HUD")

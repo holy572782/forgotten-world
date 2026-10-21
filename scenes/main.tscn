@@ -42,3 +42,4 @@ camera_rig = NodePath("../CameraRig")
 
 [node name="PracticeSelector" type="CanvasLayer" parent="."]
 script = ExtResource("8_practice")
+initial_mode = 1

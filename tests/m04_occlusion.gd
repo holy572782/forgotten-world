@@ -8,6 +8,7 @@ var comparison: Array[Vector3] = []
 func _run() -> void:
 	capture = "--capture" in OS.get_cmdline_user_args()
 	main = load("res://scenes/main.tscn").instantiate()
+	main.get_node("PracticeSelector").initial_mode = 0 # Isolate this legacy trial from the F5 enemy.
 	# Fixed M01 fixture coordinates, independent of editor placement of the arena.
 	main.get_node("TestArena").transform = Transform3D.IDENTITY
 	root.add_child(main)

@@ -13,6 +13,7 @@ func _run() -> void:
 	root.size = Vector2i(960, 720)
 	Engine.max_fps = 60
 	var main = load("res://scenes/main.tscn").instantiate()
+	main.get_node("PracticeSelector").initial_mode = 0 # Isolate this legacy trial from the F5 enemy.
 	main.get_node("TestArena").transform = Transform3D.IDENTITY
 	root.add_child(main)
 	var player = main.get_node("Player")

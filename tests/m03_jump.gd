@@ -13,6 +13,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	main = load("res://scenes/main.tscn").instantiate()
+	main.get_node("PracticeSelector").initial_mode = 0 # Isolate this legacy trial from the F5 enemy.
 	# Fixed fixture coordinates; do not change the saved arena placement.
 	main.get_node("TestArena").transform = Transform3D.IDENTITY
 	root.add_child(main)

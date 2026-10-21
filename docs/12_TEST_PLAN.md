@@ -8,6 +8,11 @@
 
 # 基礎システム QA / テスト計画 v0.3.0
 
+### M09起動入口の修正検査（2026-10-21）
+- F5初期モードを近接敵へ変更。`tests/m09_startup.gd`で実mainを読み、無操作での接近・攻撃、10ダメージ、実GUIでの遠距離発射／静止復帰を検査。ヘッドレス／実描画ともPASS・終了0。実描画画像で日本語表示も確認。
+- 既存回帰は静止モード0を明示し、元の試験条件・期待値を維持。24本の合格ログを確認。Tree外Targetableの寿命判定追加後はm06_target_selectionも再実行PASS。
+- 途中のPCフリーズ後は未完了のM09機能検査だけを再開。結果とログ、初回描画ERRORからの修正は `m09_enemy_combat_audit.md` の同日修正節を参照。30fps／時間比較は今回再実行せず、前回結果を維持。ユーザーF5確認は未実行。
+
 ## テスト環境記録票
 - Godot exact version: `4.7.2.stable.official.ed1daf0bf`（M03検証）
 - OS / CPU / GPU / メモリ: Windows / 未計測 / NVIDIA GeForce GTX 1080 / 未計測

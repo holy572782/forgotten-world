@@ -25,7 +25,7 @@ func _ready() -> void:
 	_update_label(health.current_hp, health.max_hp)
 
 func alive() -> bool:
-	return is_instance_valid(health) and health.current_hp > 0.0 and is_visible_in_tree()
+	return is_inside_tree() and not is_queued_for_deletion() and is_instance_valid(health) and health.current_hp > 0.0 and is_visible_in_tree()
 
 func accepts_click(collider: CollisionObject3D) -> bool:
 	if collider == marker:
