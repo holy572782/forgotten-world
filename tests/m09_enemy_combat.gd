@@ -35,7 +35,7 @@ func _fresh(kind: int = 0, offset: Vector3 = Vector3(1.2, 0, 0)) -> void:
 	combat.stock.advance(20)
 	main.get_node("CameraRig").snap_to_target()
 	ai = EnemyScene.instantiate()
-	ai.settings = load("res://resources/enemies/melee_practice.tres" if kind == 0 else "res://resources/enemies/ranged_practice.tres").duplicate()
+	ai.settings = load("res://tests/fixtures/enemy_stationary.tres" if kind == 0 else "res://resources/enemies/ranged_practice.tres").duplicate()
 	ai.player = player
 	ai.position = origin + offset
 	main.add_child(ai)
@@ -61,7 +61,7 @@ func _windup() -> void:
 
 func _shot(at: Vector3, direction: Vector3, speed: float = 3.0) -> CharacterBody3D:
 	var shot := Bolt.new()
-	shot.settings = ai.settings.duplicate()
+	shot.settings = ai.settings.attack.duplicate()
 	shot.settings.projectile_speed = speed
 	shot.player = player
 	shot.source = ai
@@ -293,11 +293,11 @@ func _run() -> void:
 	var selector = main.get_node("PracticeSelector")
 	selector.select_mode(1)
 	await _ticks(3)
-	_check(is_instance_valid(selector.active_enemy) and selector.active_enemy.settings.attack_kind == 0, "mode melee")
+	_check(is_instance_valid(selector.active_enemy) and selector.active_enemy.settings.attack.kind == 0, "mode melee")
 	var previous_enemy: CharacterBody3D = selector.active_enemy
 	selector.select_mode(2)
 	await _ticks(3)
-	_check(not is_instance_valid(previous_enemy) and selector.active_enemy.settings.attack_kind == 1 and health.current_hp == 100 and not combat.is_busy(), "33 isolated ranged/reset")
+	_check(not is_instance_valid(previous_enemy) and selector.active_enemy.settings.attack.kind == 2 and health.current_hp == 100 and not combat.is_busy(), "33 isolated ranged/reset")
 	selector.active_enemy._set_state(selector.active_enemy.State.WINDUP)
 	previous_enemy = selector.active_enemy
 	selector.select_mode(2)

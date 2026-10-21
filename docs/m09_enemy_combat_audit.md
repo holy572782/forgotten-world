@@ -1,3 +1,5 @@
+> **M09追加改善（2026-10-21、ADR-016）**：近接敵の最新仕様は固定予兆→踏み込み→一撃→攻撃開始地点へ帰還→隙。攻撃方式と時間は敵別Resourceで設定。M09はユーザーF5確認待ち。詳細は [敵踏み込み実装記録](m09_enemy_dash_audit.md)。以下の旧近接仕様・合格記録は作成時の履歴として保持する。
+
 # M09 敵AI・予兆・反撃 実装／検証記録
 
 2026-10-21。**M09は検証待ち（ユーザーF5操作待ち）**。M08完了（試作範囲）の記録は維持する。Issue番号の指定なし、今回の依頼を1つの作業単位とし、Issue／PRは作成していない。
@@ -116,3 +118,7 @@ TargetDash／DashPath／PlayerController／HealthComponent／盾画像は変更�
 - ログは `.godot/m09_startup_fix_headless.log`、`m09_startup_fix_render.log`、`m09_startup_fix_selection_final.log`、`m09_startup_fix_m00～m08_*.log`、`m09_startup_fix_player_*.log`、`m09_startup_fix_m09_enemy_combat.log`。初回描画はrender_initial／render_secondとして区別。環境の証明書・設定保存・GLES3キャッシュ保存ERRORとM04の期待警告を保持する。
 - 再開時、書き込み途中でNULのみになった本書を発見。破損内容をGit除外の `.godot/m09_audit_interrupted.bin` に保管し、現在HEADの本文を復元して今回の操作説明を再適用。他の変更対象テキストにNULはなかった。PCフリーズの原因は未特定。
 - ユーザーはF8で停止してF5で再起動し、近接敵が最初から動くことを確認する。遠距離を試すときは「遠距離敵」、連撃回帰は「静止敵」。M09は引き続きユーザー手動検証待ち。commit／push／PR作成は未実行。
+
+## 最新の近接追加改善（2026-10-21、ADR-016）
+
+近接練習敵の最新動作は固定予兆→踏み込み→一撃→attack_anchor帰還→隙へ更新。本文の旧その場近接・旧Resourceフィールド・検査結果は作成時の履歴として保持する。最新の設計、データ移行、3設定、40項目対応、実行結果、ファイル一覧、F5手順は [敵踏み込み実装記録](m09_enemy_dash_audit.md) を参照。M09はユーザーF5確認待ち、M08完了と未検証事項を維持する。

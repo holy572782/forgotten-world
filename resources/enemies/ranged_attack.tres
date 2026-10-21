@@ -1,0 +1,10 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_attack_data.gd" id="1"]
+[resource]
+script = ExtResource("1")
+kind = 2
+windup_seconds = 1.0
+attack_seconds = 0.12
+hit_delay_seconds = 0.0
+recovery_seconds = 1.5
+minimum_attack_interval = 2.5

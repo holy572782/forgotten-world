@@ -1,11 +1,9 @@
-[gd_resource type="Resource" load_steps=2 format=3]
+[gd_resource type="Resource" load_steps=3 format=3]
 [ext_resource type="Script" path="res://scripts/enemies/enemy_settings.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/ranged_attack.tres" id="2"]
 [resource]
 script = ExtResource("1")
-attack_kind = 1
+attack = ExtResource("2")
 detection_radius = 8.0
 attack_start_distance = 6.0
-windup_seconds = 1.0
-recovery_seconds = 1.5
-minimum_attack_interval = 2.5
 leash_radius = 10.0
