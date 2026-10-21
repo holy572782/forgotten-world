@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="5_hud"]
 [ext_resource type="Script" uid="uid://dur04w1lakbiu" path="res://scripts/player/target_dash.gd" id="6_dash"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/training_enemy.tscn" id="7_enemy"]
+[ext_resource type="Script" path="res://scripts/enemies/practice_selector.gd" id="8_practice"]
 
 [node name="Main" type="Node3D" unique_id=1095149286]
 script = ExtResource("3_main")
@@ -38,3 +39,6 @@ target = NodePath("../Player")
 [node name="HUD" parent="." unique_id=488617702 node_paths=PackedStringArray("player", "camera_rig") instance=ExtResource("5_hud")]
 player = NodePath("../Player")
 camera_rig = NodePath("../CameraRig")
+
+[node name="PracticeSelector" type="CanvasLayer" parent="."]
+script = ExtResource("8_practice")
