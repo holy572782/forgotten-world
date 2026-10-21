@@ -81,7 +81,7 @@ sprite_frames = ExtResource("10_damage")
 animation = &"damage_down"
 script = ExtResource("11_damage")
 
-[node name="WeaponSwing" type="Sprite3D" parent="."]
+[node name="WeaponSwing" type="AnimatedSprite3D" parent="."]
 visible = false
 script = ExtResource("13_weapon")
 

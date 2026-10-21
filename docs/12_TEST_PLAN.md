@@ -657,3 +657,13 @@ $godotExe = 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe'
 ```
 
 手動：F8で停止→F5で近接被弾／防御中の盾維持を確認。範囲確認は`scenes/tests/weapon_sweep_trial.tscn`を開きF6、中央を左クリック（中央を選択済みならJ）。前方3体のHP40→30・ストック3→2・元位置帰還を確認。範囲1.4m／100度は仮値で、武器別データを変えれば狭い／広い範囲を比較できる。ユーザー操作感、実機パッド、長時間性能、多数敵・複雑地形・大型敵・正式な他武器は未実行。M09検証待ちを継続する。
+
+## 鉄の剣112pxの分離アニメーション（2026-10-21、ADR-018）
+
+最新の表示は旧16px回転方式から提供112px×3コマ×4方向へ更新。仕様12項目と手動6項目、差し替え／offset手順、既知の柄位置の隙間は [鉄の剣実装記録](m09_iron_sword_animation_audit.md) を参照。
+
+- 新iron_sword_animation：ヘッドレス2177、実描画60上限2162／30上限1175 assertionsでPASS・終了0。画素・12矩形、中央、48／112を保った同倍率、4方向3コマ、フレーム進行、Q/E実入力中の同期、Resource／offset分離、欠落／null Atlas、被弾・盾、実命中と消費・帰還を確認。件数は観測tick数で変動する。
+- 既存9種類：m05_animations／m05_animation_transitions／m07_chain／m07_combo／m08_defense／m08_guard_sprite／m09_enemy_dash／weapon_sweep／player_damage_visualが全てヘッドレスPASS・終了0。weapon_sweepの表示期待だけを112pxの中央同期へ更新し、攻撃判定の期待値は変更なし。新検査と合わせ10種類。
+- Godot 4.7.2／Windows、物理60Hz、1プロセスずつ、描画1152×720・Compatibility／GTX1080。ログは.godot/iron_sword_headless／render60／render30／damage／reg_*.log、結果一覧はiron_sword_results.json。最終SCRIPT ERROR／Parse Error／SHADER ERRORなし。証明書ストア／設定保存の環境ERRORを区別する。
+- TargetDash・Controller・Path・PlayerSprite・DamageVisual・主人公PNG／Frames・盾／防御リソースはHEADと差分なし。武器の数値・時間も変更なし。
+- 中央・倍率・各コマ・Q/E同期は描画でも確認。元配置では上向きの一部に柄と手元の隙間があるため、画像無加工・中央一致のまま要レビューとして残す。ユーザーのF5／F6手動6項目・実機パッド・長時間性能・多数／大型敵・複雑地形は未実行。M09検証待ち、M10別指示待ち。

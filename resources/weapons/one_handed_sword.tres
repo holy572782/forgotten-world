@@ -1,11 +1,11 @@
 [gd_resource type="Resource" script_class="WeaponData" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/sprites/weapons/one_handed_sword.png" id="2_sword"]
+[ext_resource type="Resource" path="res://resources/weapons/iron_sword_visual.tres" id="2_sword"]
 
 [resource]
 script = ExtResource("1")
 hit_shape = 1
 melee_reach = 1.4
 sweep_angle_degrees = 100.0
-swing_texture = ExtResource("2_sword")
+attack_visual = ExtResource("2_sword")

@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="WeaponAttackVisualData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/player/weapon_attack_visual_data.gd" id="1_visual"]
+[ext_resource type="SpriteFrames" path="res://assets/sprites/weapons/iron_sword_attack_frames.tres" id="2_frames"]
+
+[resource]
+script = ExtResource("1_visual")
+attack_frames = ExtResource("2_frames")

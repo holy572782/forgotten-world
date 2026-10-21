@@ -12,9 +12,7 @@ enum HitShape { SINGLE_TARGET, SWEEP }
 @export_range(0.1, 5.0) var melee_reach: float = 1.4
 @export_range(1.0, 180.0) var sweep_angle_degrees: float = 100.0
 @export_range(0.01, 2.0) var hit_height_tolerance: float = 0.3
-@export var swing_texture: Texture2D
-@export var swing_grip_pixel := Vector2(12,12)
-@export_range(0.001, 0.2) var swing_pixel_size: float = 0.0375
+@export var attack_visual: WeaponAttackVisualData
 @export_range(0.0, 2.0) var combo_input_window: float = 0.5
 @export_range(1, 99) var stock_cost_per_hit: int = 1
 @export_range(0.1, 2.0) var attack_duration: float = 0.32

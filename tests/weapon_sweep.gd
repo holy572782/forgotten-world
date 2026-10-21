@@ -2,7 +2,7 @@ extends "res://tests/m09_enemy_combat.gd"
 ## Actual animation/physics attacks with production weapon data, not hit callbacks.
 var victims: Array[Node3D] = []
 var hit_nodes: Array[Node] = []
-var swing: Sprite3D
+var swing: AnimatedSprite3D
 var rig: Node3D
 var base_weapon: WeaponData
 
@@ -65,10 +65,10 @@ func _run() -> void:
 	combat.hit.connect(func(victim: Node): hit_nodes.append(victim); hit_frames.append(sprite.frame))
 	await _ticks(15)
 	var image := Image.new()
-	var path := "res://assets/sprites/weapons/one_handed_sword.png"
+	var path := "res://assets/sprites/weapons/iron_sword_attack.png"
 	image.load_png_from_buffer(FileAccess.get_file_as_bytes(path))
-	_check(FileAccess.get_sha256(path) == "e10c04c1462b05c93a31e70b2fa7b7dea2037b5aacdcf2f0864a35997d7c2d76", "Original supplied PNG bytes")
-	_check(image.get_size() == Vector2i(16,16) and image.get_data() == base_weapon.swing_texture.get_image().get_data(), "16px image preserved through import")
+	_check(FileAccess.get_sha256(path) == "1b666a412cf6c3ddfa00df05f6ff83d69449e1bda5b41a2668ac2ad3748953ba", "Original supplied iron sword sheet bytes")
+	_check(image.get_size() == Vector2i(336,448) and image.get_data() == load(path).get_image().get_data(), "Iron sword pixels preserved through import")
 	for profile in [Vector2(1.4,100),Vector2(1.2,100),Vector2(1.4,60),Vector2(2.2,100)]:
 		await _reset(profile.x,profile.y)
 		await _start()
@@ -149,26 +149,20 @@ func _run() -> void:
 		await _ticks(3)
 		await _start()
 		var captured_frames: Dictionary = {}
-		var rightmost := -1.0
-		var leftmost := 1.0
 		for tick in range(45):
 			await _ticks(1)
 			if not sprite._attacking: break
-			_check(swing.visible and swing.texture == base_weapon.swing_texture and not swing.no_depth_test,"Camera-facing sword retains world depth and source texture")
-			var hand := swing.global_position-player.global_position
-			var lateral := hand.dot(combat.strike_facing.cross(Vector3.UP))
-			rightmost = maxf(rightmost,lateral)
-			leftmost = minf(leftmost,lateral)
+			_check(swing.visible and swing.sprite_frames == base_weapon.attack_visual.attack_frames and not swing.no_depth_test,"Separate sword retains world depth and source frames")
+			_check(swing.animation == sprite.animation and swing.frame == sprite.frame and swing.transform == sprite.transform and swing.offset == sprite.offset and swing.pixel_size == sprite.pixel_size,"Authored sword aligns with body centre and current frame")
 			if not captured_frames.has(sprite.frame):
 				captured_frames[sprite.frame] = true
 				await _capture_swing("yaw_"+str(int(yaw))+"_frame_"+str(sprite.frame))
 		_check(captured_frames.size() == 3,"Visible start/middle/end under yaw "+str(yaw))
-		_check(rightmost > 0.15 and leftmost < -0.15,"Blade sweeps from character right through front to left")
 		await _end()
 		_check(hit_nodes.size() == 3,"Orbit does not change world-space fan")
 	# Removing the optional image leaves mechanics intact and no stuck presentation.
 	await _reset()
-	combat.equipped_weapon.swing_texture = null
+	combat.equipped_weapon.attack_visual = null
 	await _start()
 	await _ticks(1)
 	_check(not swing.visible,"Missing sword texture is safe")
