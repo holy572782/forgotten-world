@@ -1,5 +1,6 @@
 class_name WeaponEffectData
 extends Resource
+const MotionSettings = preload("res://scripts/combat/attack_motion_settings.gd")
 ## Visual-only phase window; any positive frame count/durations per direction.
 @export var enabled := true
 @export var frames: SpriteFrames
@@ -10,7 +11,7 @@ extends Resource
 @export_range(0.0, 100.0) var start_percent: float:
 	get: return start_phase * 100.0
 	set(value):
-		var next := AttackMotionSettings.bounded(value, 0.0, 100.0, 0.0) / 100.0
+		var next := MotionSettings.bounded(value, 0.0, 100.0, 0.0) / 100.0
 		var span := duration_percent / 100.0
 		playback_speed = 1.0
 		start_phase = next
@@ -20,7 +21,7 @@ extends Resource
 	get: return (end_phase-start_phase) / maxf(playback_speed, 1.0) * 100.0
 	set(value):
 		playback_speed = 1.0
-		end_phase = start_phase + AttackMotionSettings.bounded(value, 0.1, 100.0, 100.0) / 100.0
+		end_phase = start_phase + MotionSettings.bounded(value, 0.1, 100.0, 100.0) / 100.0
 @export var enabled_directions := PackedStringArray(["down", "left", "right", "up"])
 @export var offset_down := Vector2.ZERO
 @export var offset_left := Vector2.ZERO
@@ -49,4 +50,4 @@ func sample(animation: StringName, attack_phase: float, ratios := PackedFloat32A
 	for index in range(frames.get_frame_count(animation)):
 		var atlas := frames.get_frame_texture(animation,index) as AtlasTexture
 		if atlas == null or atlas.atlas == null or not atlas.region.has_area(): return Vector2(-1,0)
-	return AttackMotionSettings.sample(AttackMotionSettings.weights(frames, animation, ratios), phase)
+	return MotionSettings.sample(MotionSettings.weights(frames, animation, ratios), phase)

@@ -1,5 +1,6 @@
 class_name WeaponData
 extends Resource
+const MotionSettings = preload("res://scripts/combat/attack_motion_settings.gd")
 ## Provisional weapon balance. Runtime combo progress never lives here.
 enum HitShape { SINGLE_TARGET, SWEEP }
 @export var weapon_id: StringName = &"one_handed_sword"
@@ -13,7 +14,7 @@ enum HitShape { SINGLE_TARGET, SWEEP }
 @export_range(1.0, 180.0) var sweep_angle_degrees: float = 100.0
 @export_range(0.01, 2.0) var hit_height_tolerance: float = 0.3
 @export var attack_visual: WeaponAttackVisualData
-@export var motion: AttackMotionSettings = preload("res://resources/weapons/default_attack_motion.tres")
+@export var motion: MotionSettings = preload("res://resources/weapons/default_attack_motion.tres")
 @export_range(0.0, 2.0) var combo_input_window: float = 0.5
 @export_range(1, 99) var stock_cost_per_hit: int = 1
 @export_range(0.1, 2.0) var attack_duration: float = 0.32
@@ -21,4 +22,4 @@ enum HitShape { SINGLE_TARGET, SWEEP }
 @export_range(0.1, 5.0) var attack_speed_multiplier: float = 1.0
 
 func swing_duration() -> float:
-	return AttackMotionSettings.bounded(attack_duration, 0.1, 2.0, 0.32) / AttackMotionSettings.bounded(attack_speed_multiplier, 0.1, 5.0, 1.0)
+	return MotionSettings.bounded(attack_duration, 0.1, 2.0, 0.32) / MotionSettings.bounded(attack_speed_multiplier, 0.1, 5.0, 1.0)

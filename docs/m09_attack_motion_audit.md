@@ -116,3 +116,48 @@ $godotExe = 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe'
 ## 将来の武器
 
 WeaponDataを複製し、Motionを「ユニーク化」または別名保存して割り当てる。同じMotion参照を編集すると共有する全武器へ反映される。Attack Visual／各効果も別設定が必要なら個別にユニーク化する。Framesは既存attack_down／left／right／upを用意し、共通配分に合わせるコマ数ならMotionの比率配列、異なるコマ数なら各SpriteFramesの相対時間を設定する。装備UIや武器名ごとのコード分岐は不要。
+
+## 読み込みエラー修正（2026-10-23）
+
+開始HEAD `54dc1206238770c7649651c3448c42e157d63960`、git statusクリーン。ユーザーがGitHubへ反映した最新版から再調査した。前工程の実装と記録は一致するが、ユーザーのGodot4.7.2ではPlayerSpriteの型・識別子未解決を報告。前回の登録済み環境での合格を、未登録環境の合格と扱わない。
+
+### 原因と切り分け
+
+- `scripts/combat/attack_motion_settings.gd`は存在し、`class_name AttackMotionSettings`、`extends Resource`、保存パスとtres参照に誤りなし。定義単体と自身の型を返すsnapshotも読み込み可能。
+- 参照側がグローバルクラス名だけで型・static関数・newを使っていたため、新クラスがエディターで未認識の場合に解析できない。values等の型推論エラーはこの失敗から派生する。
+- `.godot/attack_motion_loading_probe`へ必要なファイルと既存importデータをコピーし、隔離側クラス一覧から新クラス1件だけを除外。変更前はPlayerSpriteの報告と同じCould not find type／Identifier not declared／Cannot inferを再現し、終了1。変更後は同条件で16 assertions PASS・終了0。メインのcacheや既存ファイルは削除していない。
+- ユーザーの開いているエディターのメモリ内登録状態そのものは取得していない。これは「新クラス未認識」という条件で報告のエラーを再現した結果であり、ユーザーのcache破損や原因不明のファイル消失を断定するものではない。
+
+### 修正ファイル
+
+各参照側に`const MotionSettings = preload("res://scripts/combat/attack_motion_settings.gd")`を追加し、型・new・static関数の参照をこの定数に統一。定義のclass_name、Resource型、保存形式、値、攻撃ロジックは維持する。
+
+- 本番5本：`scripts/player/player_sprite.gd`、`scripts/player/target_dash.gd`、`scripts/player/weapon_swing_visual.gd`、`scripts/player/weapon_effect_data.gd`、`scripts/combat/weapon_data.gd`。
+- 既存検査：`tests/attack_motion.gd`も同じ参照方法へ変更。
+- 新規検査：`tests/attack_motion_loading.gd`（参照側を先に解析、型付きsnapshot／tres／初期武器／mainの接続を検査）とUID、`tests/verify_attack_motion_loading.ps1`（未登録の隔離条件を準備）。
+- 記録：本書、DEVELOPMENT_STATUS、12_TEST_PLAN、ADR-022追記。
+
+上記6スクリプトは、新しいpreload宣言を除き定数名を元へ戻してHEADと比較すると一致。調整項目・計算・踏み込み・連撃・剣／効果の同期・帰還の処理は変更しない。既存Resource・画像・シーンと定義スクリプトも変更なし。
+
+### 再現手順
+
+```powershell
+# 一度読み込み済みのメインプロジェクトから実行する。
+& ./tests/verify_attack_motion_loading.ps1
+& 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe' --headless --path . --script tests/attack_motion_loading.gd
+& 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe' --headless --path . --check-only --script scripts/player/player_sprite.gd
+```
+
+隔離側は残りの既存クラスを登録したまま新クラスだけを未登録にする。完全に全クラス未登録のプロジェクトを検証したという意味ではない。コピーのUID一覧が未生成の場合のtext pathフォールバック警告と、実際の型解析エラーは区別する。ログは`.godot/motion_loading_before.log`／`motion_loading_unregistered.log`／`motion_loading_parse_*.log`／`motion_loading_reg_*.log`。
+
+### 修正後の最終検査
+
+- 未登録の隔離環境：16 assertions PASS。通常環境の参照／Resource／main接続：14 assertions PASS。
+- --check-only：定義、WeaponData、PlayerSprite、TargetDash、WeaponEffectData、WeaponSwingVisual、WeaponEffectVisualの7本すべて終了0、型／識別子／推論・関連コンパイルエラーなし。
+- 攻撃モーション実描画60上限1684、撃破帰還1869、独立効果2260、敵戦闘56 assertionsでPASS。m07_chainとm09_startupもPASS。通常3段と1／2／最終撃撃破のReturn開始は各74tickを保持。5段の128tickは当該実行の通常参照127tickとの差1tickで、既存検査の許容内。
+- 通常環境の実行7種類すべて終了0・コード／Shaderエラーなし。結果一覧はmotion_loading_parse_results.json／motion_loading_reg_results.json。隔離検査を含め、この不具合に関連する範囲を実施し、全スイート再実行とは扱わない。
+- 最終editor import終了0、新検査UID生成、git diff --check成功。Resource／画像／シーン／定義・Controller／敵AI／CameraはHEAD差分なし。証明書読込とsandbox外editor_settings保存の環境ERRORはコードエラーと区別。検証用Godotは終了済み。
+
+### ユーザー再確認（未実行）
+
+現在開いているGodotを終了し、同じプロジェクトを開き直してF5。PlayerSpriteの型・識別子・推論エラーが出ないこと、Motionの項目が開けることを確認する。J／クリックで攻撃し、剣・白斬撃・連撃・撃破後待機・帰還とQ/Eが従来どおり動くことを確認する。M09はこの再確認待ち、M10へ移行しない。コミット／プッシュ未実行。

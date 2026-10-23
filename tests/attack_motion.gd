@@ -1,6 +1,7 @@
 extends "res://tests/iron_sword_animation.gd"
+const MotionSettings = preload("res://scripts/combat/attack_motion_settings.gd")
 ## Real animation/physics; no manual hit callbacks. Save/reload runs in separate processes.
-var motion: AttackMotionSettings
+var motion: MotionSettings
 var slash: AnimatedSprite3D
 var accepted: Array[int] = []
 var impacts: Array[Vector2] = []
@@ -11,7 +12,7 @@ var records: Array[Dictionary] = []
 
 func _prepare(duration := 0.64, yaw := 0.0) -> void:
 	await _reset(yaw, duration)
-	combat.equipped_weapon.motion = AttackMotionSettings.new()
+	combat.equipped_weapon.motion = MotionSettings.new()
 	motion = combat.equipped_weapon.motion
 	accepted.clear()
 	impacts.clear()
@@ -63,7 +64,7 @@ func _persistence() -> void:
 		var saved := initial_weapon.duplicate(true) as WeaponData
 		saved.attack_visual = initial_weapon.attack_visual.duplicate()
 		saved.attack_visual.slash_effect = initial_weapon.attack_visual.slash_effect.duplicate()
-		saved.motion = AttackMotionSettings.new()
+		saved.motion = MotionSettings.new()
 		saved.motion.frame_time_ratios = PackedFloat32Array([1,0.4,1])
 		saved.motion.approach_attack_delay = 0.2
 		saved.motion.final_attack_wait = 0.3

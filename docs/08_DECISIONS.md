@@ -8,6 +8,7 @@
 
 ## ADR-022（2026-10-23）武器別モーション設定と共通攻撃タイムライン
 **状態：M09追加改善として採用。ユーザーF5受入待ち。**
+- 読み込み修正追記（同日）：新クラス未認識時の型解析エラーを隔離環境で再現。参照側はMotionSettings定数へ定義スクリプトを明示preloadし、グローバル登録の更新順への依存を解消する。class_name／Resource・保存値・戦闘ロジックは維持。前回の登録済み環境だけでなく、未登録条件を回帰検査へ追加する。新機能・新工程は追加しない。
 - WeaponDataの既存attack_duration／attack_speed_multiplier／combo_stance_durationを再利用し、Motion Resourceに踏み込み・帰還速度、従来の移動時間上下限、接近後待機、最終待機、コマ時間比率、命中コマとコマ内％を集約する。旧TargetDashSettingsの重複項目を移行し、初期値は維持。未使用animation_profile枠を実際の型付きMotionへ置き換える。
 - 本体AnimatedSprite3Dの既存エンジン再生を唯一の時計とし、比率からprivate SpriteFramesの相対時間と総時間に合う速度を決める。武器・効果は共通phaseをサンプリング。命中も共通phaseを参照して既存の1振り1回の判定を使い、新Hitboxは作らない。異なるコマ数は各素材の相対時間で同じ進行へ合わせる。
 - 効果のInspectorを開始％・長さ％へ整理。旧phase／speedは互換の保存表現、新％は重複保存しない別名。方向offset・独立2枠・無効の武器付随枠・既存深度を維持する。

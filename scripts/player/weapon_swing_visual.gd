@@ -1,4 +1,5 @@
 extends AnimatedSprite3D
+const MotionSettings = preload("res://scripts/combat/attack_motion_settings.gd")
 const AttachmentDepth = preload("res://assets/shaders/actor_attachment_depth.gdshader")
 ## One animation clock: mirror the body's frame and sub-frame progress.
 ## No combat callbacks or independent timer. Texture canvas size never sets scale.
@@ -75,7 +76,7 @@ func _sync_from_body() -> void:
 	var next := action_sprite.animation
 	if not String(next).begins_with("attack_") or not visual.attack_frames.has_animation(next): return
 	if sprite_frames != visual.attack_frames: sprite_frames = visual.attack_frames
-	var sampled := AttackMotionSettings.sample(AttackMotionSettings.weights(sprite_frames, next, action_sprite.attack_ratios()), action_sprite.attack_phase())
+	var sampled := MotionSettings.sample(MotionSettings.weights(sprite_frames, next, action_sprite.attack_ratios()), action_sprite.attack_phase())
 	if sampled.x < 0.0: return
 	animation = next
 	stop() # The body owns animation timing; never advance a second timer.

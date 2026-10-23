@@ -1,4 +1,5 @@
 extends Node
+const MotionSettings = preload("res://scripts/combat/attack_motion_settings.gd")
 ## Single-owner state machine. Controller calls physics_step before locomotion.
 const Settings = preload("res://scripts/combat/target_dash_settings.gd")
 const Path = preload("res://scripts/combat/dash_path.gd")
@@ -23,7 +24,7 @@ var queued_attack_target: Node3D
 var _waiting := false
 var _grace_elapsed := 0.0
 var _active_weapon: WeaponData
-var _active_motion: AttackMotionSettings
+var _active_motion: MotionSettings
 var _finishing_reason := ""
 var state: State = State.Idle
 var return_anchor := Vector3.ZERO
@@ -447,9 +448,9 @@ func request_attack(candidate: Node3D) -> bool:
 	if is_busy() or not can_select(candidate): return _reject("Invalid target, state or stock")
 	_active_weapon = equipped_weapon.duplicate()
 	_finishing_reason = ""
-	_active_motion = (_active_weapon.motion if _active_weapon.motion != null else AttackMotionSettings.new()).snapshot()
-	_active_weapon.combo_stance_duration = AttackMotionSettings.bounded(_active_weapon.combo_stance_duration, 0.0, 1.0, 0.12)
-	_active_weapon.combo_input_window = AttackMotionSettings.bounded(_active_weapon.combo_input_window, 0.0, 2.0, 0.5)
+	_active_motion = (_active_weapon.motion if _active_weapon.motion != null else MotionSettings.new()).snapshot()
+	_active_weapon.combo_stance_duration = MotionSettings.bounded(_active_weapon.combo_stance_duration, 0.0, 1.0, 0.12)
+	_active_weapon.combo_input_window = MotionSettings.bounded(_active_weapon.combo_input_window, 0.0, 2.0, 0.5)
 	_planned_hits = mini(_active_weapon.max_combo_hits, int(stock.current / maxi(1, _active_weapon.stock_cost_per_hit)))
 	_sequence_slots = 0
 	_target_lost = false

@@ -1,4 +1,5 @@
 extends AnimatedSprite3D
+const MotionSettings = preload("res://scripts/combat/attack_motion_settings.gd")
 ## Presentation only. Priority: Attack > Jump/Fall > Land > Walk/Idle.
 const Controller = preload("res://scripts/player/player_controller.gd")
 const ShieldVisual = preload("res://scripts/player/shield_visual_data.gd")
@@ -20,7 +21,7 @@ var _shield_ready := false
 var _rebuilding_frames := false
 var state: StringName = &"Idle"
 var _attacking := false
-var attack_motion: AttackMotionSettings
+var attack_motion: MotionSettings
 var _attack_completed := false
 var _requested_swing_duration := 0.0
 var combat_pose: StringName = &""
@@ -95,7 +96,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if OS.is_debug_build() and event.is_action_pressed("attack") and not event.is_echo():
 		request_attack_preview()
 
-func request_attack_preview(duration: float = 0.0, motion: AttackMotionSettings = null) -> bool:
+func request_attack_preview(duration: float = 0.0, motion: MotionSettings = null) -> bool:
 	if _attacking:
 		return false
 	attack_motion = motion
@@ -104,7 +105,7 @@ func request_attack_preview(duration: float = 0.0, motion: AttackMotionSettings 
 	# Private frame durations, rebuilt from the authored source for each weapon.
 	for side in SIDES:
 		var name := StringName("attack_" + side)
-		var values := AttackMotionSettings.weights(_base_frames, name, motion.frame_time_ratios if motion != null else PackedFloat32Array())
+		var values := MotionSettings.weights(_base_frames, name, motion.frame_time_ratios if motion != null else PackedFloat32Array())
 		for index in range(values.size()):
 			sprite_frames.set_frame(name, index, _base_frames.get_frame_texture(name, index), values[index])
 	_set_guard_layout(false)
@@ -129,7 +130,7 @@ func _set_attack_speed(name: StringName) -> void:
 func attack_phase() -> float:
 	if _attack_completed: return 1.0
 	if not _attacking or not String(animation).begins_with("attack_"): return 0.0
-	return AttackMotionSettings.phase_at(AttackMotionSettings.weights(sprite_frames, animation), frame, frame_progress)
+	return MotionSettings.phase_at(MotionSettings.weights(sprite_frames, animation), frame, frame_progress)
 
 func attack_ratios() -> PackedFloat32Array:
 	return attack_motion.frame_time_ratios if attack_motion != null else PackedFloat32Array()
@@ -201,7 +202,7 @@ func _select_animation(next_animation: StringName) -> void:
 		var phase := attack_phase()
 		animation = next_animation
 		_set_attack_speed(next_animation)
-		var sampled := AttackMotionSettings.sample(AttackMotionSettings.weights(sprite_frames, next_animation), phase)
+		var sampled := MotionSettings.sample(MotionSettings.weights(sprite_frames, next_animation), phase)
 		set_frame_and_progress(int(sampled.x), sampled.y)
 		_sync_shadow()
 		return
