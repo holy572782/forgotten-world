@@ -1,6 +1,6 @@
-[gd_resource type="SpriteFrames" load_steps=14 format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://h1xeuexh5lk"]
 
-[ext_resource type="Texture2D" path="res://assets/sprites/player/iron_shield_guard.png" id="1_sheet"]
+[ext_resource type="Texture2D" uid="uid://ccppl4pkgbva" path="res://assets/sprites/player/iron_shield_guard.png" id="1_sheet"]
 
 [sub_resource type="AtlasTexture" id="Atlas_0_0"]
 atlas = ExtResource("1_sheet")
@@ -74,7 +74,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("Atlas_0_2")
 }],
-"loop": false,
+"loop": 0,
 "name": &"guard_down",
 "speed": 1.0
 }, {
@@ -88,7 +88,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("Atlas_1_2")
 }],
-"loop": false,
+"loop": 0,
 "name": &"guard_left",
 "speed": 1.0
 }, {
@@ -102,7 +102,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("Atlas_2_2")
 }],
-"loop": false,
+"loop": 0,
 "name": &"guard_right",
 "speed": 1.0
 }, {
@@ -116,7 +116,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("Atlas_3_2")
 }],
-"loop": false,
+"loop": 0,
 "name": &"guard_up",
 "speed": 1.0
 }]

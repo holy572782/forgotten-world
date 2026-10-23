@@ -1,6 +1,6 @@
-[gd_resource type="SpriteFrames" load_steps=14 format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://cwop11yroot0m"]
 
-[ext_resource type="Texture2D" path="res://assets/sprites/weapons/iron_sword_attack.png" id="1_sheet"]
+[ext_resource type="Texture2D" uid="uid://b8ms2vp6p63o8" path="res://assets/sprites/weapons/iron_sword_attack.png" id="1_sheet"]
 
 [sub_resource type="AtlasTexture" id="sword_0_0"]
 atlas = ExtResource("1_sheet")
@@ -63,25 +63,60 @@ region = Rect2(224, 336, 112, 112)
 filter_clip = true
 
 [resource]
-animations = [
-{"frames": [
-{"duration": 1.0, "texture": SubResource("sword_0_0") },
-{"duration": 1.0, "texture": SubResource("sword_0_1") },
-{"duration": 1.0, "texture": SubResource("sword_0_2") }
-], "loop": false, "name": &"attack_down", "speed": 8.0 },
-{"frames": [
-{"duration": 1.0, "texture": SubResource("sword_1_0") },
-{"duration": 1.0, "texture": SubResource("sword_1_1") },
-{"duration": 1.0, "texture": SubResource("sword_1_2") }
-], "loop": false, "name": &"attack_left", "speed": 8.0 },
-{"frames": [
-{"duration": 1.0, "texture": SubResource("sword_2_0") },
-{"duration": 1.0, "texture": SubResource("sword_2_1") },
-{"duration": 1.0, "texture": SubResource("sword_2_2") }
-], "loop": false, "name": &"attack_right", "speed": 8.0 },
-{"frames": [
-{"duration": 1.0, "texture": SubResource("sword_3_0") },
-{"duration": 1.0, "texture": SubResource("sword_3_1") },
-{"duration": 1.0, "texture": SubResource("sword_3_2") }
-], "loop": false, "name": &"attack_up", "speed": 8.0 }
-]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("sword_0_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("sword_0_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("sword_0_2")
+}],
+"loop": 0,
+"name": &"attack_down",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("sword_1_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("sword_1_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("sword_1_2")
+}],
+"loop": 0,
+"name": &"attack_left",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("sword_2_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("sword_2_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("sword_2_2")
+}],
+"loop": 0,
+"name": &"attack_right",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("sword_3_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("sword_3_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("sword_3_2")
+}],
+"loop": 0,
+"name": &"attack_up",
+"speed": 8.0
+}]

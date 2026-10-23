@@ -1,13 +1,14 @@
-[gd_resource type="Resource" script_class="WeaponAttackVisualData" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="WeaponAttackVisualData" format=3 uid="uid://dbj0fcd6b4dhk"]
 
-[ext_resource type="Script" path="res://scripts/player/weapon_attack_visual_data.gd" id="1_visual"]
-[ext_resource type="SpriteFrames" path="res://assets/sprites/weapons/iron_sword_attack_frames.tres" id="2_frames"]
-[ext_resource type="Script" path="res://scripts/player/weapon_effect_data.gd" id="3_effect"]
+[ext_resource type="Script" uid="uid://dteu5lcqtjfna" path="res://scripts/player/weapon_attack_visual_data.gd" id="1_visual"]
+[ext_resource type="SpriteFrames" uid="uid://cwop11yroot0m" path="res://assets/sprites/weapons/iron_sword_attack_frames.tres" id="2_frames"]
+[ext_resource type="Script" uid="uid://b4lixxmt8n6v4" path="res://scripts/player/weapon_effect_data.gd" id="3_effect"]
 [ext_resource type="Resource" path="res://resources/weapons/iron_sword_slash_effect.tres" id="4_slash"]
 
 [sub_resource type="Resource" id="WeaponEffect_disabled"]
 script = ExtResource("3_effect")
 enabled = false
+enabled_directions = null
 
 [resource]
 script = ExtResource("1_visual")

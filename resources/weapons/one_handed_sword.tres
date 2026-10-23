@@ -1,11 +1,10 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="WeaponData" format=3 uid="uid://drpbum6i8xsx2"]
 
-[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1"]
-[ext_resource type="Resource" path="res://resources/weapons/iron_sword_visual.tres" id="2_sword"]
+[ext_resource type="Script" uid="uid://c77wgr5x0hm8t" path="res://scripts/combat/weapon_data.gd" id="1"]
+[ext_resource type="Resource" uid="uid://dbj0fcd6b4dhk" path="res://resources/weapons/iron_sword_visual.tres" id="2_sword"]
+[ext_resource type="Resource" uid="uid://d3woxb2bhclvg" path="res://resources/weapons/default_attack_motion.tres" id="2_u5xa7"]
 
 [resource]
 script = ExtResource("1")
 hit_shape = 1
-melee_reach = 1.4
-sweep_angle_degrees = 100.0
 attack_visual = ExtResource("2_sword")

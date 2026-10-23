@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="AttackMotionSettings" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="AttackMotionSettings" format=3 uid="uid://d3woxb2bhclvg"]
 
-[ext_resource type="Script" path="res://scripts/combat/attack_motion_settings.gd" id="1"]
+[ext_resource type="Script" uid="uid://fwrbubfxnjwj" path="res://scripts/combat/attack_motion_settings.gd" id="1"]
 
 [resource]
 script = ExtResource("1")
+frame_time_ratios = PackedFloat32Array(0.4, 0.2, 1.5)
