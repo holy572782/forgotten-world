@@ -196,22 +196,31 @@ func _run() -> void:
 	_press("guard",false)
 	await _wait_idle()
 
-	# An already warned in-place counterattack can hit during the player's Approach.
-	await _dash_fresh("res://resources/enemies/melee_attack.tres",1.2)
-	ai._start_windup(true)
-	ai.set_physics_process(true)
-	await _state(ai.State.DASH_APPROACH)
-	while ai._travel_elapsed < 0.18: await _ticks(1)
-	_check(combat.request_attack(target), "28 player approach during enemy counterattack")
-	await _state(ai.State.ATTACK)
-	await _ticks(4)
-	_check(health.current_hp == 90 and combat.state == combat.State.Approach, "28 actual hostile hit while player approaches")
-	await _wait_idle()
+	# The same warned counterattack must hit both a direct strike and a real Approach.
+	var original_weapon: WeaponData = combat.equipped_weapon
+	for reach in [1.4,0.9]:
+		await _dash_fresh("res://resources/enemies/melee_attack.tres",1.2)
+		combat.equipped_weapon = original_weapon.duplicate()
+		combat.equipped_weapon.melee_reach = reach
+		ai._start_windup(true)
+		ai.set_physics_process(true)
+		await _state(ai.State.DASH_APPROACH)
+		while ai._travel_elapsed < 0.18: await _ticks(1)
+		_check(combat.request_attack(target), "28 player attack during enemy counterattack")
+		var expected: int = combat.State.Attack if reach == 1.4 else combat.State.Approach
+		_check(combat.state == expected, "28 actual reach selects direct strike or travel")
+		await _state(ai.State.ATTACK)
+		await _ticks(4)
+		_check(health.current_hp == 90 and combat.state == expected, "28 hostile hit during direct strike or Approach")
+		await _wait_idle()
+	combat.equipped_weapon = original_weapon
 
 	# Simultaneous return reservations must resolve without a warp or stuck state.
 	await _dash_fresh()
 	await _windup()
 	await _state(ai.State.DASH_RETURN)
+	# Stay outside sword reach so this trial still exercises two real returns.
+	player.reset_motion(origin + Vector3(-0.8,0,0))
 	_check(combat.request_attack(target), "31 attack enemy during its return")
 	await _phase(combat.State.Attack)
 	_press("move_down",true)

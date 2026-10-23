@@ -376,3 +376,8 @@ WeaponData.attack_visualにWeaponAttackVisualDataを参照し、attack_framesと
 既存WeaponDataの一振り時間・速度倍率・連撃間隔を維持し、型付きMotion Resourceへ速度・移動時間上下限・踏み込み後待機・最終待機・コマ比率・命中コマ内％を集約。初期値は従来互換。TargetDashSettingsとの二重設定を解消し、開始時に複製・不正値を制限する。
 本体AnimatedSprite3Dが唯一の時計で、プレイヤー専用SpriteFramesの相対コマ時間とspeed_scaleから総時間を合わせる。共通attack_phaseを剣・斬撃・既存の一撃判定が参照する。同数パーツには共通比率、異なる数なら素材の相対時間を使う。Q/Eは進行を維持。エフェクトは開始％・長さ％をInspectorに表示し、既存phase／speedの保存表現へ書き込む。別タイマー・Hitboxは追加しない。
 対象消失時の無表示時間維持、生存予約、通常の入力猶予、手動帰還・Guard・安全中断を維持。最終待機は自然終了のみに適用する。深度・原画像・AI・ダメージ式・盾は不変。設定表、制限、検査と未実行のF5手順は[m09_attack_motion_audit.md](m09_attack_motion_audit.md)。
+### 命中範囲内の踏み込み省略（2026-10-23、ADR-023）
+
+対象を向いたときの実命中形状を既存の命中処理と共用し、範囲内なら直接Attack、範囲外なら従来のApproachへ入る。鉄の剣はWeaponData.melee_reach1.4m、選択・連撃半径attack_range5mと分離。画像112pxは判定に使わない。SWEEPの停止距離は既存1.1mとリーチの小さい方。SINGLE_TARGETは従来の距離条件を維持する。
+近距離はApproachの最低時間と到着後待機も省略。一振り時間・比率・命中・段間・入力猶予・最終待機・消費・撃破後の無表示時間維持は共通処理を使う。return_anchorは最初の位置を維持し、そこから動いていなければReturnへ入らず通常の終了／カメラ解除／入力復帰を行う。移動済みなら従来の安全帰還。旧FREE→APPROACH固定の説明をこの範囲で更新する。
+選択・予約・継続・命中ではDashPathの地形掃引・見通し・連続した平坦足場を共用し、近くても壁・低い障害物・隙間・段差越しは拒否する。原寸カプセルと既存の接触補正を保持。新Hitbox・ダメージ経路は作らない。詳細と手動確認は[m09_in_place_attack_audit.md](m09_in_place_attack_audit.md)。

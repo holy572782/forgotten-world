@@ -140,9 +140,10 @@ func _run() -> void:
 		var id: int = combat.attack_id
 		var delivered := hits
 		var returns_before := return_starts
+		var stationary := player.global_position.is_equal_approx(combat.return_anchor)
 		_key(pair[1])
 		await _ticks(1)
-		_check(combat.state == combat.State.Return,stage+" input enters Return in receiving physics tick")
+		_check(combat.state == (combat.State.Idle if stationary else combat.State.Return),stage+" input returns immediately when unmoved, otherwise travels")
 		_check(not combat.queued and combat.stock.current == paid and combat.attack_id == id,stage+" clears queue without refund/spend/new ID")
 		_check(not combat._hit_pending and not sprite._attacking,stage+" stops strike and pending hit")
 		await _capture_pose(stage)
@@ -152,7 +153,7 @@ func _run() -> void:
 		var held_direction: Vector3 = player.input_to_world(Input.get_vector("move_left","move_right","move_up","move_down"),player._movement_basis())
 		await _ticks(6)
 		_check((player.global_position-at).dot(held_direction) > 0.01,stage+" held key resumes walking after return")
-		_check(return_starts == returns_before+1 and hits == delivered,stage+" one return, no canceled hit")
+		_check(return_starts == returns_before+(0 if stationary else 1) and hits == delivered,stage+" no unnecessary return or canceled hit")
 		_neutral()
 		await _ticks(1)
 		_key(KEY_D)

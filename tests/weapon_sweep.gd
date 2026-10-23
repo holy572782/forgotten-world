@@ -75,7 +75,8 @@ func _run() -> void:
 		# Changing the equipped Resource mid-cycle must not mutate the snapshot.
 		combat.equipped_weapon.melee_reach = 0.1
 		await _end()
-		var expected := 3 if profile == Vector2(1.4,100) else (4 if profile.x > 2 else 1)
+		# A 2.2m reach now strikes from the original position, so the 3m victim stays out.
+		var expected := 3 if profile == Vector2(1.4,100) or profile.x > 2 else 1
 		_check(hit_nodes.size() == expected and hit_nodes.count(victims[0]) == 1,"Weapon reach/angle determines victims: "+str(profile)+" actual="+str(hit_nodes.size()))
 		_check(hit_nodes.count(victims[3]) == 0 and hit_nodes.count(victims[4]) == 0 and hit_nodes.count(victims[6]) == 0,"No back, side or height hit")
 		_check(combat.stock.current == 2 and combat.combo_hits == 1,"One stock and one combo step per swing, independent of victims")

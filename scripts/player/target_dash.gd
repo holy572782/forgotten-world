@@ -408,7 +408,7 @@ func can_select(candidate: Node3D) -> bool:
 	var difference := candidate.global_position - body.global_position
 	if Vector2(difference.x, difference.z).length() > equipped_weapon.attack_range: return false
 	if absf(difference.y) > settings.floor_tolerance: return false
-	return Path.sight(body, candidate.global_position) and Path.clear(body, attack_position(candidate), settings, body.global_position)
+	return _target_path_safe(candidate)
 
 func _candidate_valid(candidate: Node3D) -> bool:
 	return can_combo_select(candidate) if is_busy() else can_select(candidate)
@@ -426,7 +426,19 @@ func _next_target_safe(candidate: Node3D) -> bool:
 	var difference := candidate.global_position - return_anchor
 	if Vector2(difference.x, difference.z).length() > _active_weapon.attack_range: return false
 	if not _framed(candidate): return false
-	return Path.sight(body, candidate.global_position) and Path.clear(body, attack_position(candidate), settings, body.global_position)
+	return _target_path_safe(candidate)
+
+func _target_path_safe(candidate: Node3D) -> bool:
+	return Path.clear(body, attack_position(candidate), settings, body.global_position) and Path.strike_clear(body, candidate.global_position, settings)
+
+func _strike_in_range(candidate: Node3D, weapon: WeaponData, facing: Vector3) -> bool:
+	# One geometry predicate for movement decisions and the existing damage path.
+	if weapon.hit_shape == WeaponData.HitShape.SINGLE_TARGET:
+		return body.global_position.distance_to(candidate.global_position) <= settings.stop_distance + 0.1
+	return Sweep.contains(body.global_position, facing, candidate.global_position, weapon)
+
+func _in_place(candidate: Node3D, weapon: WeaponData) -> bool:
+	return _strike_in_range(candidate, weapon, candidate.global_position - body.global_position)
 
 func _framed(candidate: Node3D) -> bool:
 	if not is_instance_valid(candidate): return false
@@ -439,10 +451,14 @@ func _framed(candidate: Node3D) -> bool:
 	return camera_rig.frames_points(points, settings.screen_margin)
 
 func attack_position(candidate: Node3D) -> Vector3:
+	var weapon := _active_weapon if _combat_cycle else equipped_weapon
+	if _in_place(candidate, weapon): return body.global_position
 	var direction := candidate.global_position - body.global_position
 	direction.y = 0.0
-	if direction.length() <= settings.stop_distance: return body.global_position
-	return candidate.global_position - direction.normalized() * settings.stop_distance
+	var stopping := settings.stop_distance
+	if weapon.hit_shape == WeaponData.HitShape.SWEEP: stopping = minf(stopping, weapon.melee_reach)
+	if direction.length() <= stopping: return body.global_position
+	return candidate.global_position - direction.normalized() * stopping
 
 func request_attack(candidate: Node3D) -> bool:
 	if is_busy() or not can_select(candidate): return _reject("Invalid target, state or stock")
@@ -480,7 +496,8 @@ func request_attack(candidate: Node3D) -> bool:
 	_hit_done = false
 	_hit_pending = false
 	_attack_finished = false
-	_begin_travel(State.Approach, _destination, _active_motion.approach_speed)
+	if _in_place(target, _active_weapon): _start_strike()
+	else: _begin_travel(State.Approach, _destination, _active_motion.approach_speed)
 	return true
 
 func _reject(reason: String) -> bool:
@@ -520,14 +537,14 @@ func _advance_queued() -> void:
 	queued_attack_target = null
 	_target_lost = false
 	_empty_slot = false
-	if not _target_alive() or next != target or body.global_position.distance_to(attack_position(next)) > 0.05 or state == State.Recover:
-		target = next
-		_target_anchor = target.global_position
-		_waiting = false
-		_face_target()
-		_begin_travel(State.Approach, attack_position(target), _active_motion.approach_speed)
-	else:
-		_start_strike()
+	var needs_travel := not _in_place(next, _active_weapon)
+	var refresh_anchor := not _target_alive() or next != target or state == State.Recover or needs_travel
+	target = next
+	if refresh_anchor: _target_anchor = target.global_position
+	_waiting = false
+	_face_target()
+	if needs_travel: _begin_travel(State.Approach, attack_position(target), _active_motion.approach_speed)
+	else: _start_strike()
 
 func _start_strike() -> void:
 	if not _target_alive():
@@ -666,7 +683,7 @@ func _on_finished() -> void:
 func _strike_targets() -> Array[Node3D]:
 	var recipients: Array[Node3D] = []
 	if _active_weapon.hit_shape == WeaponData.HitShape.SINGLE_TARGET:
-		if _target_alive() and body.global_position.distance_to(target.global_position) <= settings.stop_distance + 0.1 and Path.sight(body,target.global_position):
+		if _target_alive() and _strike_in_range(target, _active_weapon, strike_facing) and Path.strike_clear(body,target.global_position,settings):
 			recipients.append(target)
 		return recipients
 	for candidate in get_tree().get_nodes_in_group("combat_targets"):
@@ -674,8 +691,8 @@ func _strike_targets() -> Array[Node3D]:
 		# The original cycle boundary remains fixed even for incidental victims.
 		var from_anchor: Vector3 = candidate.global_position - return_anchor
 		if Vector2(from_anchor.x,from_anchor.z).length() > _active_weapon.attack_range: continue
-		if not Sweep.contains(body.global_position,strike_facing,candidate.global_position,_active_weapon): continue
-		if not Path.sight(body,candidate.global_position): continue
+		if not _strike_in_range(candidate, _active_weapon, strike_facing): continue
+		if not Path.strike_clear(body,candidate.global_position,settings): continue
 		var points: Array[Vector3] = [candidate.global_position+Vector3.UP*0.1,candidate.global_position+Vector3.UP*1.7]
 		if is_instance_valid(camera_rig) and not camera_rig.frames_points(points,settings.screen_margin): continue
 		recipients.append(candidate)
@@ -689,7 +706,7 @@ func _attack(delta: float) -> void:
 		return
 	if not _target_alive(): _target_lost = true
 	if not _target_lost:
-		if not _target_valid() or not Path.sight(body, target.global_position):
+		if not _target_valid() or not Path.strike_clear(body, target.global_position, settings):
 			_begin_return("Target moved or attack path blocked")
 			return
 		_face_target()
@@ -752,6 +769,9 @@ func _begin_return(reason: String) -> void:
 	if not _combat_cycle or state == State.Return: return
 	_interrupt_attack()
 	last_result = reason
+	if body.global_position.is_equal_approx(return_anchor):
+		_finish(true)
+		return
 	_begin_travel(State.Return, return_anchor, _active_motion.return_speed)
 
 func _return(delta: float) -> void:

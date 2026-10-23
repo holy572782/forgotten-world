@@ -48,6 +48,8 @@ func _travel_case(speed: float, delay: float, return_speed: float, final_wait: f
 
 func _persistence() -> void:
 	var path := "res://.godot/attack_motion_saved_weapon.tres"
+	var original_ratios: PackedFloat32Array = initial_weapon.motion.frame_time_ratios.duplicate()
+	var original_effect_start: float = initial_weapon.attack_visual.slash_effect.start_percent
 	for property in WeaponEffectData.new().get_property_list():
 		if property.name in ["start_percent","duration_percent"]:
 			_check((property.usage & PROPERTY_USAGE_EDITOR) != 0 and (property.usage & PROPERTY_USAGE_STORAGE) == 0, "Inspector exposes percent alias without duplicate storage")
@@ -74,7 +76,7 @@ func _persistence() -> void:
 		_check(ResourceSaver.save(saved,path) == OK, "Save motion and effect resources")
 		var stored := FileAccess.get_file_as_string(path)
 		_check(not "start_percent =" in stored and not "duration_percent =" in stored, "No duplicate serialized timing aliases")
-		_check(initial_weapon.motion.frame_time_ratios == PackedFloat32Array([1,1,1]) and initial_weapon.attack_visual.slash_effect.start_percent == 0, "Shared defaults are unchanged")
+		_check(initial_weapon.motion.frame_time_ratios == original_ratios and initial_weapon.attack_visual.slash_effect.start_percent == original_effect_start, "Shared authored settings are unchanged")
 
 func _run() -> void:
 	Engine.max_fps = 30 if "--fps30" in OS.get_cmdline_user_args() else 60

@@ -8,21 +8,16 @@ static func clear(body: CharacterBody3D, destination: Vector3, settings: Resourc
 	var start := contact_position(body, from, settings)
 	var finish := contact_position(body, destination, settings)
 	if not start.is_finite() or not finish.is_finite(): return false
+	if not _sweep_clear(body, start, finish, 5): return false
+	if body.test_move(Transform3D(body.global_basis, start), finish - start, null, body.safe_margin, false):
+		return false
+	return supported(body, start, finish, settings)
+
+static func supported(body: CharacterBody3D, start: Vector3, finish: Vector3, settings: Resource) -> bool:
+	# Shared by travel and the line of a melee strike; no sweep into the enemy body.
+	if absf(finish.y - start.y) > settings.floor_tolerance: return false
 	var space := body.get_world_3d().direct_space_state
 	var collider: CollisionShape3D = body.get_node("CollisionShape3D")
-	var query := PhysicsShapeQueryParameters3D.new()
-	query.shape = collider.shape
-	query.transform = Transform3D(body.global_basis, start) * collider.transform
-	query.transform.origin.y += 0.01
-	query.collision_mask = 5 # Terrain and enemy bodies; never the selectable marker.
-	query.exclude = [body.get_rid()]
-	query.margin = 0.0 # Native body test below owns the movement safety margin.
-	query.motion = finish - start
-	var sweep := space.cast_motion(query)
-	if sweep[0] < 1.0:
-		return false
-	if body.test_move(Transform3D(body.global_basis, start), query.motion, null, body.safe_margin, false):
-		return false
 	# Sample the capsule footprint, not just its centre, to reject ledges and gaps.
 	var count := maxi(1, ceili(start.distance_to(finish) / settings.path_sample_spacing))
 	var radius: float = collider.shape.radius * 0.95
@@ -35,6 +30,50 @@ static func clear(body: CharacterBody3D, destination: Vector3, settings: Resourc
 			if floor_hit.is_empty() or absf(floor_hit.position.y - point.y) > settings.floor_tolerance or floor_hit.normal.y < 0.99:
 				return false
 	return true
+
+static func _sweep_clear(body: CharacterBody3D, start: Vector3, finish: Vector3, mask: int, endpoint_tolerance: float = 0.0) -> bool:
+	var collider: CollisionShape3D = body.get_node("CollisionShape3D")
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = collider.shape
+	query.transform = Transform3D(body.global_basis, start) * collider.transform
+	query.transform.origin.y += 0.01
+	query.collision_mask = mask
+	query.exclude = [body.get_rid()]
+	query.margin = 0.0
+	query.motion = finish - start
+	var space := body.get_world_3d().direct_space_state
+	if space.cast_motion(query)[0] >= 1.0: return true
+	if endpoint_tolerance <= 0.0: return false
+	# Only resolve proven, shallow endpoint contact, then sweep the whole route again.
+	# A middle wall with a clear endpoint must never be accepted by this fallback.
+	var original_transform := query.transform
+	query.transform.origin += query.motion
+	query.motion = Vector3.ZERO
+	var contacts := space.collide_shape(query)
+	if contacts.is_empty(): return false
+	var recovery := Vector3.ZERO
+	for index in range(0, contacts.size()-1, 2):
+		var separation := contacts[index+1] - contacts[index]
+		var depth := separation.length()
+		if depth > endpoint_tolerance: return false
+		if depth > 0.0:
+			var normal := separation / depth
+			recovery += normal * maxf(0.0, depth-recovery.dot(normal))
+	if recovery.length_squared() <= 0.0 or recovery.length() > endpoint_tolerance: return false
+	recovery += recovery.normalized() * minf(body.safe_margin, endpoint_tolerance-recovery.length())
+	query.transform = original_transform
+	query.motion = finish + recovery - start
+	return space.cast_motion(query)[0] >= 1.0
+
+static func strike_clear(body: CharacterBody3D, destination: Vector3, settings: Resource) -> bool:
+	# Reuse travel geometry for terrain/low obstacles and continuous floor support.
+	# Enemy bodies are not terrain: the existing sweep may hit several recipients.
+	var start := contact_position(body, body.global_position, settings)
+	if not start.is_finite(): return false
+	# Keep a wall-parallel corridor parallel after the bounded native contact recovery.
+	var finish := destination + (start - body.global_position)
+	# A target's wall-tangent endpoint may need the same <=2mm recovery as the start.
+	return sight(body, destination) and _sweep_clear(body, start, finish, 1, settings.contact_recovery_limit) and supported(body, start, destination, settings)
 
 static func contact_position(body: CharacterBody3D, at: Vector3, settings: Resource) -> Vector3:
 	var result := KinematicCollision3D.new()

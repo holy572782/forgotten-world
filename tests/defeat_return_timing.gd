@@ -52,7 +52,8 @@ func _fresh(limit: int = 3, capacity: int = 3, lethal: int = 1, speed: float = 1
 		victim_ids.append(victim.get_instance_id())
 		_check(sprite.frame == combat._active_motion.hit_frame, "Actual central-frame impact"))
 	combat.state_changed.connect(func(next: int):
-		if next == combat.State.Return: return_tick = Engine.get_physics_frames())
+		# A target lost before any movement now finishes at the anchor without Return.
+		if next == combat.State.Return or (next == combat.State.Idle and return_tick < 0): return_tick = Engine.get_physics_frames())
 	target.health.depleted.connect(func(_source: Node):
 		depleted_count += 1
 		death_tick = Engine.get_physics_frames())
@@ -73,7 +74,7 @@ func _to_return(queue: bool = false, capture_label: String = "") -> int:
 				captured_wait = true
 				await RenderingServer.frame_post_draw
 				root.get_texture().get_image().save_png("res://.godot/defeat_wait_"+capture_label+"_"+str(Engine.max_fps)+".png")
-	_check(return_tick >= 0, "Sequence eventually starts return")
+	_check(return_tick >= 0, "Sequence eventually returns, or ends immediately when unmoved")
 	return return_tick - accepted_ticks[0] if not accepted_ticks.is_empty() else -1
 
 func _end() -> void:
