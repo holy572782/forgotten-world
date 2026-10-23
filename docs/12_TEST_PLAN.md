@@ -684,3 +684,14 @@ $godotExe = 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe'
 - 関連9種類（m04_camera／m04_occlusion／m04_shadows／m07_chain／m08_defense／m08_guard_sprite／m09_enemy_dash／weapon_sweep／player_damage_visual）ヘッドレスPASS・終了0。最終調整後にm04_occlusion／m09_enemy_dash／weapon_sweepと上記実描画2条件を再実行し合格。合計11種類で、全スイートの再実行ではない。
 - 環境はGodot4.7.2／Windows／Compatibility／GTX1080、1プロセスずつ。`.godot/weapon_depth_fixed.log`、`weapon_depth_live60／live30.log`、`weapon_depth_reg_*.log`、`weapon_depth_final_*.log`、結果一覧`weapon_depth_results.json`／`weapon_depth_final_results.json`。最終コード／Shaderエラーなし。証明書・GLES3キャッシュ・設定保存の環境ERRORとM04の期待警告は別記。
 - ユーザーの修正版F5／F6実操作・操作感の受入、任意の透明Shader／交差地形、長時間性能、実機パッドは未実行。README末尾で4方向3コマ、Q/E、敵近傍、壁、段差／崖、連撃・帰還・防御・敵AIを再確認する。M09検証待ちを維持。
+
+
+## 剣更新・武器別エフェクト（2026-10-23、ADR-021）
+
+最終結果：新weapon_effectsはヘッドレス2260・実描画60上限2160／30上限1176 assertions、剣／斬撃のweapon_depth各37 assertions、関連14種類もPASS・終了0。新規込み15種類、最終一覧16実行（深度は2条件）。撃破帰還は1869 assertions、通常3段と1／2／最終撃撃破はすべて74tickを維持。最終コード／Shaderエラーなし。証明書・キャッシュ／設定保存の環境ERROR、M04期待警告と区別。editor import終了0、保護対象のHEAD差分なし・原本SHA一致・git diff --check成功。ユーザーF5／F6の12項目は未実行。
+
+新tests/weapon_effects.gdは原本とゲーム用PNGのバイト・全RGBA・全12矩形一致、4方向の実再生、30／60上限・速度0.5／2とQ/Eでの同期、5コマの相対時間、独立2枠・方向offset／有効方向・開始終了phase・一度再生、3／5連撃、通常命中・消費、被弾／Guard／方向帰還／cancel／参照欠落・不正Atlas・撃破後待機の消去を検査。提供白は本番で1回のみ、2枠同時の検査では既存画像をテスト用参照として使用する。
+
+weapon_depth.gdは新配置の低い剣をdownの第2コマで検査し、--effectで半透明の斬撃も検査する。他層をfixture内で無効にして全12コマの床あり／なしの差分画素集合を完全比較し、不透明／半透明／近接／部分壁、敵前後、段差／崖、4Yawと診断設定復元を確認する。元のコマ構成と低い描画位置が変わったためのfixture更新で、遮蔽の受入条件は緩和しない。weapon_sweepの旧PNG固定SHAだけを最新原本との一致へ更新し、攻撃の期待値は変更なし。
+
+結果・ログ・再現コマンドはm09_weapon_effects_audit.md。F5／F6によるユーザー手動12項目、実機パッド・長時間性能・複雑地形等は未実行として保持し、M09検証待ちとする。

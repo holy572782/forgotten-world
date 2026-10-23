@@ -361,3 +361,12 @@ WeaponData.attack_visualにWeaponAttackVisualDataを参照し、attack_framesと
 対象がない残りの各回はattack_duration/attack_speed_multiplierと段間combo_stance_durationをStance（歩行0コマ、停止）で保つ。剣の再生・命中・ID・消費はなく、予定の最後でReturnへ移る。接近中に消失した場合も安全停止して接近残時間＋未開始サイクルを待機へ置き換える。参照の有効性・生存確認後だけ座標を読む。
 
 待機中も生存敵の入力予約を受理する。予約なし自動攻撃、生存対象での従来のcombo_input_window、実斬撃時支払い・戦闘中回復停止は変更しない。生存対象の移動・画面外・経路不成立、方向帰還・Guard・HP0／reset、アニメ異常timeoutと敵の死亡処理を維持する。詳細はm09_defeat_return_audit.md。
+
+
+### 武器別エフェクトの同期表示（2026-10-23、ADR-021）
+
+編集済み剣を無加工更新し、白い斬撃を独立SlashEffectへ接続。WeaponEffectはユーザー確認により無効枠のみ。WeaponAttackVisualData.weapon_effect／slash_effectはそれぞれWeaponEffectDataを参照し、enabled、frames（attack_down/left/right/up、任意コマ数・相対コマ時間）、start_phase／end_phase、playback_speed、方向別offsetとenabled_directionsを持つ。本体のframeとframe_progressを相対コマ時間で0〜1へ変換し、指定期間に収まるようサンプリングする。独立時計・命中通知・追加判定はなし。速度1が指定期間へ全コマを合わせる設定、速い場合は一度終了して消え、遅い場合も期間末に消す。
+
+本体AnimatedSprite3D／武器WeaponSwingを維持し、WeaponEffect／SlashEffectを兄弟として追加。盾は既存ShieldVisualDataをPlayerSpriteのGuardへ表示する方式を保持する。原寸・同倍率・中心・方向を継承し、エフェクトは被弾置換・非Attack・待機・Guard・Return・終了時に非表示。独立materialと設定参照を使う。
+
+半透明画素をALPHAで保持するShaderと不透明剣はactor_attachment_depth.gdshaderincの所有者深度を共用。剣の既存discard閾値0.5は不変、効果はalpha0だけdiscard・depth_draw_never。no_depth_test=falseのまま地形rayと画素深度を使い、rayは武器の同一描画tick結果を共有。透明層はWeaponEffect→SlashEffectの順で通常合成する。戦闘仕様・数値・AI・カメラには変更なし。詳細はm09_weapon_effects_audit.md。

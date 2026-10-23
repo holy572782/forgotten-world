@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player_controller.gd" id="1_controller"]
 [ext_resource type="Resource" path="res://resources/player_movement.tres" id="2_movement"]
@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://scripts/player/player_damage_visual.gd" id="11_damage"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player/player_damage.png" id="12_damage"]
 [ext_resource type="Script" path="res://scripts/player/weapon_swing_visual.gd" id="13_weapon"]
+[ext_resource type="Script" path="res://scripts/player/weapon_effect_visual.gd" id="14_effect"]
 [sub_resource type="ShaderMaterial" id="Material_depth"]
 resource_local_to_scene = true
 shader = ExtResource("5_depth")
@@ -84,6 +85,15 @@ script = ExtResource("11_damage")
 [node name="WeaponSwing" type="AnimatedSprite3D" parent="."]
 visible = false
 script = ExtResource("13_weapon")
+
+[node name="WeaponEffect" type="AnimatedSprite3D" parent="."]
+visible = false
+script = ExtResource("14_effect")
+
+[node name="SlashEffect" type="AnimatedSprite3D" parent="."]
+visible = false
+script = ExtResource("14_effect")
+effect_slot = 1
 
 [node name="Shadow" type="AnimatedSprite3D" parent="DamageVisual"]
 cast_shadow = 3

@@ -3,6 +3,8 @@ extends Resource
 ## Display only. Offsets are pixels (+x right, +y up), relative to the body centre.
 const SIDES := ["down", "left", "right", "up"]
 @export var attack_frames: SpriteFrames
+@export var weapon_effect: WeaponEffectData
+@export var slash_effect: WeaponEffectData
 @export var offset_down := Vector2.ZERO
 @export var offset_left := Vector2.ZERO
 @export var offset_right := Vector2.ZERO

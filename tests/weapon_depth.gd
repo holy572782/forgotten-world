@@ -18,6 +18,7 @@ var blocker: MeshInstance3D
 var material: Material
 var metrics: Array[Dictionary] = []
 var assertions := 0
+var effect_fixture := false
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -61,7 +62,7 @@ func _mask(label: String = "") -> Dictionary:
 		var index := pixel*stride
 		if before[index] != after[index] or before[index+1] != after[index+1] or before[index+2] != after[index+2]: mask[pixel] = true
 	if not label.is_empty() and "--capture" in OS.get_cmdline_user_args():
-		present.save_png("res://.godot/weapon_depth_"+label+".png")
+		present.save_png("res://.godot/"+("effect_depth_" if effect_fixture else "weapon_depth_")+label+".png")
 	return mask
 
 func _pose(side: String, index: int) -> void:
@@ -93,7 +94,19 @@ func _run() -> void:
 	sprite.stop()
 	sprite._attacking = true
 	sprite.get_node("Shadow").hide()
-	sword = player.get_node("WeaponSwing")
+	effect_fixture = "--effect" in OS.get_cmdline_user_args()
+	combat._active_weapon = combat._active_weapon.duplicate()
+	combat._active_weapon.attack_visual = combat._active_weapon.attack_visual.duplicate()
+	if effect_fixture: combat._active_weapon.attack_visual.attack_frames = null
+	else:
+		combat._active_weapon.attack_visual.weapon_effect = null
+		combat._active_weapon.attack_visual.slash_effect = null
+	sword = player.get_node("SlashEffect" if effect_fixture else "WeaponSwing")
+	for node_name in ["WeaponSwing","WeaponEffect","SlashEffect"]:
+		var attachment := player.get_node(node_name)
+		if attachment != sword:
+			attachment.set_process(false)
+			attachment.hide() # Isolate the tested layer in difference masks.
 	material = sword.material_override
 	camera = Camera3D.new()
 	world.add_child(camera)
@@ -121,7 +134,7 @@ func _run() -> void:
 				_check(reference.size() > 10,"Reference blade exists "+side+str(frame))
 				_check(fixed == reference,"Floor retains complete blade silhouette "+side+str(frame)+": "+str(fixed.size())+"/"+str(reference.size()))
 	# Deliberate diagnostic only. Always restore depth testing/material afterwards.
-	_pose("down",0)
+	_pose("down",1) # Revised sheet's lower-right pose (formerly column zero).
 	blocker.show()
 	sword.material_override = null
 	sword.no_depth_test = true
@@ -191,7 +204,7 @@ func _run() -> void:
 			ground.position.y = 0.5
 			camera.position = Vector3(0,6.6,8).rotated(Vector3.UP,deg_to_rad(yaw))
 			camera.look_at(Vector3(0,1.5,0))
-			_pose("down",0)
+			_pose("down",1)
 			ground.hide()
 			var above_void := await _mask()
 			ground.show()
@@ -202,7 +215,7 @@ func _run() -> void:
 			ground.mesh.size = Vector3(30,0.2,30)
 			_check(above_void.size() > 10 and on_step == above_void and on_edge == above_void,"Raised floor/cliff silhouette yaw="+str(yaw))
 		_check(not sword.no_depth_test and sword.material_override == material,"Depth diagnostic fully restored")
-	FileAccess.open("res://.godot/weapon_depth_metrics.json",FileAccess.WRITE).store_string(JSON.stringify(metrics,"\t"))
+	FileAccess.open("res://.godot/"+("effect_depth_metrics.json" if effect_fixture else "weapon_depth_metrics.json"),FileAccess.WRITE).store_string(JSON.stringify(metrics,"\t"))
 	print(JSON.stringify(metrics))
 	print("WALL diagnostic=",through_wall.size()," final=",hidden.size())
 	if failures.is_empty(): print("WEAPON DEPTH ","DIAGNOSE" if diagnose else "PASS",": ",assertions," assertions")

@@ -67,7 +67,7 @@ func _run() -> void:
 	var image := Image.new()
 	var path := "res://assets/sprites/weapons/iron_sword_attack.png"
 	image.load_png_from_buffer(FileAccess.get_file_as_bytes(path))
-	_check(FileAccess.get_sha256(path) == "1b666a412cf6c3ddfa00df05f6ff83d69449e1bda5b41a2668ac2ad3748953ba", "Original supplied iron sword sheet bytes")
+	_check(FileAccess.get_sha256(path) == FileAccess.get_sha256("res://画像フォルダ/武器/鉄の剣.png"), "Latest supplied iron sword sheet bytes")
 	_check(image.get_size() == Vector2i(336,448) and image.get_data() == load(path).get_image().get_data(), "Iron sword pixels preserved through import")
 	for profile in [Vector2(1.4,100),Vector2(1.2,100),Vector2(1.4,60),Vector2(2.2,100)]:
 		await _reset(profile.x,profile.y)

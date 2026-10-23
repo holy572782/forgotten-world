@@ -4,6 +4,7 @@ const AttachmentDepth = preload("res://assets/shaders/actor_attachment_depth.gds
 ## No combat callbacks or independent timer. Texture canvas size never sets scale.
 @onready var body: CharacterBody3D = get_parent()
 @onready var action_sprite: AnimatedSprite3D = body.get_node("AnimatedSprite3D")
+var _depth_probe_frame := -1
 
 func _ready() -> void:
 	visible = false
@@ -13,7 +14,7 @@ func _ready() -> void:
 	alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var depth_material := ShaderMaterial.new()
-	depth_material.shader = AttachmentDepth
+	depth_material.shader = _attachment_shader()
 	var capsule: CapsuleShape3D = body.get_node("CollisionShape3D").shape
 	depth_material.set_shader_parameter("body_radius",capsule.radius)
 	depth_material.set_shader_parameter("body_height",capsule.height)
@@ -23,11 +24,17 @@ func _ready() -> void:
 	action_sprite.animation_changed.connect(_sync_from_body)
 	action_sprite.attack_completed.connect(hide)
 
+func _attachment_shader() -> Shader:
+	return AttachmentDepth
+
 func _process(_delta: float) -> void:
 	_sync_from_body()
 	if visible: update_depth_occlusion()
 
-func update_depth_occlusion() -> void:
+func update_depth_occlusion(reuse_this_frame: bool = false) -> void:
+	var current_frame := Engine.get_process_frames()
+	if reuse_this_frame and _depth_probe_frame == current_frame: return
+	_depth_probe_frame = current_frame
 	var camera := get_viewport().get_camera_3d()
 	var blocked := false
 	if camera != null:
@@ -72,10 +79,14 @@ func _sync_from_body() -> void:
 	animation = next
 	stop() # The body owns animation timing; never advance a second timer.
 	set_frame_and_progress(action_sprite.frame,action_sprite.frame_progress)
+	visible = _apply_frame_layout(visual.direction_offset(String(next).get_slice("_",1)))
+
+func _apply_frame_layout(extra_offset: Vector2) -> bool:
 	transform = action_sprite.transform
 	billboard = action_sprite.billboard
 	pixel_size = action_sprite.pixel_size
-	offset = action_sprite.offset + visual.direction_offset(String(next).get_slice("_",1))
+	offset = action_sprite.offset + extra_offset
 	var atlas := sprite_frames.get_frame_texture(animation,frame) as AtlasTexture
+	if atlas == null or atlas.atlas == null: return false
 	material_override.set_shader_parameter("sprite_sheet",atlas.atlas)
-	visible = true
+	return true
