@@ -7,4 +7,6 @@
 [resource]
 script = ExtResource("1")
 hit_shape = 1
+melee_reach = 2.5
 attack_visual = ExtResource("2_sword")
+combo_input_window = 0.1
