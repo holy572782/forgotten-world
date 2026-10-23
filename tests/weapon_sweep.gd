@@ -79,7 +79,7 @@ func _run() -> void:
 		_check(hit_nodes.size() == expected and hit_nodes.count(victims[0]) == 1,"Weapon reach/angle determines victims: "+str(profile)+" actual="+str(hit_nodes.size()))
 		_check(hit_nodes.count(victims[3]) == 0 and hit_nodes.count(victims[4]) == 0 and hit_nodes.count(victims[6]) == 0,"No back, side or height hit")
 		_check(combat.stock.current == 2 and combat.combo_hits == 1,"One stock and one combo step per swing, independent of victims")
-		for index in hit_frames: _check(index == combat.settings.hit_frame,"Existing central frame timing")
+		for index in hit_frames: _check(index == combat._active_motion.hit_frame,"Existing central frame timing")
 	# A selected victim can die without preventing other victims of the same swing.
 	await _reset()
 	victims[0].health.damage(35)

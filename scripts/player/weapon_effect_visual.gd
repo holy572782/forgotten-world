@@ -20,14 +20,7 @@ func _process(_delta: float) -> void:
 		material_override.set_shader_parameter("owner_floor_occluded",weapon.material_override.get_shader_parameter("owner_floor_occluded"))
 
 func _body_phase() -> float:
-	var total := 0.0
-	var cursor := 0.0
-	for index in range(action_sprite.sprite_frames.get_frame_count(action_sprite.animation)):
-		var weight := action_sprite.sprite_frames.get_frame_duration(action_sprite.animation,index)
-		total += weight
-		if index < action_sprite.frame: cursor += weight
-		elif index == action_sprite.frame: cursor += weight*action_sprite.frame_progress
-	return cursor/maxf(total,0.000001)
+	return action_sprite.attack_phase()
 
 func _sync_from_body() -> void:
 	visible = false
@@ -40,7 +33,7 @@ func _sync_from_body() -> void:
 	if config == null: return
 	var next := action_sprite.animation
 	if not String(next).begins_with("attack_"): return
-	var sampled := config.sample(next,_body_phase())
+	var sampled := config.sample(next,_body_phase(),action_sprite.attack_ratios())
 	if sampled.x < 0.0: return
 	if sprite_frames != config.frames: sprite_frames = config.frames
 	animation = next

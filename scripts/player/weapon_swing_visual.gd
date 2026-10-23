@@ -74,11 +74,12 @@ func _sync_from_body() -> void:
 	var visual := weapon.attack_visual
 	var next := action_sprite.animation
 	if not String(next).begins_with("attack_") or not visual.attack_frames.has_animation(next): return
-	if action_sprite.frame < 0 or action_sprite.frame >= visual.attack_frames.get_frame_count(next): return
 	if sprite_frames != visual.attack_frames: sprite_frames = visual.attack_frames
+	var sampled := AttackMotionSettings.sample(AttackMotionSettings.weights(sprite_frames, next, action_sprite.attack_ratios()), action_sprite.attack_phase())
+	if sampled.x < 0.0: return
 	animation = next
 	stop() # The body owns animation timing; never advance a second timer.
-	set_frame_and_progress(action_sprite.frame,action_sprite.frame_progress)
+	set_frame_and_progress(int(sampled.x),sampled.y)
 	visible = _apply_frame_layout(visual.direction_offset(String(next).get_slice("_",1)))
 
 func _apply_frame_layout(extra_offset: Vector2) -> bool:

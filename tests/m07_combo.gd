@@ -15,7 +15,7 @@ func _run() -> void:
 	target.health.balance.max_hp = 200.0
 	combat.hit.connect(func(_t: Node):
 		hits += 1
-		_check(sprite.frame == combat.settings.hit_frame, "Visible hit frame"))
+		_check(sprite.frame == combat._active_motion.hit_frame, "Visible hit frame"))
 	combat.attack_accepted.connect(func(id: int, _combo: int): accepted.append(id))
 	await _ticks(20)
 	var origin := player.global_position

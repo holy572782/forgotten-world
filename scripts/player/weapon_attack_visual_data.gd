@@ -22,8 +22,8 @@ func is_valid() -> bool:
 	if attack_frames == null: return false
 	for side in SIDES:
 		var name := StringName("attack_"+side)
-		if not attack_frames.has_animation(name) or attack_frames.get_frame_count(name) != 3: return false
-		for index in range(3):
+		if not attack_frames.has_animation(name) or attack_frames.get_frame_count(name) < 1: return false
+		for index in range(attack_frames.get_frame_count(name)):
 			var frame := attack_frames.get_frame_texture(name,index) as AtlasTexture
 			if frame == null or frame.atlas == null or not frame.region.has_area(): return false
 	return true

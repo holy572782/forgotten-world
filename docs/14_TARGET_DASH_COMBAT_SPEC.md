@@ -312,3 +312,8 @@ ADR-017の扇形判定・範囲・1振り1消費・連撃・予約・帰還・�
 ### 武器・斬撃エフェクト（2026-10-23、ADR-021）
 
 演出は本体、WeaponSwing、WeaponEffect、SlashEffect、既存盾表示を論理分離。提供白はSlashEffectへ1回だけ使用し、武器付随はユーザー回答により無効枠のみ。WeaponData.attack_visual内の2つのWeaponEffectDataで画像・方向offset・速度・phase窓・有効化を指定する。本体のframe／進行を参照するため武器の回数・速度・連撃でも単一の時計を維持し、攻撃以外や撃破後待機・帰還・防御で消す。表示は既存の命中・範囲・支払い・撃破後帰還・敵AIから独立し、ダメージや判定は追加しない。深度・半透明・差し替えと検査はm09_weapon_effects_audit.md。M09内で手動確認待ち、新工程なし。
+
+## M09追加改善：共通攻撃タイムラインとInspector調整（2026-10-23、ADR-022）
+
+既存WeaponDataのattack_duration÷attack_speed_multiplierを一振りの共通時間とする。Motionに移動速度／従来の時間上下限、到着後待機0秒、最終待機0秒、frame_time_ratios初期[1,1,1]、hit_frame初期1／hit_frame_percent初期0を設定する。比率を変更しても総時間は不変。中央コマの開始／途中へ命中を追従させ、既存_hit_doneとHP所有者の重複除外を保持する。本体のエンジン再生から得るphaseだけを剣・効果・命中が読み、描画の別時計・追加判定は作らない。
+連撃間は既存combo_stance_duration、予約なしの猶予はcombo_input_windowを再利用。最終待機は通常終了条件成立後に追加し、手動帰還・Guard・安全中断を遅らせない。撃破／参照消失後は予定スロットと一振り時間・段間隔を維持、接近中消失は到着後待機も含めて保持する。設定を開始時に複製し、安全経路・固定帰還地点・別生存対象への予約・消費・敵AIを維持する。効果は開始％／長さ％と方向offsetで独立調整、攻撃終了で必ず消す。武器ごとのMotion／表示Resource差し替えに対応する。設定値一覧・検査・F5受入手順は[m09_attack_motion_audit.md](m09_attack_motion_audit.md)。

@@ -46,7 +46,7 @@ func _run() -> void:
 	for path in ["TrainingEnemySecond","TrainingEnemyThird"]: main.get_node(path).position = Vector3(12,0,10)
 	initial_weapon = combat.equipped_weapon
 	visual = initial_weapon.attack_visual
-	combat.hit.connect(func(_victim: Node): hits += 1; _check(sprite.frame == combat.settings.hit_frame,"Unchanged hit frame"))
+	combat.hit.connect(func(_victim: Node): hits += 1; _check(sprite.frame == combat._active_motion.hit_frame,"Unchanged hit frame"))
 	combat.attack_accepted.connect(func(_id: int,_combo: int):
 		restarts += 1
 		_check(slash_fx.visible and slash_fx.frame == 0 and slash_fx.frame_progress == 0.0,"Every real attack restarts slash at phase zero"))

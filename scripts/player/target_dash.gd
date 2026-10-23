@@ -23,6 +23,8 @@ var queued_attack_target: Node3D
 var _waiting := false
 var _grace_elapsed := 0.0
 var _active_weapon: WeaponData
+var _active_motion: AttackMotionSettings
+var _finishing_reason := ""
 var state: State = State.Idle
 var return_anchor := Vector3.ZERO
 var return_error := 0.0
@@ -215,6 +217,7 @@ func _interrupt_attack() -> void:
 	_waiting = false
 	_hit_pending = false
 	_empty_slot = false
+	_finishing_reason = ""
 	# A paid strike keeps its ID and hit history. Only _start_strike resets them.
 	sprite._attacking = false
 	sprite.stop()
@@ -410,6 +413,7 @@ func _candidate_valid(candidate: Node3D) -> bool:
 	return can_combo_select(candidate) if is_busy() else can_select(candidate)
 
 func can_combo_select(candidate: Node3D) -> bool:
+	if not _finishing_reason.is_empty(): return false
 	if state != State.Approach and state != State.Attack and state != State.Recover: return false
 	var unpaid := 1 if state == State.Approach else 0
 	if _sequence_slots + unpaid >= _planned_hits: return false
@@ -442,6 +446,10 @@ func attack_position(candidate: Node3D) -> Vector3:
 func request_attack(candidate: Node3D) -> bool:
 	if is_busy() or not can_select(candidate): return _reject("Invalid target, state or stock")
 	_active_weapon = equipped_weapon.duplicate()
+	_finishing_reason = ""
+	_active_motion = (_active_weapon.motion if _active_weapon.motion != null else AttackMotionSettings.new()).snapshot()
+	_active_weapon.combo_stance_duration = AttackMotionSettings.bounded(_active_weapon.combo_stance_duration, 0.0, 1.0, 0.12)
+	_active_weapon.combo_input_window = AttackMotionSettings.bounded(_active_weapon.combo_input_window, 0.0, 2.0, 0.5)
 	_planned_hits = mini(_active_weapon.max_combo_hits, int(stock.current / maxi(1, _active_weapon.stock_cost_per_hit)))
 	_sequence_slots = 0
 	_target_lost = false
@@ -471,7 +479,7 @@ func request_attack(candidate: Node3D) -> bool:
 	_hit_done = false
 	_hit_pending = false
 	_attack_finished = false
-	_begin_travel(State.Approach, _destination, settings.approach_speed)
+	_begin_travel(State.Approach, _destination, _active_motion.approach_speed)
 	return true
 
 func _reject(reason: String) -> bool:
@@ -480,6 +488,7 @@ func _reject(reason: String) -> bool:
 	return false
 
 func request_followup(candidate: Node3D = null, replace: bool = false) -> bool:
+	if not _finishing_reason.is_empty(): return _reject("Attack sequence ending")
 	if state != State.Approach and state != State.Attack and state != State.Recover: return _reject("Not accepting input")
 	if queued and not replace: return _reject("Queue full")
 	if state != State.Recover and _target_alive() and not _target_lost and not _target_valid(): return _reject("Target moved")
@@ -515,7 +524,7 @@ func _advance_queued() -> void:
 		_target_anchor = target.global_position
 		_waiting = false
 		_face_target()
-		_begin_travel(State.Approach, attack_position(target), settings.approach_speed)
+		_begin_travel(State.Approach, attack_position(target), _active_motion.approach_speed)
 	else:
 		_start_strike()
 
@@ -535,21 +544,22 @@ func _start_strike() -> void:
 	_attack_finished = false
 	_target_lost = false
 	_empty_slot = false
+	_finishing_reason = ""
 	sprite.combat_pose = &"Attack"
 	strike_facing = body.facing_world
 	_set_state(State.Attack)
-	if not sprite.request_attack_preview(_strike_duration()):
+	if not sprite.request_attack_preview(_strike_duration(), _active_motion):
 		_begin_return("Animation unavailable")
 		return
 	stock.spend(_active_weapon.stock_cost_per_hit)
 	combo_hits += 1
 	_sequence_slots += 1
 	attack_id += 1
-	_hit_pending = sprite.frame == settings.hit_frame
+	_hit_pending = _hit_due()
 	attack_accepted.emit(attack_id, combo_hits)
 
 func _strike_duration() -> float:
-	return _active_weapon.attack_duration / maxf(0.1, _active_weapon.attack_speed_multiplier)
+	return _active_weapon.swing_duration()
 
 func _start_empty_slot(approach_remaining: float = 0.0) -> void:
 	# Preserve the weapon's planned rhythm, without an animation, ID, hit or cost.
@@ -590,7 +600,7 @@ func _begin_travel(next: State, destination: Vector3, speed: float) -> void:
 		body.move_and_collide(Vector3.ZERO, false, body.safe_margin)
 		_travel_start = body.global_position
 		_destination = resolved
-	_duration = clampf(_travel_start.distance_to(_destination) / maxf(speed, 0.1), settings.minimum_travel_time, maxf(settings.minimum_travel_time, settings.maximum_travel_time))
+	_duration = clampf(_travel_start.distance_to(_destination) / maxf(speed, 0.1), _active_motion.minimum_travel_time, _active_motion.maximum_travel_time)
 	_set_state(next)
 	sprite.combat_pose = &"Approach" if next == State.Approach else &"Return"
 	sprite._process(0.0)
@@ -608,7 +618,7 @@ func _target_valid() -> bool:
 
 func _approach(delta: float) -> void:
 	if not _target_alive():
-		_start_empty_slot(maxf(0.0, _duration - _elapsed))
+		_start_empty_slot(maxf(0.0, _duration + _active_motion.approach_attack_delay - _elapsed))
 		return
 	if not _target_valid():
 		_begin_return("Target lost or moved")
@@ -617,6 +627,9 @@ func _approach(delta: float) -> void:
 	if not _move_travel(delta):
 		_begin_return("Approach blocked")
 	elif _elapsed >= _duration:
+		body.velocity = Vector3.ZERO
+		sprite.combat_pose = &"Stance"
+		if _elapsed < _duration + _active_motion.approach_attack_delay: return
 		var reserved := queued
 		var reserved_target := queued_attack_target
 		_start_strike()
@@ -635,11 +648,15 @@ func _move_travel(delta: float) -> bool:
 	return collision == null
 
 func _on_frame() -> void:
-	if state == State.Attack and String(sprite.animation).begins_with("attack_") and sprite.frame == settings.hit_frame:
+	if _hit_due():
 		_hit_pending = true
+
+func _hit_due() -> bool:
+	return state == State.Attack and not _empty_slot and _active_motion != null and String(sprite.animation).begins_with("attack_") and sprite.attack_phase() + 0.000001 >= _active_motion.hit_phase(sprite.sprite_frames, sprite.animation)
 
 func _on_finished() -> void:
 	if state == State.Attack:
+		if _hit_due(): _hit_pending = true
 		_attack_finished = true
 		_waiting = true
 		_grace_elapsed = 0.0
@@ -675,6 +692,9 @@ func _attack(delta: float) -> void:
 			_begin_return("Target moved or attack path blocked")
 			return
 		_face_target()
+	# Frame boundaries and sub-frame offsets read the same engine animation phase.
+	# Polling also catches a very short frame skipped between physics ticks.
+	if _hit_due(): _hit_pending = true
 	if _hit_pending and not _hit_done and not _target_lost:
 		_hit_done = true
 		# Snapshot before damage signals can kill/free targets. One HP owner per swing,
@@ -700,27 +720,38 @@ func _attack(delta: float) -> void:
 	if not _attack_finished and _elapsed >= timeout:
 		_begin_return("Animation timeout")
 	elif _attack_finished:
-		if _sequence_slots >= _planned_hits:
-			_begin_return("Combo finished")
+		if not _finishing_reason.is_empty():
+			_finish_attack_cycle(_finishing_reason, delta)
+		elif _sequence_slots >= _planned_hits:
+			_finish_attack_cycle("Combo finished", delta)
 		elif _target_lost:
 			_grace_elapsed += delta
 			if _grace_elapsed >= _active_weapon.combo_stance_duration:
 				if queued: _advance_queued()
 				else: _start_empty_slot()
 		elif not stock.can_spend(_active_weapon.stock_cost_per_hit):
-			_begin_return("No stock")
+			_finish_attack_cycle("No stock", delta)
 		else:
 			_grace_elapsed += delta
 			if queued:
 				if _grace_elapsed >= _active_weapon.combo_stance_duration: _advance_queued()
 			elif _grace_elapsed >= _active_weapon.combo_input_window:
-				_begin_return("Input window ended")
+				_finish_attack_cycle("Input window ended", delta)
+
+func _finish_attack_cycle(reason: String, delta: float) -> void:
+	if _finishing_reason.is_empty():
+		_finishing_reason = reason
+		_grace_elapsed = 0.0
+	else:
+		_grace_elapsed += delta
+	if _grace_elapsed >= _active_motion.final_attack_wait:
+		_begin_return(reason)
 
 func _begin_return(reason: String) -> void:
 	if not _combat_cycle or state == State.Return: return
 	_interrupt_attack()
 	last_result = reason
-	_begin_travel(State.Return, return_anchor, settings.return_speed)
+	_begin_travel(State.Return, return_anchor, _active_motion.return_speed)
 
 func _return(delta: float) -> void:
 	if not _move_travel(delta):

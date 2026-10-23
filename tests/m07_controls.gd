@@ -74,7 +74,7 @@ func _run() -> void:
 	_click(Vector2(1100,690),MOUSE_BUTTON_LEFT)
 	await _ticks(2)
 	_check(not combat.is_busy() and combat.stock.current == 3, "Empty click does not auto-select attack")
-	combat.hit.connect(func(_t: Node): hits += 1; _check(sprite.frame == combat.settings.hit_frame, "Hit frame synchronized"))
+	combat.hit.connect(func(_t: Node): hits += 1; _check(sprite.frame == combat._active_motion.hit_frame, "Hit frame synchronized"))
 	combat.attack_accepted.connect(func(_id: int, _count: int): start_times.append(Time.get_ticks_msec()/1000.0))
 	sprite.attack_completed.connect(func(): end_times.append(Time.get_ticks_msec()/1000.0))
 	var camera: Camera3D = main.get_node("CameraRig").camera

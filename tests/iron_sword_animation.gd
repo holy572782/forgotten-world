@@ -66,7 +66,7 @@ func _run() -> void:
 	visual = initial_weapon.attack_visual
 	combat.hit.connect(func(_victim: Node):
 		hits += 1
-		_check(sprite.frame == combat.settings.hit_frame,"Existing authored hit frame unchanged"))
+		_check(sprite.frame == combat._active_motion.hit_frame,"Existing authored hit frame unchanged"))
 	await _ticks(15)
 	_check(not sword.visible and sprite.visible,"No sword at rest")
 	var path := "res://assets/sprites/weapons/iron_sword_attack.png"

@@ -50,7 +50,7 @@ func _fresh(limit: int = 3, capacity: int = 3, lethal: int = 1, speed: float = 1
 	combat.hit.connect(func(victim: Node):
 		impact_ticks.append(Engine.get_physics_frames())
 		victim_ids.append(victim.get_instance_id())
-		_check(sprite.frame == combat.settings.hit_frame, "Actual central-frame impact"))
+		_check(sprite.frame == combat._active_motion.hit_frame, "Actual central-frame impact"))
 	combat.state_changed.connect(func(next: int):
 		if next == combat.State.Return: return_tick = Engine.get_physics_frames())
 	target.health.depleted.connect(func(_source: Node):

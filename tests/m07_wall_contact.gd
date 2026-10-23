@@ -140,7 +140,7 @@ func _run() -> void:
 	combat.hit.connect(func(t: Node):
 		hits += 1
 		hit_targets.append(t)
-		_check(sprite.frame == combat.settings.hit_frame, "Wall contact preserves hit-frame sync"))
+		_check(sprite.frame == combat._active_motion.hit_frame, "Wall contact preserves hit-frame sync"))
 	combat.state_changed.connect(func(next: int):
 		if next == combat.State.Approach and combat.combo_hits == 0:
 			# Capture at hold_follow(), not while FREE camera smoothing still runs.

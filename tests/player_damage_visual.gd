@@ -103,7 +103,7 @@ func _run() -> void:
 	health.damage(1)
 	await _wait_idle()
 	await _ticks(22)
-	_check(hits == 1 and hit_frames == [combat.settings.hit_frame], "Exactly one real hit at existing animation frame")
+	_check(hits == 1 and hit_frames == [combat._active_motion.hit_frame], "Exactly one real hit at existing animation frame")
 	_check(player.global_position.distance_to(saved_origin) < 0.03 and sprite.visible and not damage.visible, "Existing return anchor and visibility restored")
 	# Guard always holds the shield, including back hits without mitigation.
 	_press("guard",true)

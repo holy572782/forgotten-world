@@ -122,7 +122,7 @@ func _run() -> void:
 	Input.action_release("jump")
 	_check(not combat.is_busy(), "Returns to Idle")
 	_check(hits == 1 and target.health.current_hp == 30.0, "Exactly one damage event")
-	_check(hit_frames == [combat.settings.hit_frame], "Damage matches visible hit frame")
+	_check(hit_frames == [combat._active_motion.hit_frame], "Damage matches visible hit frame")
 	_check(player.global_position.distance_to(origin) < 0.03, "Returns to saved 3D anchor")
 	_check(states == [1, 2, 3, 0], "Ordered state transitions")
 	_check(max_camera_step < 0.6, "No abrupt camera movement")

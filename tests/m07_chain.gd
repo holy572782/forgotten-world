@@ -59,7 +59,7 @@ func _run() -> void:
 	rig = main.get_node("CameraRig")
 	combat.hit.connect(func(t: Node):
 		hit_targets.append(t)
-		_check(sprite.frame == combat.settings.hit_frame, "Central frame damage"))
+		_check(sprite.frame == combat._active_motion.hit_frame, "Central frame damage"))
 	await _ticks(20)
 	recorded_anchor = player.global_position
 	# Automatic aiming follows player world facing, not orbit yaw.

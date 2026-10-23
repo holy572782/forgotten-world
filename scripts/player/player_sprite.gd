@@ -20,6 +20,9 @@ var _shield_ready := false
 var _rebuilding_frames := false
 var state: StringName = &"Idle"
 var _attacking := false
+var attack_motion: AttackMotionSettings
+var _attack_completed := false
+var _requested_swing_duration := 0.0
 var combat_pose: StringName = &""
 var _attack_facing := Vector3.BACK
 var _was_airborne := false
@@ -92,27 +95,48 @@ func _unhandled_input(event: InputEvent) -> void:
 	if OS.is_debug_build() and event.is_action_pressed("attack") and not event.is_echo():
 		request_attack_preview()
 
-func request_attack_preview(duration: float = 0.0) -> bool:
+func request_attack_preview(duration: float = 0.0, motion: AttackMotionSettings = null) -> bool:
 	if _attacking:
 		return false
+	attack_motion = motion
+	_attack_completed = false
+	_requested_swing_duration = duration
+	# Private frame durations, rebuilt from the authored source for each weapon.
+	for side in SIDES:
+		var name := StringName("attack_" + side)
+		var values := AttackMotionSettings.weights(_base_frames, name, motion.frame_time_ratios if motion != null else PackedFloat32Array())
+		for index in range(values.size()):
+			sprite_frames.set_frame(name, index, _base_frames.get_frame_texture(name, index), values[index])
 	_set_guard_layout(false)
 	_attacking = true
 	_attack_facing = body.facing_world
 	state = &"Attack"
 	var sector := Controller.direction_sector(_attack_facing, body._movement_basis(), 4)
 	var attack_animation := StringName("attack_" + SIDES[sector])
-	var original_duration := 0.0
-	for index in range(sprite_frames.get_frame_count(attack_animation)):
-		original_duration += sprite_frames.get_frame_duration(attack_animation, index) / sprite_frames.get_animation_speed(attack_animation)
-	speed_scale = original_duration / duration if duration > 0.0 else 1.0
+	_set_attack_speed(attack_animation)
 	play(attack_animation)
 	set_frame_and_progress(0, 0.0)
 	_sync_shadow()
 	attack_started.emit()
 	return true
 
+func _set_attack_speed(name: StringName) -> void:
+	var original_duration := 0.0
+	for index in range(sprite_frames.get_frame_count(name)):
+		original_duration += sprite_frames.get_frame_duration(name, index) / sprite_frames.get_animation_speed(name)
+	speed_scale = original_duration / _requested_swing_duration if _requested_swing_duration > 0.0 else 1.0
+
+func attack_phase() -> float:
+	if _attack_completed: return 1.0
+	if not _attacking or not String(animation).begins_with("attack_"): return 0.0
+	return AttackMotionSettings.phase_at(AttackMotionSettings.weights(sprite_frames, animation), frame, frame_progress)
+
+func attack_ratios() -> PackedFloat32Array:
+	return attack_motion.frame_time_ratios if attack_motion != null else PackedFloat32Array()
+
 func _on_animation_finished() -> void:
 	if _attacking and String(animation).begins_with("attack_"):
+		_attack_completed = true
 		_attacking = false
 		speed_scale = 1.0
 		attack_completed.emit()
@@ -173,6 +197,14 @@ func _select_animation(next_animation: StringName) -> void:
 	if animation == next_animation:
 		return
 	var same_family := String(animation).get_slice("_", 0) == String(next_animation).get_slice("_", 0)
+	if same_family and _attacking:
+		var phase := attack_phase()
+		animation = next_animation
+		_set_attack_speed(next_animation)
+		var sampled := AttackMotionSettings.sample(AttackMotionSettings.weights(sprite_frames, next_animation), phase)
+		set_frame_and_progress(int(sampled.x), sampled.y)
+		_sync_shadow()
+		return
 	var phase_frame := frame if same_family else 0
 	var phase_progress := frame_progress if same_family else 0.0
 	animation = next_animation

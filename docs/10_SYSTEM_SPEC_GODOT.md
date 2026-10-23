@@ -370,3 +370,9 @@ WeaponData.attack_visualにWeaponAttackVisualDataを参照し、attack_framesと
 本体AnimatedSprite3D／武器WeaponSwingを維持し、WeaponEffect／SlashEffectを兄弟として追加。盾は既存ShieldVisualDataをPlayerSpriteのGuardへ表示する方式を保持する。原寸・同倍率・中心・方向を継承し、エフェクトは被弾置換・非Attack・待機・Guard・Return・終了時に非表示。独立materialと設定参照を使う。
 
 半透明画素をALPHAで保持するShaderと不透明剣はactor_attachment_depth.gdshaderincの所有者深度を共用。剣の既存discard閾値0.5は不変、効果はalpha0だけdiscard・depth_draw_never。no_depth_test=falseのまま地形rayと画素深度を使い、rayは武器の同一描画tick結果を共有。透明層はWeaponEffect→SlashEffectの順で通常合成する。戦闘仕様・数値・AI・カメラには変更なし。詳細はm09_weapon_effects_audit.md。
+
+### 武器別攻撃モーション調整（2026-10-23、ADR-022）
+
+既存WeaponDataの一振り時間・速度倍率・連撃間隔を維持し、型付きMotion Resourceへ速度・移動時間上下限・踏み込み後待機・最終待機・コマ比率・命中コマ内％を集約。初期値は従来互換。TargetDashSettingsとの二重設定を解消し、開始時に複製・不正値を制限する。
+本体AnimatedSprite3Dが唯一の時計で、プレイヤー専用SpriteFramesの相対コマ時間とspeed_scaleから総時間を合わせる。共通attack_phaseを剣・斬撃・既存の一撃判定が参照する。同数パーツには共通比率、異なる数なら素材の相対時間を使う。Q/Eは進行を維持。エフェクトは開始％・長さ％をInspectorに表示し、既存phase／speedの保存表現へ書き込む。別タイマー・Hitboxは追加しない。
+対象消失時の無表示時間維持、生存予約、通常の入力猶予、手動帰還・Guard・安全中断を維持。最終待機は自然終了のみに適用する。深度・原画像・AI・ダメージ式・盾は不変。設定表、制限、検査と未実行のF5手順は[m09_attack_motion_audit.md](m09_attack_motion_audit.md)。
