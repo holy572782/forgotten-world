@@ -1,0 +1,134 @@
+[
+	{
+		"approach": 0,
+		"attacks": [
+			0
+		],
+		"distance": 0.0,
+		"duration": 0.0,
+		"end_tick": 29,
+		"error": 0.0,
+		"hits": 1,
+		"name": "distance_1.3",
+		"return_count": 0,
+		"return_tick": 0,
+		"slots": 1,
+		"stock": 2
+	},
+	{
+		"approach": 15,
+		"attacks": [
+			15
+		],
+		"distance": 0.400000214576721,
+		"duration": 0.25,
+		"end_tick": 60,
+		"error": 0.000826869567390531,
+		"hits": 1,
+		"name": "distance_1.5",
+		"return_count": 1,
+		"return_tick": 44,
+		"slots": 1,
+		"stock": 2
+	},
+	{
+		"approach": 15,
+		"attacks": [
+			15
+		],
+		"distance": 1.40000009536743,
+		"duration": 0.25,
+		"end_tick": 60,
+		"error": 0.000826869567390531,
+		"hits": 1,
+		"name": "distance_2.5",
+		"return_count": 1,
+		"return_tick": 44,
+		"slots": 1,
+		"stock": 2
+	},
+	{
+		"approach": 18,
+		"attacks": [
+			18
+		],
+		"distance": 3.70000028610229,
+		"duration": 0.37000002861023,
+		"end_tick": 70,
+		"error": 0.000826869567390531,
+		"hits": 1,
+		"name": "distance_4.8",
+		"return_count": 1,
+		"return_tick": 47,
+		"slots": 1,
+		"stock": 2
+	},
+	{
+		"approach": 15,
+		"attacks": [
+			15,
+			51
+		],
+		"distance": 1.40000009536743,
+		"duration": 0.25,
+		"end_tick": 96,
+		"error": 0.000826869567390531,
+		"hits": 2,
+		"name": "combo_2",
+		"return_count": 1,
+		"return_tick": 80,
+		"slots": 2,
+		"stock": 1
+	},
+	{
+		"approach": 15,
+		"attacks": [
+			15,
+			51,
+			87
+		],
+		"distance": 1.40000009536743,
+		"duration": 0.25,
+		"end_tick": 132,
+		"error": 0.000826869567390531,
+		"hits": 3,
+		"name": "combo_3",
+		"return_count": 1,
+		"return_tick": 116,
+		"slots": 3,
+		"stock": 0
+	},
+	{
+		"approach": 15,
+		"attacks": [
+			15
+		],
+		"distance": 1.40000009536743,
+		"duration": 0.25,
+		"end_tick": 132,
+		"error": 0.000826869567390531,
+		"hits": 1,
+		"name": "lethal_1",
+		"return_count": 1,
+		"return_tick": 116,
+		"slots": 3,
+		"stock": 2
+	},
+	{
+		"approach": 15,
+		"attacks": [
+			15,
+			51
+		],
+		"distance": 1.40000009536743,
+		"duration": 0.25,
+		"end_tick": 132,
+		"error": 0.000826869567390531,
+		"hits": 2,
+		"name": "lethal_2",
+		"return_count": 1,
+		"return_tick": 116,
+		"slots": 3,
+		"stock": 1
+	}
+]

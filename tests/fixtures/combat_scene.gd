@@ -6,6 +6,9 @@ static func create() -> Node3D:
 	var combat := scene.get_node("Player/TargetDash")
 	combat.equipped_weapon = combat.equipped_weapon.duplicate()
 	combat.equipped_weapon.motion = preload("res://scripts/combat/attack_motion_settings.gd").new()
+	# Range/window are also user-tunable; keep historical regression scenarios fixed.
+	combat.equipped_weapon.melee_reach = 1.4
+	combat.equipped_weapon.combo_input_window = 0.5
 	scene.get_node("PracticeSelector").initial_mode = 0 # Legacy combat trials use stationary targets.
 	scene.get_node("TrainingEnemy").position = Vector3(-3,0,-2)
 	scene.get_node("TrainingEnemySecond").position = Vector3(-8,0,-2)

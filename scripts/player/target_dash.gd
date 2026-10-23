@@ -5,6 +5,7 @@ const Settings = preload("res://scripts/combat/target_dash_settings.gd")
 const Path = preload("res://scripts/combat/dash_path.gd")
 const Target = preload("res://scripts/combat/targetable.gd")
 const Sweep = preload("res://scripts/combat/melee_sweep.gd")
+const RETURN_POSITION_EPSILON := 0.001 # Metres; ignore numerical drift without snapping.
 enum State { Idle, Approach, Attack, Return, Guard, Recover }
 signal state_changed(next: int)
 signal hit(target: Node)
@@ -618,7 +619,9 @@ func _begin_travel(next: State, destination: Vector3, speed: float) -> void:
 		body.move_and_collide(Vector3.ZERO, false, body.safe_margin)
 		_travel_start = body.global_position
 		_destination = resolved
-	_duration = clampf(_travel_start.distance_to(_destination) / maxf(speed, 0.1), _active_motion.minimum_travel_time, _active_motion.maximum_travel_time)
+	var minimum := _active_motion.return_minimum_travel_time if next == State.Return else _active_motion.minimum_travel_time
+	var maximum := _active_motion.return_maximum_travel_time if next == State.Return else _active_motion.maximum_travel_time
+	_duration = clampf(_travel_start.distance_to(_destination) / maxf(speed, 0.1), minimum, maximum)
 	_set_state(next)
 	sprite.combat_pose = &"Approach" if next == State.Approach else &"Return"
 	sprite._process(0.0)
@@ -769,7 +772,7 @@ func _begin_return(reason: String) -> void:
 	if not _combat_cycle or state == State.Return: return
 	_interrupt_attack()
 	last_result = reason
-	if body.global_position.is_equal_approx(return_anchor):
+	if body.global_position.distance_squared_to(return_anchor) <= RETURN_POSITION_EPSILON * RETURN_POSITION_EPSILON:
 		_finish(true)
 		return
 	_begin_travel(State.Return, return_anchor, _active_motion.return_speed)

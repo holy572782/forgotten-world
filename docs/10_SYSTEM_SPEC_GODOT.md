@@ -381,3 +381,7 @@ WeaponData.attack_visualにWeaponAttackVisualDataを参照し、attack_framesと
 対象を向いたときの実命中形状を既存の命中処理と共用し、範囲内なら直接Attack、範囲外なら従来のApproachへ入る。鉄の剣はWeaponData.melee_reach1.4m、選択・連撃半径attack_range5mと分離。画像112pxは判定に使わない。SWEEPの停止距離は既存1.1mとリーチの小さい方。SINGLE_TARGETは従来の距離条件を維持する。
 近距離はApproachの最低時間と到着後待機も省略。一振り時間・比率・命中・段間・入力猶予・最終待機・消費・撃破後の無表示時間維持は共通処理を使う。return_anchorは最初の位置を維持し、そこから動いていなければReturnへ入らず通常の終了／カメラ解除／入力復帰を行う。移動済みなら従来の安全帰還。旧FREE→APPROACH固定の説明をこの範囲で更新する。
 選択・予約・継続・命中ではDashPathの地形掃引・見通し・連続した平坦足場を共用し、近くても壁・低い障害物・隙間・段差越しは拒否する。原寸カプセルと既存の接触補正を保持。新Hitbox・ダメージ経路は作らない。詳細と手動確認は[m09_in_place_attack_audit.md](m09_in_place_attack_audit.md)。
+### 帰還専用の距離比例時間（2026-10-24、ADR-024）
+
+Approachは既存Motionのapproach_speed12m/s・minimum_travel_time0.25秒・maximum_travel_time0.40秒を維持。Returnのみ安全補正後の経路距離÷return_speed（既定10m/s）をreturn_minimum_travel_time0.10秒〜return_maximum_travel_time0.35秒へ収める。新しい秒数は0.01〜2秒へ制限し、上限逆転は下限へ揃える。旧Resource・既存return_speedは互換を保持し、武器別Motionの開始時snapshotを使用する。
+最初のreturn_anchorと1mm以内なら移動・スナップなしで既存終了処理を呼ぶ。攻撃終了猶予・撃破後の予定時間・Final Attack Wait・手動帰還は変更しない。元のsmoothstep、毎tickの経路／衝突・足場安全性、Return姿勢、Guard後の残距離からの再開、入力復帰・カメラを維持。保存済みの剣リーチ2.5m・Combo Input Window0.1秒・コマ比率は変更しない。詳細は[帰還時間実装記録](m09_return_travel_audit.md)。M09ユーザーF5確認待ち。

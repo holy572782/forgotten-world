@@ -322,3 +322,7 @@ ADR-017の扇形判定・範囲・1振り1消費・連撃・予約・帰還・�
 FREE→TARGETEDの後、既存の実命中形状内ならAPPROACHを経ずATTACKへ入る。連撃の別対象・Guard後の追撃も同じ判断を使う。鉄の剣はmelee_reach1.4mのSWEEP、金色マークはattack_range5mの対象範囲で分離。範囲外は従来の速度・時間制限・経路移動で接近する。短リーチでは停止距離をそのリーチまでに収める。
 位置不変の攻撃では踏み込み時間／到着後待機と、終端のReturn空移動を省略するが、剣振り・共通phase・命中／消費・段間／入力猶予／最終待機・撃破後の無表示スロットを維持。基準点return_anchorは最初の攻撃開始位置で不変。近遠混在で移動していれば最後はその基準へ帰還する。手動帰還は未移動なら即終了、移動済みなら既存Return。
 選択から命中まで、既存の原寸カプセル掃引と5点足場検査・見通しを共用し、近距離でも地形／壁／隙間を無視しない。追加ダメージ経路・画像サイズ由来の判定は作らない。検査とF5手順は[m09_in_place_attack_audit.md](m09_in_place_attack_audit.md)。M09検証待ち、新工程なし。
+## M09追加改善：帰還時間と踏み込み時間の分離（2026-10-24、ADR-024）
+
+Returnの計画時間はclamp(安全補正後の帰還距離÷速度10m/s, 0.10秒, 0.35秒)。武器別Motionのreturn_speedと新return_minimum_travel_time／return_maximum_travel_timeを使用する。既存minimum_travel_time／maximum_travel_timeはApproach専用になり、12m/s・0.25〜0.40秒の既存動作を維持。Return開始時の距離1mm以内は移動も位置スナップも行わずFREEへ戻る。
+ATTACKからRETURNへ移る条件・Combo Input Window・Final Attack Wait・撃破後の無表示スロット・最初のreturn_anchor・手動帰還の優先は維持。補間、毎tickの安全検査／実カプセル移動、壁／足場閉塞時の安全停止、Guard割り込み／残距離での再開、Q/E・通常入力復帰・表示同期は既存処理を使用する。敵AIの帰還時間や攻撃データは変更しない。検査とF5手順は[帰還時間実装記録](m09_return_travel_audit.md)。M09ユーザー確認待ち。
