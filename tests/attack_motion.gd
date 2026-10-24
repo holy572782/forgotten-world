@@ -26,9 +26,7 @@ func _begin() -> void:
 	await _phase(combat.State.Attack)
 
 func _done(queue := false) -> void:
-	# Slow configured returns no longer have a maximum duration; keep the watchdog finite.
-	var limit := maxi(700,ceili((combat._active_weapon.attack_range/combat._active_motion.return_speed+10.0)*60.0))
-	for tick in range(limit):
+	for tick in range(700):
 		if not combat.is_busy(): break
 		if queue and target.alive() and not combat.queued: combat.request_followup(target)
 		await _ticks(1)
