@@ -619,9 +619,8 @@ func _begin_travel(next: State, destination: Vector3, speed: float) -> void:
 		body.move_and_collide(Vector3.ZERO, false, body.safe_margin)
 		_travel_start = body.global_position
 		_destination = resolved
-	var minimum := _active_motion.return_minimum_travel_time if next == State.Return else _active_motion.minimum_travel_time
-	var maximum := _active_motion.return_maximum_travel_time if next == State.Return else _active_motion.maximum_travel_time
-	_duration = clampf(_travel_start.distance_to(_destination) / maxf(speed, 0.1), minimum, maximum)
+	var seconds := _travel_start.distance_to(_destination) / maxf(speed, 0.1)
+	_duration = seconds if next == State.Return else clampf(seconds, _active_motion.minimum_travel_time, _active_motion.maximum_travel_time)
 	_set_state(next)
 	sprite.combat_pose = &"Approach" if next == State.Approach else &"Return"
 	sprite._process(0.0)
@@ -659,9 +658,10 @@ func _approach(delta: float) -> void:
 			queued_attack_target = reserved_target
 
 func _move_travel(delta: float) -> bool:
-	var fraction := clampf(_elapsed / _duration, 0.0, 1.0)
-	# Smooth acceleration/deceleration; the capsule follows the visible route.
-	var next := _travel_start.lerp(_destination, smoothstep(0.0, 1.0, fraction))
+	var fraction := clampf(_elapsed / _duration, 0.0, 1.0) if _duration > 0.0 else 1.0
+	# Approach keeps its easing; Return covers equal distances in equal physics time.
+	var progress := fraction if state == State.Return else smoothstep(0.0, 1.0, fraction)
+	var next := _travel_start.lerp(_destination, progress)
 	if not Path.clear(body, next, settings, body.global_position): return false
 	var motion := next - body.global_position
 	body.velocity = motion / maxf(delta, 0.0001)

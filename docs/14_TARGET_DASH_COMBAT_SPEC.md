@@ -326,3 +326,8 @@ FREE→TARGETEDの後、既存の実命中形状内ならAPPROACHを経ずATTACK
 
 Returnの計画時間はclamp(安全補正後の帰還距離÷速度10m/s, 0.10秒, 0.35秒)。武器別Motionのreturn_speedと新return_minimum_travel_time／return_maximum_travel_timeを使用する。既存minimum_travel_time／maximum_travel_timeはApproach専用になり、12m/s・0.25〜0.40秒の既存動作を維持。Return開始時の距離1mm以内は移動も位置スナップも行わずFREEへ戻る。
 ATTACKからRETURNへ移る条件・Combo Input Window・Final Attack Wait・撃破後の無表示スロット・最初のreturn_anchor・手動帰還の優先は維持。補間、毎tickの安全検査／実カプセル移動、壁／足場閉塞時の安全停止、Guard割り込み／残距離での再開、Q/E・通常入力復帰・表示同期は既存処理を使用する。敵AIの帰還時間や攻撃データは変更しない。検査とF5手順は[帰還時間実装記録](m09_return_travel_audit.md)。M09ユーザー確認待ち。
+
+## M09追加改善：帰還速度の一定化（2026-10-24、ADR-025）
+
+Returnは安全補正後の距離÷Return Speed（初期12m/s）を無制限に使い、共通物理時間の線形進行で移動する。時間上下限・加減速補間はReturnへ適用しない。最終区間は終点で止め、1mm以内の未移動は従来どおり省略する。旧return_minimum_travel_time／return_maximum_travel_timeは互換保存のみで非表示・不使用とし、Approachの速度・上下限・smoothstepを維持する。
+既存のreturn_anchor・毎tickの安全経路／衝突・足場検査・閉塞時の安全停止、Return姿勢・Guard再開・手動帰還・カメラ／入力復帰を使用する。攻撃終了までの待機・連撃・撃破後の予定時間・Combo Input Window・共通アニメーション・判定／ダメージ・敵AIは変更しない。ADR-024の帰還時間制限を本節で更新する。測定・手順は[一定速度帰還の実装記録](m09_constant_return_audit.md)。M09ユーザー確認待ち。

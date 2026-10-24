@@ -385,3 +385,8 @@ WeaponData.attack_visualにWeaponAttackVisualDataを参照し、attack_framesと
 
 Approachは既存Motionのapproach_speed12m/s・minimum_travel_time0.25秒・maximum_travel_time0.40秒を維持。Returnのみ安全補正後の経路距離÷return_speed（既定10m/s）をreturn_minimum_travel_time0.10秒〜return_maximum_travel_time0.35秒へ収める。新しい秒数は0.01〜2秒へ制限し、上限逆転は下限へ揃える。旧Resource・既存return_speedは互換を保持し、武器別Motionの開始時snapshotを使用する。
 最初のreturn_anchorと1mm以内なら移動・スナップなしで既存終了処理を呼ぶ。攻撃終了猶予・撃破後の予定時間・Final Attack Wait・手動帰還は変更しない。元のsmoothstep、毎tickの経路／衝突・足場安全性、Return姿勢、Guard後の残距離からの再開、入力復帰・カメラを維持。保存済みの剣リーチ2.5m・Combo Input Window0.1秒・コマ比率は変更しない。詳細は[帰還時間実装記録](m09_return_travel_audit.md)。M09ユーザーF5確認待ち。
+
+### 一定速度帰還（2026-10-24、ADR-025）
+
+Returnは経路距離÷Return Speed（仮基準12m/s）をそのまま計画時間とし、物理時間に対する線形進行で移動する。帰還には時間上下限とsmoothstepを使わない。最後の区間だけ残距離で止め、1mm以内は移動・スナップなしで終了。時間0の経路も0除算を防ぐ。旧return_minimum_travel_time／return_maximum_travel_timeは保存互換のみでInspector非表示、動作には不使用。Approachは従来の12m/s・0.25〜0.40秒とsmoothstepを維持する。
+最初のreturn_anchor、攻撃終了までの猶予・最終待機・連撃／撃破後スロット・手動帰還、毎tickの壁／足場安全性と実体衝突、Guard後の残距離での再開、Q/E・入力／カメラ解除・Return姿勢は維持。保存済みのリーチ・入力猶予・比率や敵AIは変更しない。ADR-024の時間制限は本節で更新する。仕様・測定・手順は[一定速度帰還の実装記録](m09_constant_return_audit.md)。M09ユーザーF5確認待ち。

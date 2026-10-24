@@ -5,10 +5,11 @@ extends Resource
 @export_range(0.1, 40.0) var approach_speed := 12.0
 @export_range(0.05, 2.0) var minimum_travel_time := 0.25
 @export_range(0.05, 2.0) var maximum_travel_time := 0.4
-@export_group("Return travel (metres per second; seconds)")
-@export_range(0.1, 40.0) var return_speed := 10.0
-@export_range(0.01, 2.0) var return_minimum_travel_time := 0.1
-@export_range(0.01, 2.0) var return_maximum_travel_time := 0.35
+@export_group("Return travel (metres per second)")
+@export_range(0.1, 40.0) var return_speed := 12.0
+## Legacy Resource storage only; constant-speed return ignores these limits.
+@export_storage var return_minimum_travel_time := 0.1
+@export_storage var return_maximum_travel_time := 0.35
 @export_group("Waits (seconds)")
 @export_range(0.0, 5.0) var approach_attack_delay := 0.0
 @export_range(0.0, 5.0) var final_attack_wait := 0.0
@@ -25,11 +26,9 @@ static func bounded(value: float, low: float, high: float, fallback: float) -> f
 func snapshot() -> AttackMotionSettings:
 	var result := duplicate() as AttackMotionSettings
 	result.approach_speed = bounded(approach_speed, 0.1, 40.0, 12.0)
-	result.return_speed = bounded(return_speed, 0.1, 40.0, 10.0)
+	result.return_speed = bounded(return_speed, 0.1, 40.0, 12.0)
 	result.minimum_travel_time = bounded(minimum_travel_time, 0.05, 2.0, 0.25)
 	result.maximum_travel_time = maxf(result.minimum_travel_time, bounded(maximum_travel_time, 0.05, 2.0, 0.4))
-	result.return_minimum_travel_time = bounded(return_minimum_travel_time, 0.01, 2.0, 0.1)
-	result.return_maximum_travel_time = maxf(result.return_minimum_travel_time, bounded(return_maximum_travel_time, 0.01, 2.0, 0.35))
 	result.approach_attack_delay = bounded(approach_attack_delay, 0.0, 5.0, 0.0)
 	result.final_attack_wait = bounded(final_attack_wait, 0.0, 5.0, 0.0)
 	result.hit_frame = clampi(hit_frame, 0, 63)
