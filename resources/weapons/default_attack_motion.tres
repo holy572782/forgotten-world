@@ -4,4 +4,5 @@
 
 [resource]
 script = ExtResource("1")
+return_maximum_travel_time = 0.32
 frame_time_ratios = PackedFloat32Array(0.4, 0.2, 1.5)

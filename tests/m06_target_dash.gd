@@ -96,9 +96,13 @@ func _run() -> void:
 	_click(Vector2(20, 20))
 	await _ticks(2)
 	_check(not combat.is_busy(), "HUD right click ignored")
-	_click(camera.unproject_position(target.global_position + Vector3(1.5, 0, 0)))
+	# Right ground clicks now assist within a screen cone; test an empty direction.
+	var player_screen := camera.unproject_position(player.global_position)
+	var empty_screen := player_screen - (camera.unproject_position(target.global_position)-player_screen).normalized()*80.0
+	_check(combat.pick_attack_target(empty_screen) == null, "Fixture has no valid enemy in the opposite cone")
+	_click(empty_screen)
 	await _ticks(2)
-	_check(not combat.is_busy(), "Empty ground does not start attack")
+	_check(not combat.is_busy(), "Empty direction does not start attack")
 	max_camera_step = 0.0
 	previous_camera = camera.global_position
 	var start_time := Time.get_ticks_msec()

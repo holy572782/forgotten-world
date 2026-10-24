@@ -60,6 +60,7 @@ var _return_neutral_seen := 0
 var _pending_guard := false
 var _wait_defense_release := false
 var _pending_click := false
+var _click_directional := false
 var _pending_selected_attack := false
 var _click_position := Vector2.ZERO
 var _ring: MeshInstance3D
@@ -125,13 +126,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("attack") or event.is_action_pressed("target_attack"):
 		if is_busy():
 			if event is InputEventMouseButton:
-				var candidate := pick_target(event.position)
+				var candidate := pick_attack_target(event.position) if event.button_index == MOUSE_BUTTON_RIGHT else pick_target(event.position)
 				if candidate != null: request_followup(candidate, true)
 				else: _reject("No valid click target")
 			else:
 				request_followup()
 		elif not _pending_click and not _pending_selected_attack and event is InputEventMouseButton:
 			_pending_click = true
+			_click_directional = event.button_index == MOUSE_BUTTON_RIGHT
 			_click_position = event.position
 		elif not _pending_click:
 			_pending_selected_attack = true
@@ -160,7 +162,7 @@ func physics_step(delta: float) -> void:
 		_pending_selected_attack = false
 	if _pending_click:
 		_pending_click = false
-		var selected := pick_target(_click_position)
+		var selected := pick_attack_target(_click_position) if _click_directional else pick_target(_click_position)
 		if selected != null:
 			request_attack(selected)
 	elif _pending_selected_attack and not is_busy():
@@ -400,6 +402,37 @@ func pick_target(screen_position: Vector2) -> Node3D:
 			if _candidate_valid(candidate): return candidate
 			return null
 	return null
+
+func pick_attack_target(screen_position: Vector2) -> Node3D:
+	# Preserve the existing frontmost valid direct click before offering assistance.
+	var direct := pick_target(screen_position)
+	if direct != null: return direct
+	var camera := get_viewport().get_camera_3d()
+	if camera == null or camera.is_position_behind(body.global_position): return null
+	if not screen_position.is_finite() or not get_viewport().get_visible_rect().has_point(screen_position): return null
+	# Logical foot points share a ground plane; marker/sprite offsets must not tilt aim.
+	var screen_origin := camera.unproject_position(body.global_position)
+	var click_direction := screen_position - screen_origin
+	if click_direction.is_zero_approx(): return null
+	var tolerance := deg_to_rad(MotionSettings.bounded(settings.directional_click_tolerance_degrees, 0.0, 90.0, 20.0))
+	var best: Node3D
+	var best_angle := INF
+	var best_distance := INF
+	# Reuse marker eligibility (including combo rules), then the existing distance
+	# priority and stable NodePath order for equal screen angles. Facing is irrelevant.
+	for candidate in valid_candidates():
+		if camera.is_position_behind(candidate.global_position) or not _framed(candidate): continue
+		var direction := camera.unproject_position(candidate.global_position) - screen_origin
+		if direction.is_zero_approx(): continue
+		var angle := absf(click_direction.angle_to(direction))
+		if angle > tolerance + 0.000001: continue
+		if candidate == selected_target: return candidate
+		var distance := _aim_distance(candidate)
+		if best == null or (angle < best_angle and not is_equal_approx(angle, best_angle)) or (is_equal_approx(angle, best_angle) and distance < best_distance and not is_equal_approx(distance, best_distance)):
+			best = candidate
+			best_angle = angle
+			best_distance = distance
+	return best
 
 func can_select(candidate: Node3D) -> bool:
 	if not stock.can_spend(equipped_weapon.stock_cost_per_hit): return false

@@ -385,3 +385,8 @@ WeaponData.attack_visualにWeaponAttackVisualDataを参照し、attack_framesと
 
 Approachは既存Motionのapproach_speed12m/s・minimum_travel_time0.25秒・maximum_travel_time0.40秒を維持。Returnのみ安全補正後の経路距離÷return_speed（既定10m/s）をreturn_minimum_travel_time0.10秒〜return_maximum_travel_time0.35秒へ収める。新しい秒数は0.01〜2秒へ制限し、上限逆転は下限へ揃える。旧Resource・既存return_speedは互換を保持し、武器別Motionの開始時snapshotを使用する。
 最初のreturn_anchorと1mm以内なら移動・スナップなしで既存終了処理を呼ぶ。攻撃終了猶予・撃破後の予定時間・Final Attack Wait・手動帰還は変更しない。元のsmoothstep、毎tickの経路／衝突・足場安全性、Return姿勢、Guard後の残距離からの再開、入力復帰・カメラを維持。保存済みの剣リーチ2.5m・Combo Input Window0.1秒・コマ比率は変更しない。詳細は[帰還時間実装記録](m09_return_travel_audit.md)。M09ユーザーF5確認待ち。
+
+### 右クリックの方向補助（2026-10-24、ADR-026）
+
+右クリックは既存の直接指定を優先し、直接の有効対象がなければ現在カメラで主人公足元→敵の攻撃基準点と主人公足元→クリックの画面方向を比較する。既存TargetDashSettings.directional_click_tolerance_degreesの初期半角20度（0〜90）以内から、選択中→画面角度差→既存の近距離優先→NodePath順で選ぶ。金色マークの高さ・画像offsetは方向へ使わない。候補は既存valid_candidatesと画面内条件を満たし、3Dの距離・高さ・壁／足場安全性、連撃受付とストックを維持する。
+右クリックのFREE入力は既存の物理tick受信、戦闘中は既存1個の次段予約へ渡す。左クリックの直接指定・L／J・向き自動照準・金色マーク・InputMapと攻撃／命中／移動シーケンスは変更しない。候補なしは不発。帰還は着手時の現物ADR-024とユーザー保存値を維持し、会話上の一定速度版との差は実装記録に残す。仕様・検査・手順は[方向クリック実装記録](m09_directional_click_audit.md)。M09ユーザーF5受入待ち。

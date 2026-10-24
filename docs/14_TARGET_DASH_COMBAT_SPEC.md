@@ -326,3 +326,8 @@ FREE→TARGETEDの後、既存の実命中形状内ならAPPROACHを経ずATTACK
 
 Returnの計画時間はclamp(安全補正後の帰還距離÷速度10m/s, 0.10秒, 0.35秒)。武器別Motionのreturn_speedと新return_minimum_travel_time／return_maximum_travel_timeを使用する。既存minimum_travel_time／maximum_travel_timeはApproach専用になり、12m/s・0.25〜0.40秒の既存動作を維持。Return開始時の距離1mm以内は移動も位置スナップも行わずFREEへ戻る。
 ATTACKからRETURNへ移る条件・Combo Input Window・Final Attack Wait・撃破後の無表示スロット・最初のreturn_anchor・手動帰還の優先は維持。補間、毎tickの安全検査／実カプセル移動、壁／足場閉塞時の安全停止、Guard割り込み／残距離での再開、Q/E・通常入力復帰・表示同期は既存処理を使用する。敵AIの帰還時間や攻撃データは変更しない。検査とF5手順は[帰還時間実装記録](m09_return_travel_audit.md)。M09ユーザー確認待ち。
+
+## M09追加改善：右クリック方向指定（2026-10-24、ADR-026）
+
+右クリックの第1優先は従来の最前面の有効な直接指定。該当しなければ主人公と攻撃基準点を同じカメラで画面投影し、クリック方向の左右20度以内の既存有効候補を選択する。半角はTargetDashSettingsへ保存（0〜90度）。クリック距離は使わず、敵の手前／奥の地面でも方向が合えばよい。マークの高さ・画像余白を方向へ使わない。
+優先は扇内の選択中対象→画面上の角度差→既存の距離→NodePath。扇外の選択相手は優先しない。左右マウスの既存直接指定、L／J・向き自動照準、金色マークの表示条件を維持し、右クリックだけ補助する。候補なしは不発、選択後の3D可否・命中・ストック・近距離省略／踏み込み・連撃・帰還は既存処理。攻撃中は既存1個予約の差し替え。帰還方式と保存済みMotionは変更しない。詳細は[方向クリック実装記録](m09_directional_click_audit.md)。M09ユーザーF5確認待ち、新工程なし。
