@@ -4,6 +4,7 @@ extends Node
 const Balance = preload("res://scripts/combat/combat_balance.gd")
 signal hp_changed(current: float, maximum: float)
 signal depleted(source: Node)
+signal damage_applied(amount: float, source: Node)
 @export var balance: Balance = preload("res://resources/combat_balance.tres")
 var _hp: float = 0.0
 ## Optional receiver-owned mitigation. HP validation/clamping stays here.
@@ -34,7 +35,9 @@ func _set_hp(next: float, source: Node = null) -> void:
 	if bounded == _hp:
 		return
 	var was_alive := _hp > 0.0
+	var lost := _hp - bounded
 	_hp = bounded
+	if lost > 0.0: damage_applied.emit(lost, source)
 	hp_changed.emit(_hp, max_hp)
 	if was_alive and _hp == 0.0:
 		depleted.emit(source)

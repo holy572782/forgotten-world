@@ -1,10 +1,11 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/combat/targetable.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/combat/health_component.gd" id="2"]
 [ext_resource type="Script" path="res://scripts/combat/combat_balance.gd" id="3"]
 [ext_resource type="Script" path="res://scripts/enemies/practice_enemy.gd" id="4_ai"]
 [ext_resource type="Resource" path="res://resources/enemies/melee_practice.tres" id="5_settings"]
+[ext_resource type="Script" path="res://scripts/effects/enemy_hit_feedback.gd" id="6_feedback"]
 [sub_resource type="Resource" id="Health"]
 script = ExtResource("3")
 max_hp = 40.0
@@ -41,6 +42,8 @@ balance = SubResource("Health")
 [node name="Targetable" type="Node3D" parent="."]
 script = ExtResource("1")
 click_collider_paths = Array[NodePath]([NodePath("..")])
+[node name="HitFeedback" type="Node" parent="."]
+script = ExtResource("6_feedback")
 [node name="HealthLabel" type="Label3D" parent="Targetable"]
 position = Vector3(0, 2.55, 0)
 billboard = 1

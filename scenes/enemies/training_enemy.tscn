@@ -1,8 +1,9 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/combat/targetable.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/combat/health_component.gd" id="2"]
 [ext_resource type="Script" path="res://scripts/combat/combat_balance.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/effects/enemy_hit_feedback.gd" id="4_feedback"]
 [sub_resource type="Resource" id="Health"]
 script = ExtResource("3")
 max_hp = 40.0
@@ -37,6 +38,8 @@ balance = SubResource("Health")
 [node name="Targetable" type="Node3D" parent="."]
 script = ExtResource("1")
 click_collider_paths = Array[NodePath]([NodePath("..")])
+[node name="HitFeedback" type="Node" parent="."]
+script = ExtResource("4_feedback")
 [node name="HealthLabel" type="Label3D" parent="Targetable"]
 position = Vector3(0, 2.55, 0)
 billboard = 1
