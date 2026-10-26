@@ -15,3 +15,8 @@ extends Resource
 ## Combat intent hysteresis; normal locomotion keeps the InputMap deadzone.
 @export_range(0.01, 1.0) var combat_direction_press_threshold: float = 0.35
 @export_range(0.0, 0.99) var combat_direction_release_threshold: float = 0.20
+
+@export_group("Jump sound")
+@export var jump_sound: AudioStream
+@export_range(-60.0, 0.0) var jump_volume_db := -12.0
+@export_range(0.5, 2.0, 0.01) var jump_pitch_scale := 1.0

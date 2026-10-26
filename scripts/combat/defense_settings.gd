@@ -8,3 +8,8 @@ extends Resource
 @export var block_success_sound: AudioStream
 @export_range(-60.0, 0.0) var block_success_volume_db := -12.0
 @export_range(0.5, 2.0, 0.01) var block_success_pitch_scale := 1.0
+
+@export_group("Guard start sound")
+@export var guard_start_sound: AudioStream
+@export_range(-60.0, 0.0) var guard_start_volume_db := -12.0
+@export_range(0.5, 2.0, 0.01) var guard_start_pitch_scale := 1.5

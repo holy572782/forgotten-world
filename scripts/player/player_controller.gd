@@ -2,6 +2,7 @@ extends CharacterBody3D
 ## Locomotion and jumping. Body origin is the contact point beneath the capsule.
 
 const MovementSettings = preload("res://scripts/player/player_movement.gd")
+signal jump_started
 
 @export var movement: MovementSettings = preload("res://resources/player_movement.tres")
 @export var movement_camera: Camera3D
@@ -79,6 +80,7 @@ func _start_jump() -> void:
 	_jump_consumed = true
 	_coyote_remaining = 0.0
 	_buffer_remaining = 0.0
+	jump_started.emit()
 
 func _apply_gravity(delta: float, grounded: bool) -> void:
 	if grounded and not _jump_consumed:

@@ -18,6 +18,8 @@
 > **M06実装依頼による更新（2026-10-18）**: 今回は対象選択・踏み込み・単発命中・攻撃終了直後の自動帰還を実装。本文の「M06でストックへ移行」は今回の明示指示でM07へ延期し、M05ゲージ・HP・HUDを保持する。ストック／コンボ／防御／ステップは未実装。M06の実装制約・操作・検証はREADME末尾とDEVELOPMENT_STATUSの最新ログを参照。以下の旧工程記述／原文はこの注記を優先して読む。
 # 基礎ゲームシステム詳細仕様書 v0.3.0
 
+> **行動開始音（2026-10-26、ADR-031）**：PlayerMovementのJump1は実_start_jumpの確定後に1回。Defense SettingsのEquip1はGuard以外→Guardの実遷移時に1回。初期ピッチ1.0／1.5、音量と独立保存・交換可能、既存AudioStreamPlayerを使用。入力だけ／保持／無効操作／通常着地／解除では鳴らさず、既存Sword2は実防御成功専用を維持する。物理と戦闘の条件・数値は変更しない。[設定・検査・F5手順](m09_action_audio_audit.md)。
+
 ### M09追加改善：戦闘効果音・被弾演出（2026-10-26、ADR-029）
 
 音声更新（ADR-030）：現在は風切りEvasion1／命中Slash1／防御成功Sword2。武器FeedbackのSwing／Hit Pitch Scale、Defense SettingsのBlock Success Sound／Volume Db／Pitch Scaleを保存できる。3ピッチは1.0・0.5〜2.0・刻み0.01で既存AudioStreamPlayerへ反映する。防御成功は既存の正面Guard判定成立時のみ通知し、入力や姿勢だけでは鳴らさない。防御性能・攻撃時間・flash／sparkは維持。詳細は[戦闘演出実装記録](m09_combat_feedback_audit.md)。

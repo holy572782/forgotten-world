@@ -6,6 +6,14 @@
 
 # 08 意思決定ログ（ADR簡易版）
 
+## ADR-031（2026-10-26）実ジャンプ・防御開始のSE
+**状態：M09追加改善として採用、F5／聴感確認待ち。**
+
+- 実在するユーザー提供Jump1／Equip1を選び、無加工コピーしたOggをジャンプ／防御開始に使用する。PlayerMovementへJump Sound／Volume Db／Pitch Scale、Defense SettingsへGuard Start Sound／Volume Db／Pitch Scaleを追加する。音量初期-12dB、ピッチはJump1＝1.0・Equip1＝1.5、範囲0.5〜2.0・刻み0.01。音声は交換可能、nullで無効化できる。
+- PlayerControllerの既存_start_jumpが初速と受付状態を確定した後に通知を追加し、既存CombatFeedbackで再生する。空中の無効入力・長押し・通常着地・踏み込み用Jump姿勢では鳴らさない。コヨーテ／着地バッファで実際に開始する新しいジャンプも同じ通知を使う。物理・入力条件は維持する。
+- 防御開始は既存state_changedを観測し、Guard以外→Guardへの実遷移に1回だけEquip1を再生する。右／Iの長押し・重複保持、無効入力、解除、UI入力だけでは鳴らさない。Sword2は既存guard_succeeded専用のままで、成功時にEquip1を再実行しない。
+- 再生は同じCombatFeedback内のAudioStreamPlayerと既存pitch_scaleを利用し、新しい入力／音声管理システムは作らない。防御・攻撃・移動／帰還・敵AI・ダメージ・既存演出とバランスを維持する。M09検証待ち、新工程なし。素材・設定・検査・F5手順は[行動開始音実装記録](m09_action_audio_audit.md)。
+
 ## ADR-030（2026-10-26）SEの正式割当と独立したピッチ設定
 **状態：M09追加改善として採用、F5での聴感確認待ち。**
 

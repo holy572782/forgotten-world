@@ -1,6 +1,8 @@
-[gd_resource type="Resource" script_class="" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player_movement.gd" id="1_settings"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/mz_jump1.ogg" id="2_sound"]
 
 [resource]
 script = ExtResource("1_settings")
+jump_sound = ExtResource("2_sound")

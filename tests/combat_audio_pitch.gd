@@ -88,7 +88,7 @@ func _run() -> void:
 		main.add_child(source)
 		_press("guard",true)
 		await _ticks(3)
-		_check(combat.state == combat.State.Guard and blocks.is_empty(),"Guard pose/holding input alone is silent")
+		_check(combat.state == combat.State.Guard and blocks.is_empty(),"Guard pose/holding input alone never plays block success")
 		for pitch in [0.8,1.2]:
 			combat.defense.block_success_pitch_scale = pitch
 			combat.defense.block_success_volume_db = -19

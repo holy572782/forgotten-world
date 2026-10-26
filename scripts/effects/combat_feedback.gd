@@ -6,12 +6,17 @@ var sprite: AnimatedSprite3D
 var swing_audio: AudioStreamPlayer
 var hit_audio: AudioStreamPlayer
 var block_audio: AudioStreamPlayer
+var jump_audio: AudioStreamPlayer
+var guard_start_audio: AudioStreamPlayer
+var _last_combat_state := 0
 var config: Resource
 var observed_id := -1
 var swing_played := false
 signal swing_presented(attack_id: int)
 signal impact_presented(receiver: Node)
 signal block_presented(source: Node)
+signal jump_presented
+signal guard_start_presented
 
 func _ready() -> void:
 	combat = get_parent().get_node("TargetDash")
@@ -27,6 +32,15 @@ func _ready() -> void:
 	block_audio.name = "BlockSuccessAudio"
 	block_audio.max_polyphony = 4
 	add_child(block_audio)
+	jump_audio = AudioStreamPlayer.new()
+	jump_audio.name = "JumpAudio"
+	add_child(jump_audio)
+	guard_start_audio = AudioStreamPlayer.new()
+	guard_start_audio.name = "GuardStartAudio"
+	add_child(guard_start_audio)
+	_last_combat_state = combat.state
+	get_parent().jump_started.connect(_jump_started)
+	combat.state_changed.connect(_combat_state_changed)
 	combat.attack_accepted.connect(_strike)
 	combat.guard_succeeded.connect(_block_success)
 	sprite.frame_changed.connect(_sample_swing)
@@ -86,3 +100,24 @@ func _block_success(source: Node) -> void:
 		block_audio.pitch_scale = Motion.bounded(settings.block_success_pitch_scale,0.5,2.0,1.0)
 		block_audio.play()
 	block_presented.emit(source)
+
+func _jump_started() -> void:
+	var settings: Resource = get_parent().movement
+	if settings.jump_sound != null:
+		jump_audio.stream = settings.jump_sound
+		jump_audio.volume_db = Motion.bounded(settings.jump_volume_db,-60.0,0.0,-12.0)
+		jump_audio.pitch_scale = Motion.bounded(settings.jump_pitch_scale,0.5,2.0,1.0)
+		jump_audio.play()
+	jump_presented.emit()
+
+func _combat_state_changed(next: int) -> void:
+	var entering_guard: bool = next == combat.State.Guard and _last_combat_state != combat.State.Guard
+	_last_combat_state = next
+	if not entering_guard: return
+	var settings: Resource = combat.defense
+	if settings.guard_start_sound != null:
+		guard_start_audio.stream = settings.guard_start_sound
+		guard_start_audio.volume_db = Motion.bounded(settings.guard_start_volume_db,-60.0,0.0,-12.0)
+		guard_start_audio.pitch_scale = Motion.bounded(settings.guard_start_pitch_scale,0.5,2.0,1.5)
+		guard_start_audio.play()
+	guard_start_presented.emit()
