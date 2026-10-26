@@ -17,7 +17,7 @@ func _persist() -> void:
 	if "--reload" in OS.get_cmdline_user_args():
 		var saved: Resource = load(path)
 		_check(saved != null and saved.swing_volume_db == -18 and saved.flash_duration == 0.2,"Feedback settings persist across processes")
-		_check(saved.hit_sound is AudioStreamWAV and saved.spark_scene is PackedScene,"Replacement streams and spark scene survive reload")
+		_check(saved.hit_sound is AudioStream and saved.spark_scene is PackedScene,"Replacement streams and spark scene survive reload")
 		return
 	var saved: Resource = load("res://resources/combat_feedback.tres").snapshot()
 	saved.swing_volume_db = -18

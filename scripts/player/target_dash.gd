@@ -11,6 +11,7 @@ signal state_changed(next: int)
 signal hit(target: Node)
 signal attack_accepted(attack_id: int, combo: int)
 signal attack_rejected(reason: String)
+signal guard_succeeded(source: Node)
 @export var settings: Settings = preload("res://resources/target_dash_settings.tres")
 @export var defense: Resource = preload("res://resources/defense_settings.tres")
 @export var camera_rig: Node3D
@@ -303,6 +304,7 @@ func filter_damage(amount: float, source: Node) -> float:
 	if direction.is_zero_approx(): return amount
 	var facing := Vector3(body.facing_world.x, 0.0, body.facing_world.z).normalized()
 	if facing.dot(direction.normalized()) >= cos(deg_to_rad(defense.guard_half_angle_degrees)) - 0.000001:
+		guard_succeeded.emit(source)
 		return amount * defense.guard_damage_multiplier
 	return amount
 

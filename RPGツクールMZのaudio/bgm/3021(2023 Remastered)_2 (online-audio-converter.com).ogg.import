@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://d3oqgail0lklg"
+path="res://.godot/imported/3021(2023 Remastered)_2 (online-audio-converter.com).ogg-4910bf8ffaa29d5b96328237d651b5a5.oggvorbisstr"
+
+[deps]
+
+source_file="res://RPGツクールMZのaudio/bgm/3021(2023 Remastered)_2 (online-audio-converter.com).ogg"
+dest_files=["res://.godot/imported/3021(2023 Remastered)_2 (online-audio-converter.com).ogg-4910bf8ffaa29d5b96328237d651b5a5.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

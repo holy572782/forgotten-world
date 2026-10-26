@@ -2,7 +2,38 @@
 
 状態：M09追加改善。自動検査結果は下記へ集約し、音の聴感・見た目・F5操作はユーザー確認待ち。M08試作範囲完了、M09検証待ち、M10別指示待ちを維持する。
 
-## 開始時の確認と変更範囲
+## 現在の音声割当とピッチ（2026-10-26、ADR-030）
+
+初回ADR-029の合成WAVから、ユーザー指定の3音へ変更。今回の開始HEADは `17ef4c01bc0e35c9bb76f1cacc25c344abba125e`。既存の未追跡 `RPGツクールMZのaudio/` があり、音声3本を確認・無加工コピーした。元の音声と以前の合成WAVは保持し、新しい音声管理機構は追加しない。
+
+| 用途 | 元の実在ファイル | 現在の再生ファイル |
+|---|---|---|
+| 片手剣の風切り | RPGツクールMZのaudio/se/Evasion1.ogg | assets/audio/sfx/mz_evasion1.ogg |
+| 片手剣の実命中 | RPGツクールMZのaudio/se/Slash1.ogg | assets/audio/sfx/mz_slash1.ogg |
+| 防御成功 | RPGツクールMZのaudio/se/Sword2.ogg | assets/audio/sfx/mz_sword2.ogg |
+
+コピー前後のSHA256はそれぞれ `d6f1e181f2f9bdec9cd45c929403beeb95a2b826f75b324a5835cee9fb36789f`、`b6316b49764cd325307659284cd6c15171ddf311a3fc32827b1899af112421e2`、`949407c00fa6115e5db869923152940a562ed0b6717d39c980f70b5153451591` で一致する。3音ともループなし。
+
+風切り・命中の再生位置は既存処理のまま。防御成功音は未実装だったため、既存filter_damageのGuard＋攻撃元の有効な方向・正面角度判定が成立した分岐にguard_succeeded通知だけを追加し、CombatFeedback内のAudioStreamPlayerで再生する。右／Iを押すだけでは鳴らず、実被弾で正面Guardが成立した場合に1回鳴る。0まで軽減する場合も成立音は鳴る。背面・不明・同位置の攻撃元、0／不正ダメージ、Guard外では鳴らない。ダメージ計算・防御性能は変更しない。
+
+Swing Pitch Scale／Hit Pitch Scaleは武器Feedback、Block Success Sound／Volume Db／Pitch Scaleは既存Defense Settingsに追加。すべてのピッチは初期1.0、0.5〜2.0、刻み0.01。既存AudioStreamPlayerのpitch_scaleを再生直前に設定し、音量とは独立する。ピッチは音の高さと再生速度を変えるが、攻撃・連撃・帰還・フラッシュ／火花の時間は変えない。
+
+今回の変更ファイル：上記Ogg3本と.import、scripts/combat/combat_feedback_settings.gd／defense_settings.gd、resources/combat_feedback.tres／defense_settings.tres、scripts/effects/combat_feedback.gd、scripts/player/target_dash.gd（通知2行のみ）、tests/combat_audio_pitch.gdとUID、tests/combat_feedback.gd（保存時の型確認をWAV専用からAudioStreamへ変更）、08／10／12／14・README・DEVELOPMENT_STATUS・ASSET_REGISTER・本書。
+
+検査：tests/combat_audio_pitch.gdを実描画60／30上限と別プロセス--reloadで実行し、正しい3音の再生・3連撃・各ピッチ0.8／1.2・音量独立・防御姿勢のみの無音・正面／背面／不明／完全軽減・Inspectorの範囲と保存を確認した。**8種類11条件すべてPASS・終了0**。新検査は実描画60／30で259／164 assertions、再読込4。既存combat_feedbackは633／再読込2、M00入力・M07連撃・M08防御・方向クリック1470・敵戦闘56・実起動もPASS。初回の結果は下記ADR-029の履歴として保持する。
+
+```powershell
+$godotExe = 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe'
+& $godotExe --path . --script tests/combat_audio_pitch.gd
+& $godotExe --path . --script tests/combat_audio_pitch.gd -- --fps30
+& $godotExe --headless --path . --script tests/combat_audio_pitch.gd -- --reload
+```
+
+関連検査はcombat_feedback（通常／--reload）、m00_input_map、m07_chain、m08_defense、directional_click、m09_enemy_combat、m09_startupを同様の--scriptで実行。import終了0、採用ログにSCRIPT ERROR／Parse Error／SHADER ERRORなし。環境のログ・証明書・エディター設定保存ERRORは区別する。ログ・集計はGit除外の `.godot/m09_audio_pitch_*`。静的照合で、TargetDashは成立通知2行のみ、InputMap・HP・Motion・シーン・武器数値・敵AI・フラッシュ／火花・fixtureはHEAD差分なし。git diff --check合格。検証用Godotは終了済み。
+
+F5：F8で停止→Inspectorで変更して保存→F5。左／Jで風切りEvasion1と実命中Slash1、3連撃を確認する。「静止敵」で右／Iを保持してもSword2は鳴らず、「近接敵」の正面攻撃を実際に防いだときだけ鳴ることを確認。各ピッチを他は1.0のまま個別に0.8→1.2へ変更し、低く遅い音→高く速い音を比較する。Resourceを保存しGodotを再起動して値が残ることを確認し、好みの値へ戻す。ユーザーの聴感とF5受入は待ち。新工程・自動commit／pushなし。
+
+## 開始時の確認と変更範囲（ADR-029の履歴）
 
 main、HEAD `c0766cc4ba6b05a06002008dccf798204df4eed3`、作業ツリーに変更なし。AGENTS、進捗・08／10／11／12／14、既存武器・タイムライン・斬撃・HP・敵・描画を照合した。既存の音声再生システムはなく、敵は画像ではなく仮カプセルMesh。今回はその見た目・AI・命中処理を維持して演出を足す。
 
@@ -15,7 +46,7 @@ main、HEAD `c0766cc4ba6b05a06002008dccf798204df4eed3`、作業ツリーに変�
 
 TargetDash、AttackHitbox相当の既存命中形状、ダメージ式、攻撃／連撃／撃破後待機／帰還の各処理には変更なし。既存の左攻撃・右防御・J／I／L・Q/E・武器Motion・斬撃は共用する。画面揺れ・ヒットストップ・ノックバック・バランス調整は追加しない。
 
-## 仮音声と制作方法
+## 初回の仮音声と制作方法（ADR-029の履歴・現在は割当なし）
 
 - `assets/audio/sfx/sword_swing.wav`：0.16秒、mono、44.1kHz／PCM16。ピーク0.65、RMS約0.14231、SHA256 `354b276f8886e568470121beac7882dbaee79191ff6fdd12255abe9e1dfaee8b`。
 - `assets/audio/sfx/sword_hit.wav`：0.12秒、mono、44.1kHz／PCM16。ピーク0.70、RMS約0.10423、SHA256 `29c743c2c79b86ce51ca0bd58e32d5756d8dae9a6564f53a3cc8902dfb690321`。
@@ -27,11 +58,18 @@ TargetDash、AttackHitbox相当の既存命中形状、ダメージ式、攻撃�
 
 `main → Player → TargetDash → Equipped Weapon → Feedback`。FileSystemの `resources/combat_feedback.tres` を開いても同じ設定。共有設定を武器別に変えるときはMake Uniqueまたは別名Resourceとして保存して、その武器のFeedbackへ割り当てる。
 
+防御は `main → Player → TargetDash → Defense → Block success sound` または `resources/defense_settings.tres`。音量・ピッチを別々に変更してResourceを保存する。いずれも実行中のRemoteだけの変更ではなく、停止中のLocal／FileSystem側で保存する。
+
 | プロパティ | 初期値 | 単位・範囲 |
 |---|---|---|
-| Swing Sound / Hit Sound | 同梱WAV | AudioStream。正式な音声へ差し替え、nullでその音を無効化 |
+| Swing Sound / Hit Sound | Evasion1 / Slash1 | AudioStream。nullでその音を無効化 |
 | Swing Volume Db | -9 | dB、-60〜0 |
+| Swing Pitch Scale | 1.0 | 0.5〜2.0、刻み0.01 |
 | Hit Volume Db | -12 | dB、-60〜0 |
+| Hit Pitch Scale | 1.0 | 0.5〜2.0、刻み0.01 |
+| Block Success Sound | Sword2 | Defense SettingsのAudioStream。nullで無効化 |
+| Block Success Volume Db | -12 | dB、-60〜0 |
+| Block Success Pitch Scale | 1.0 | 0.5〜2.0、刻み0.01 |
 | Swing Frame | 1 | 0始まりのコマ番号、0〜63。既定1は2コマ目 |
 | Swing Frame Percent | 0 | 選んだコマ内の％、0〜100 |
 | Flash Duration | 0.10 | 秒、0.01〜1 |

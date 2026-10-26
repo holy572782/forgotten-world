@@ -5,11 +5,13 @@ var combat: Node
 var sprite: AnimatedSprite3D
 var swing_audio: AudioStreamPlayer
 var hit_audio: AudioStreamPlayer
+var block_audio: AudioStreamPlayer
 var config: Resource
 var observed_id := -1
 var swing_played := false
 signal swing_presented(attack_id: int)
 signal impact_presented(receiver: Node)
+signal block_presented(source: Node)
 
 func _ready() -> void:
 	combat = get_parent().get_node("TargetDash")
@@ -21,7 +23,12 @@ func _ready() -> void:
 	hit_audio.name = "HitAudio"
 	hit_audio.max_polyphony = 4
 	add_child(hit_audio)
+	block_audio = AudioStreamPlayer.new()
+	block_audio.name = "BlockSuccessAudio"
+	block_audio.max_polyphony = 4
+	add_child(block_audio)
 	combat.attack_accepted.connect(_strike)
+	combat.guard_succeeded.connect(_block_success)
 	sprite.frame_changed.connect(_sample_swing)
 	sprite.attack_completed.connect(_sample_swing)
 	process_priority = 15
@@ -46,6 +53,7 @@ func _sample_swing() -> void:
 	if config.swing_sound != null:
 		swing_audio.stream = config.swing_sound
 		swing_audio.volume_db = config.swing_volume_db
+		swing_audio.pitch_scale = config.swing_pitch_scale
 		swing_audio.play()
 	swing_presented.emit(observed_id)
 
@@ -58,6 +66,7 @@ func confirmed_hit(receiver: Node, settings: Resource) -> void:
 	if settings.hit_sound != null:
 		if hit_audio.stream != settings.hit_sound: hit_audio.stream = settings.hit_sound
 		hit_audio.volume_db = settings.hit_volume_db
+		hit_audio.pitch_scale = settings.hit_pitch_scale
 		hit_audio.play()
 	if settings.spark_scene != null and settings.spark_count > 0:
 		var burst: Node = settings.spark_scene.instantiate()
@@ -68,3 +77,12 @@ func confirmed_hit(receiver: Node, settings: Resource) -> void:
 		else:
 			burst.free()
 	impact_presented.emit(receiver)
+
+func _block_success(source: Node) -> void:
+	var settings: Resource = combat.defense
+	if settings.block_success_sound != null:
+		if block_audio.stream != settings.block_success_sound: block_audio.stream = settings.block_success_sound
+		block_audio.volume_db = Motion.bounded(settings.block_success_volume_db,-60.0,0.0,-12.0)
+		block_audio.pitch_scale = Motion.bounded(settings.block_success_pitch_scale,0.5,2.0,1.0)
+		block_audio.play()
+	block_presented.emit(source)

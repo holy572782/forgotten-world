@@ -3,8 +3,10 @@ extends Resource
 @export_group("Sound")
 @export var swing_sound: AudioStream
 @export_range(-60.0, 0.0) var swing_volume_db := -9.0
+@export_range(0.5, 2.0, 0.01) var swing_pitch_scale := 1.0
 @export var hit_sound: AudioStream
 @export_range(-60.0, 0.0) var hit_volume_db := -12.0
+@export_range(0.5, 2.0, 0.01) var hit_pitch_scale := 1.0
 ## Zero-based body frame and percentage within it; uses the weighted swing timeline.
 @export_range(0, 63) var swing_frame := 1
 @export_range(0.0, 100.0) var swing_frame_percent := 0.0
@@ -24,6 +26,7 @@ func snapshot() -> Resource:
 	var copy := duplicate()
 	var bounds := {
 		"swing_volume_db": Vector3(-60,0,-9), "hit_volume_db": Vector3(-60,0,-12),
+		"swing_pitch_scale": Vector3(0.5,2,1), "hit_pitch_scale": Vector3(0.5,2,1),
 		"swing_frame_percent": Vector3(0,100,0), "flash_duration": Vector3(0.01,1,0.1),
 		"flash_strength": Vector3(0,1,0.55), "spark_duration": Vector3(0.01,1,0.14),
 		"spark_size_pixels": Vector3(1,4,2), "spark_spread": Vector3(0,0.5,0.18),

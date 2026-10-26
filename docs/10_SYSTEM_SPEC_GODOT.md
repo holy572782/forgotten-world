@@ -20,6 +20,8 @@
 
 ### M09追加改善：戦闘効果音・被弾演出（2026-10-26、ADR-029）
 
+音声更新（ADR-030）：現在は風切りEvasion1／命中Slash1／防御成功Sword2。武器FeedbackのSwing／Hit Pitch Scale、Defense SettingsのBlock Success Sound／Volume Db／Pitch Scaleを保存できる。3ピッチは1.0・0.5〜2.0・刻み0.01で既存AudioStreamPlayerへ反映する。防御成功は既存の正面Guard判定成立時のみ通知し、入力や姿勢だけでは鳴らさない。防御性能・攻撃時間・flash／sparkは維持。詳細は[戦闘演出実装記録](m09_combat_feedback_audit.md)。
+
 WeaponData.feedbackに表示専用の設定Resourceを追加する。風切りは既存の加重コマ進行で剣を振る位置をサンプルし、1振り1回。命中音・敵のフラッシュ・小さな火花はHealthComponentの実HP減少通知damage_appliedで開始する。既存hp_changed／depleted、命中・ダメージ計算・入力・Motion・斬撃・踏み込み／連撃／帰還・敵AIは維持する。0軽減・不成立・対象喪失時の無表示スロットに命中演出を出さない。
 音声は同梱のオリジナル短音WAV、フラッシュは既存材質へ一時overlay、火花は画像不要の四角形。通常深度を保持して短時間で復元／解放する。武器別と敵側の上書き、音声・火花シーンの差し替えに対応。既定値・Inspector・検査・F5手順は[戦闘演出実装記録](m09_combat_feedback_audit.md)。ユーザーの聴感・見た目は未受入、M09検証待ち。
 更新: 2026-10-17 / 対象: Godot 4.x 安定版（導入時に具体的なバージョンを固定）

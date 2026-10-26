@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bpslp3yimjya0"
+path="res://.godot/imported/2021.10.14_3 (audio-extractor.net).ogg-6d16582a1281eeefccc519c30bf94bea.oggvorbisstr"
+
+[deps]
+
+source_file="res://RPGツクールMZのaudio/bgm/2021.10.14_3 (audio-extractor.net).ogg"
+dest_files=["res://.godot/imported/2021.10.14_3 (audio-extractor.net).ogg-6d16582a1281eeefccc519c30bf94bea.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
