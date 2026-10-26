@@ -1,5 +1,23 @@
 # zouhyou_attack 4方向素材（2026-10-26）
 
+## 踏み込み姿勢への追加修正（同日）
+
+ユーザー追加指示「踏み込んでいるようにしてほしい」により、前傾した上体と大きく開いた前後の脚を持つ別版を作成。初回版は変更せず保持。
+
+- 編集元：`assets/source/enemies/zouhyou_attack_lunge.aseprite`。
+- 書出し：`assets/export/enemies/zouhyou_attack_lunge/zouhyou_attack_lunge.png`と同フォルダーの下／左／右／上の個別PNG。
+- Lua：`tools/aseprite/create_zouhyou_attack_lunge.lua`。初回`.aseprite`を入力とし、頭・肩・腰の元の細部を整数座標でずらして前傾を表現。画像の回転・補間・縮小なし。追加する脚／足は3×3ブロックと元のパレットのみ。
+- 足先の余白確保のため1枠を48→60px、シートを144×192→180×240に拡張。キャラクターのピクセル倍率は変更なし。行順は下／左／右／上、3列は同じ姿勢を反復。新しい攻撃アニメーションではない。
+- レイヤーは`lunge_original_details`、`lunge_legs_3x3`、非表示の`previous_version_reference`。元版を比較・再編集可能。
+- Aseprite1.3.18.6で作成後、別バッチで保存済みファイルを再読込。3レイヤー／表示状態、合成PNG一致、非表示の元版参照一致、左右の正確な反転、全12枠の反復、新規脚の3×3単位を確認PASS。生成時に元パーツの枠外切断がないことも検査。拡大4方向画像を目視。入力原本2枚のSHA256は上記記録と同じ。
+- ユーザーによる姿勢の受入、GUIでの確認、Godot導入・F5は未実行。ゲームへの接続・M09の進捗・戦闘仕様は変更なし。commit／push未実行。
+
+再現時は既存成果を上書きしない別名を指定する。
+
+```powershell
+& 'C:\Program Files (x86)\Steam\steamapps\common\Aseprite\Aseprite.exe' --batch --script-param 'output=D:/Game/forgotten-world/.godot/zouhyou_art/lunge_review.aseprite' --script-param 'export_dir=D:/Game/forgotten-world/.godot/zouhyou_art/lunge_review_export' --script 'tools/aseprite/create_zouhyou_attack_lunge.lua'
+```
+
 目的はユーザーがAsepriteで開いていた`$zouhyou_attack_left.png`の上下左右の攻撃姿勢の作成。ゲームへの導入、敵AI・戦闘・マイルストーンの変更は対象外。Issue番号の指定なし。開始時のgit statusはクリーン。
 
 ## 元画像とユーザー指定
