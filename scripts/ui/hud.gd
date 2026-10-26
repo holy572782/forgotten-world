@@ -34,7 +34,7 @@ func _ignore_mouse(node: Node) -> void:
 		_ignore_mouse(child)
 
 func _panel_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and (event.is_action("attack") or event.is_action("target_attack")):
+	if event is InputEventMouseButton and (event.is_action("attack") or event.is_action("guard")):
 		panel.accept_event()
 
 func _layout_panel() -> void:

@@ -61,4 +61,4 @@ func select_mode(next: int) -> void:
 		active_enemy.player = player
 		active_enemy.position = Vector3(-2, 0, -2)
 		main.add_child(active_enemy)
-	status.text = ["静止敵：連撃の確認用（攻撃しません）", "近接敵：予兆を見て I 防御・方向入力で帰還／再クリックでやり直し", "遠距離敵：遅い弾を移動で回避／再クリックでやり直し"][mode]
+	status.text = ["静止敵：左クリック攻撃・連撃の確認用（敵は攻撃しません）", "近接敵：左クリック攻撃・右クリック／I 防御・方向入力で帰還", "遠距離敵：左クリック攻撃・右クリック／I 防御・移動で弾を回避"][mode]

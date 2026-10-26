@@ -46,7 +46,7 @@ func _wait_idle() -> void:
 		if not combat.is_busy(): return
 	_check(false, "State timeout")
 
-func _click(position: Vector2, button: int = MOUSE_BUTTON_RIGHT) -> void:
+func _click(position: Vector2, button: int = MOUSE_BUTTON_LEFT) -> void:
 	var event := InputEventMouseButton.new()
 	event.button_index = button
 	event.position = position
@@ -95,8 +95,8 @@ func _run() -> void:
 	_check(combat.pick_target(camera.unproject_position(target.marker.global_position)) == target, "Ray selects visible marker")
 	_click(Vector2(20, 20))
 	await _ticks(2)
-	_check(not combat.is_busy(), "HUD right click ignored")
-	# Right ground clicks now assist within a screen cone; test an empty direction.
+	_check(not combat.is_busy(), "HUD attack click ignored")
+	# Left ground clicks assist within a screen cone; test an empty direction.
 	var player_screen := camera.unproject_position(player.global_position)
 	var empty_screen := player_screen - (camera.unproject_position(target.global_position)-player_screen).normalized()*80.0
 	_check(combat.pick_attack_target(empty_screen) == null, "Fixture has no valid enemy in the opposite cone")
@@ -109,7 +109,7 @@ func _run() -> void:
 	_click(camera.unproject_position(target.marker.global_position))
 	await _ticks(3)
 	print("Click screen=", camera.unproject_position(target.marker.global_position), " viewport=", root.size, " state=", combat.state, " sprite=", sprite.state, " pending=", combat._pending_click)
-	_check(combat.state == combat.State.Approach and sprite.state == &"Approach", "Right click starts approach")
+	_check(combat.state == combat.State.Approach and sprite.state == &"Approach", "Left click starts approach")
 	_check(sprite.sprite_frames.get_frame_texture(sprite.animation, sprite.frame).atlas.resource_path.ends_with("player_jump.png"), "Approach jump image")
 	_check(player.global_position.distance_to(origin) > 0.01 and player.global_position.distance_to(origin) < 3.0, "Visible intermediate position")
 	for index in range(120):

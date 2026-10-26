@@ -58,9 +58,9 @@ var _return_input_armed := false
 var _return_press_seen := 0
 var _return_neutral_seen := 0
 var _pending_guard := false
+var _mouse_guard_held := false
 var _wait_defense_release := false
 var _pending_click := false
-var _click_directional := false
 var _pending_selected_attack := false
 var _click_position := Vector2.ZERO
 var _ring: MeshInstance3D
@@ -115,25 +115,30 @@ func _update_range_guides() -> void:
 func is_busy() -> bool:
 	return state != State.Idle
 
+func _input(event: InputEvent) -> void:
+	# Releases must reach the input adapter even over UI that consumes the event.
+	if event is InputEventMouseButton and event.is_action_released("guard"):
+		_mouse_guard_held = false
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_echo(): return
 	if event.is_action_pressed("guard"):
+		if event is InputEventMouseButton: _mouse_guard_held = true
 		_pending_guard = true
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("lock_on"):
 		cycle_target()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("attack") or event.is_action_pressed("target_attack"):
+	elif event.is_action_pressed("attack"):
 		if is_busy():
 			if event is InputEventMouseButton:
-				var candidate := pick_attack_target(event.position) if event.button_index == MOUSE_BUTTON_RIGHT else pick_target(event.position)
+				var candidate := pick_attack_target(event.position)
 				if candidate != null: request_followup(candidate, true)
 				else: _reject("No valid click target")
 			else:
 				request_followup()
 		elif not _pending_click and not _pending_selected_attack and event is InputEventMouseButton:
 			_pending_click = true
-			_click_directional = event.button_index == MOUSE_BUTTON_RIGHT
 			_click_position = event.position
 		elif not _pending_click:
 			_pending_selected_attack = true
@@ -162,7 +167,7 @@ func physics_step(delta: float) -> void:
 		_pending_selected_attack = false
 	if _pending_click:
 		_pending_click = false
-		var selected := pick_attack_target(_click_position) if _click_directional else pick_target(_click_position)
+		var selected := pick_attack_target(_click_position)
 		if selected != null:
 			request_attack(selected)
 	elif _pending_selected_attack and not is_busy():
@@ -192,8 +197,28 @@ func _direction_return_requested() -> bool:
 	_return_neutral_seen = body.movement_neutral_serial
 	return _combat_cycle and _return_input_armed and new_press and state in [State.Approach, State.Attack, State.Recover]
 
+func _guard_pressed() -> bool:
+	if not Input.is_action_pressed("guard"): return false
+	if _mouse_guard_held: return true
+	var bindings := InputMap.action_get_events("guard")
+	var mouse_pressed := false
+	for binding in bindings:
+		if binding is InputEventMouseButton and Input.is_mouse_button_pressed(binding.button_index):
+			mouse_pressed = true
+	if not mouse_pressed: return true # Existing keyboard/pad and synthetic action input.
+	# A UI-consumed mouse press updates global Input too. Ignore that source, while
+	# still allowing concurrently held keyboard/pad bindings from the same InputMap.
+	for binding in bindings:
+		if binding is InputEventKey:
+			if binding.physical_keycode != 0 and Input.is_physical_key_pressed(binding.physical_keycode): return true
+			if binding.keycode != 0 and Input.is_key_pressed(binding.keycode): return true
+		elif binding is InputEventJoypadButton:
+			for device in Input.get_connected_joypads():
+				if (binding.device < 0 or binding.device == device) and Input.is_joy_button_pressed(device, binding.button_index): return true
+	return false
+
 func _defense_input() -> bool:
-	var guard_pressed := Input.is_action_pressed("guard")
+	var guard_pressed := _guard_pressed()
 	var guard_request := guard_pressed or _pending_guard
 	_pending_guard = false
 	if _wait_defense_release:
@@ -248,7 +273,7 @@ func _face_defense_target() -> void:
 func _guard() -> void:
 	body.velocity = Vector3.ZERO
 	_face_defense_target()
-	if not Input.is_action_pressed("guard"): _after_defense()
+	if not _guard_pressed(): _after_defense()
 
 func _after_defense() -> void:
 	body.velocity = Vector3.ZERO
@@ -838,6 +863,7 @@ func _finish(resume_held_movement: bool = false) -> void:
 
 func cancel() -> void:
 	_pending_guard = false
+	_mouse_guard_held = false
 	_return_input_armed = false
 	_wait_defense_release = true
 	_pending_click = false

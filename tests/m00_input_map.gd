@@ -17,8 +17,8 @@ func _run() -> void:
 		"jump": [["key", KEY_SPACE], ["button", JOY_BUTTON_A]],
 		"attack": [["key", KEY_J], ["mouse", MOUSE_BUTTON_LEFT], ["button", JOY_BUTTON_X]],
 		"dodge": [["key", KEY_K], ["button", JOY_BUTTON_B]],
-		"guard": [["key", KEY_I], ["button", JOY_BUTTON_LEFT_SHOULDER]],
-		"target_attack": [["mouse", MOUSE_BUTTON_RIGHT]],
+		"guard": [["key", KEY_I], ["button", JOY_BUTTON_LEFT_SHOULDER], ["mouse", MOUSE_BUTTON_RIGHT]],
+		"target_attack": [], # Reserved legacy action; no mouse attack binding.
 		"camera_left": [["key", KEY_Q], ["axis", JOY_AXIS_RIGHT_X, -1.0]],
 		"camera_right": [["key", KEY_E], ["axis", JOY_AXIS_RIGHT_X, 1.0]],
 		"lock_on": [["key", KEY_L], ["button", JOY_BUTTON_RIGHT_STICK]],

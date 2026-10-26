@@ -104,7 +104,7 @@ func _run() -> void:
 	target.health.heal(200)
 	await _ticks(3)
 	var event := InputEventMouseButton.new()
-	event.button_index = MOUSE_BUTTON_RIGHT
+	event.button_index = MOUSE_BUTTON_LEFT
 	event.position = main.get_node("CameraRig").camera.unproject_position(enemy.global_position + Vector3.UP * 0.75)
 	event.pressed = true
 	var before_hits := hits

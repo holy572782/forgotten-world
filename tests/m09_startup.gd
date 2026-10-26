@@ -27,6 +27,14 @@ func _click(button: Button) -> void:
 	Input.flush_buffered_events()
 	await _ticks(3)
 
+func _world_mouse(position: Vector2, button: int, pressed: bool) -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = button
+	event.position = position
+	event.pressed = pressed
+	Input.parse_input_event(event)
+	Input.flush_buffered_events()
+
 func _run() -> void:
 	root.size = Vector2i(1152,720)
 	Engine.max_fps = 60
@@ -51,6 +59,29 @@ func _run() -> void:
 	if "--capture" in OS.get_cmdline_user_args():
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://.godot/m09_startup_melee.png")
+	# The editable F5 scene and moving hostile must accept the new mouse controls too.
+	var combat: Node = player.combat
+	var candidate: Node3D = ai.get_node("Targetable")
+	var camera: Camera3D = main.get_node("CameraRig").camera
+	_world_mouse(camera.unproject_position(candidate.global_position),MOUSE_BUTTON_RIGHT,true)
+	await _ticks(5)
+	_check(combat.state == combat.State.Guard and combat.attack_id == 0,"actual F5 right hold guards without an attack")
+	_world_mouse(Vector2(20,20),MOUSE_BUTTON_RIGHT,false)
+	await _ticks(3)
+	for i in range(180):
+		if combat.can_select(candidate) and ai.state == ai.State.WINDUP: break
+		await _ticks(1)
+	var point := camera.unproject_position(candidate.marker.global_position)
+	_check(combat.pick_attack_target(point) == candidate,"actual F5 moving enemy has a valid click point")
+	_world_mouse(point,MOUSE_BUTTON_LEFT,true)
+	_world_mouse(point,MOUSE_BUTTON_LEFT,false)
+	await _ticks(2)
+	_check(combat.is_busy() and combat.target == candidate,"actual F5 left click starts attack on live enemy")
+	var enemy_hp: float = candidate.health.current_hp
+	for i in range(180):
+		if candidate.health.current_hp < enemy_hp: break
+		await _ticks(1)
+	_check(candidate.health.current_hp < enemy_hp and combat.attack_id == 1,"actual F5 click delivers one paid strike to live enemy")
 	await _click(selector.buttons[2])
 	_check(selector.mode == 2 and selector.buttons[2].button_pressed, "Japanese ranged GUI button activates ranged trial")
 	_check(not player.combat.is_busy() and health.current_hp == 100, "trial GUI resets without a player attack")
@@ -60,7 +91,7 @@ func _run() -> void:
 	_check(selector.mode == 0 and not is_instance_valid(selector.active_enemy) and main.get_node("TrainingEnemy").visible, "Japanese static GUI button restores legacy trial")
 	main.queue_free()
 	await _ticks(3)
-	if failures.is_empty(): print("M09 STARTUP PASS: default enemy attacks, GUI switches and resets")
+	if failures.is_empty(): print("M09 STARTUP PASS: default enemy attacks, left attack/right guard, GUI switches and resets")
 	else:
 		for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
