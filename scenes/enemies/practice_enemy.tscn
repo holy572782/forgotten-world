@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scripts/combat/targetable.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/combat/health_component.gd" id="2"]
@@ -6,6 +6,9 @@
 [ext_resource type="Script" path="res://scripts/enemies/practice_enemy.gd" id="4_ai"]
 [ext_resource type="Resource" path="res://resources/enemies/melee_practice.tres" id="5_settings"]
 [ext_resource type="Script" path="res://scripts/effects/enemy_hit_feedback.gd" id="6_feedback"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_sprite.gd" id="7_sprite"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_weapon_visual.gd" id="8_weapon"]
+[ext_resource type="Shader" path="res://assets/shaders/enemy_sprite_flash.gdshader" id="9_flash"]
 [sub_resource type="Resource" id="Health"]
 script = ExtResource("3")
 max_hp = 40.0
@@ -33,6 +36,22 @@ collision_mask = 7
 [node name="Body" type="MeshInstance3D" parent="."]
 position = Vector3(0, 0.75, 0)
 mesh = SubResource("BodyMesh")
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="."]
+script = ExtResource("7_sprite")
+cast_shadow = 0
+pixel_size = 0.0375
+offset = Vector2(0, 23)
+billboard = 1
+texture_filter = 0
+alpha_cut = 1
+[node name="Shadow" type="AnimatedSprite3D" parent="AnimatedSprite3D"]
+cast_shadow = 3
+billboard = 1
+texture_filter = 0
+alpha_cut = 1
+[node name="WeaponSwing" type="AnimatedSprite3D" parent="."]
+script = ExtResource("8_weapon")
+visible = false
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 position = Vector3(0, 0.75, 0)
 shape = SubResource("BodyShape")
@@ -44,6 +63,8 @@ script = ExtResource("1")
 click_collider_paths = Array[NodePath]([NodePath("..")])
 [node name="HitFeedback" type="Node" parent="."]
 script = ExtResource("6_feedback")
+visual_paths = Array[NodePath]([NodePath("../AnimatedSprite3D"), NodePath("../Body")])
+sprite_flash_shader = ExtResource("9_flash")
 [node name="HealthLabel" type="Label3D" parent="Targetable"]
 position = Vector3(0, 2.55, 0)
 billboard = 1

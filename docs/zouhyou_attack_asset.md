@@ -1,5 +1,25 @@
 # zouhyou_attack 4方向素材（2026-10-26）
 
+## 最新版：元の右向きの足・原寸への修正（同日）
+
+ユーザー追加指示「元画像の右向きの足の形状を意識してサイズも一緒でもう一度」を受け、60px版の広げすぎた足を採用せず、元の48px枠へ戻した別版を作成。以下の60px版は比較履歴として保持する。
+
+- 最新編集元：`assets/source/enemies/zouhyou_attack_original_size.aseprite`。
+- 最新書出し：`assets/export/enemies/zouhyou_attack_original_size/zouhyou_attack.png`、同フォルダーの`zouhyou_attack_down/left/right/up.png`。
+- 最新Lua：`tools/aseprite/create_zouhyou_attack_original_size.lua`。
+- 元の右向き`$zouhyou_attack_light.png`の1枠をそのまま右向きとして使用し、足・膝・輪郭・元の細部を全画素保持。左向きはこの右向きの正確な左右反転。上下は同キャラクターの原寸の正面・背面を使用し、元の右向きの小さな屈曲した足を基準にコンパクトな前後差を3×3ブロックで表現。キャラクターの拡大縮小・補間・上体の大きな変形なし。
+- サイズ：1枠48×48、3列×4行＝144×192。行順は下／左／右／上、3列は同じ姿勢の反復。個別PNGは48×48。元画像と同寸法。
+- 可視レイヤー`original_size_details`と`compact_attack_3x3`、非表示の`original_right_reference`と`original_direction_reference`を保持。
+- 右原本のSHA256は`57754ff626938b368a14e754299172a8fe9ea3cb48fd9bbc81f293605fa8b985`。作業後も原本と方向資料のハッシュ不変。旧成果は未変更。
+- 保存済みAsepriteを別バッチで再読込し、寸法・4レイヤーの表示状態・合成PNGの全RGBA・右原画一致・左反転・全12枠・追加部分の3×3ブロックを確認PASS。拡大画像で足の大きさ・コンパクトな輪郭を目視。見た目はユーザー確認待ち。
+- GUIでの確認、ゲームへの導入・Godot／F5は未実行。M09の工程・戦闘仕様・コードは変更なし。commit／push未実行。
+
+再生成時は既存成果と異なる出力先を指定する。
+
+```powershell
+& 'C:\Program Files (x86)\Steam\steamapps\common\Aseprite\Aseprite.exe' --batch --script-param 'output=D:/Game/forgotten-world/.godot/zouhyou_art/original_size_review.aseprite' --script-param 'export_dir=D:/Game/forgotten-world/.godot/zouhyou_art/original_size_review_export' --script 'tools/aseprite/create_zouhyou_attack_original_size.lua'
+```
+
 ## 踏み込み姿勢への追加修正（同日）
 
 ユーザー追加指示「踏み込んでいるようにしてほしい」により、前傾した上体と大きく開いた前後の脚を持つ別版を作成。初回版は変更せず保持。

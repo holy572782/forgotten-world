@@ -1,0 +1,14 @@
+[gd_resource type="Resource" load_steps=5 format=3]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_visual_data.gd" id="1"]
+[ext_resource type="SpriteFrames" path="res://assets/sprites/enemies/zouhyou_walk_frames.tres" id="2"]
+[ext_resource type="SpriteFrames" path="res://assets/sprites/enemies/zouhyou_attack_frames.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/weapons/iron_sword_visual.tres" id="4"]
+[resource]
+script = ExtResource("1")
+walk_frames = ExtResource("2")
+attack_frames = ExtResource("3")
+weapon_visual = ExtResource("4")
+weapon_offsets_down = PackedVector2Array(-15, -23, -15, 20, 44, 20)
+weapon_offsets_left = PackedVector2Array(-46, -16, 13, -16, 13, 11)
+weapon_offsets_right = PackedVector2Array(47, -16, -12, -16, -12, 11)
+weapon_offsets_up = PackedVector2Array(16, 7, 16, -20, -43, -20)

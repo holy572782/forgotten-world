@@ -4,6 +4,7 @@ const Defaults = preload("res://resources/combat_feedback.tres")
 const FlashShader = preload("res://assets/shaders/enemy_hit_flash.gdshader")
 const Settings = preload("res://scripts/combat/combat_feedback_settings.gd")
 @export var override_settings: Settings
+@export var sprite_flash_shader: Shader
 @export var visual_paths: Array[NodePath] = [NodePath("../Body")]
 @export var impact_offset := Vector3(0,0.75,0)
 @export_range(0.0, 2.0) var surface_radius := 0.42
@@ -49,7 +50,12 @@ func _begin_flash(config: Resource) -> void:
 		if not originals.has(visual):
 			originals[visual] = visual.material_overlay
 			var flash := ShaderMaterial.new()
-			flash.shader = FlashShader
+			flash.shader = sprite_flash_shader if visual is AnimatedSprite3D and sprite_flash_shader != null else FlashShader
+			if visual is AnimatedSprite3D and sprite_flash_shader != null:
+				flash.render_priority = 1 # Draw the depth-tested tint after the body pass.
+				var capsule: CapsuleShape3D = get_parent().get_node("CollisionShape3D").shape
+				flash.set_shader_parameter("body_radius", capsule.radius)
+				flash.set_shader_parameter("body_height", capsule.height)
 			flashes[visual] = flash
 			var overlay: Material = visual.material_overlay
 			if overlay == null:
@@ -76,6 +82,8 @@ func _update_masks() -> void:
 		if visual is Sprite3D: texture = visual.texture
 		elif visual is AnimatedSprite3D and visual.sprite_frames != null:
 			texture = visual.sprite_frames.get_frame_texture(visual.animation,visual.frame)
+		if sprite_flash_shader != null and texture is AtlasTexture:
+			texture = texture.atlas # Sprite3D mesh UVs already address the full sheet.
 		var flash: ShaderMaterial = flashes[visual]
 		flash.set_shader_parameter("use_texture_alpha",texture != null)
 		if texture != null: flash.set_shader_parameter("source_texture",texture)

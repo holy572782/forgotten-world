@@ -1,6 +1,8 @@
-[gd_resource type="Resource" load_steps=3 format=3]
+[gd_resource type="Resource" load_steps=4 format=3]
 [ext_resource type="Script" path="res://scripts/enemies/enemy_settings.gd" id="1"]
 [ext_resource type="Resource" path="res://resources/enemies/melee_attack.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/enemies/zouhyou_visual.tres" id="3_visual"]
 [resource]
 script = ExtResource("1")
 attack = ExtResource("2")
+visual = ExtResource("3_visual")
