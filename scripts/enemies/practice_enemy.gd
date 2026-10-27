@@ -6,6 +6,7 @@ const Path = preload("res://scripts/combat/dash_path.gd")
 const Sweep = preload("res://scripts/combat/melee_sweep.gd")
 # RETURN = home/leash return; DASH_RETURN = attack_anchor.
 enum State { IDLE, CHASE, WINDUP, ATTACK, RECOVERY, RETURN, DEAD, DASH_APPROACH, DASH_RETURN }
+signal attack_warning_started
 @export var settings: Settings = preload("res://resources/enemies/melee_practice.tres")
 @export var player: CharacterBody3D
 @export var show_debug_state := true
@@ -33,6 +34,9 @@ var _travel_elapsed := 0.0
 var _held_elapsed := 0.0
 var _return_after_recovery := false
 var _in_place := false
+var _pursuit_moving := false
+var _pursuit_step_active := false
+var _pursuit_destination := Vector3.ZERO
 
 func _ready() -> void:
 	process_physics_priority = 1 # Player reserves a stable target before enemy motion.
@@ -91,7 +95,11 @@ func _physics_process(delta: float) -> void:
 			if sight and distance <= settings.detection_radius: _set_state(State.CHASE)
 		State.CHASE:
 			if sight and distance <= engagement_range() and cooldown <= 0.0: _start_windup()
-			elif sight and distance > engagement_range(): _walk_towards(player.global_position, delta)
+			elif sight and distance > engagement_range():
+				if _can_pursue() and attack_count > 0: _pursuit_step(delta)
+				else: _walk_towards(player.global_position, delta)
+			elif _can_pursue() and attack_count > 0: _pursuit_step(delta)
+			else: velocity = Vector3.ZERO # Stopped cooldown uses Idle, not a stale walk velocity.
 		State.WINDUP:
 			if elapsed >= active_attack.windup_seconds:
 				if active_attack.kind == AttackData.Kind.DASH_MELEE: _begin_dash()
@@ -105,6 +113,10 @@ func _physics_process(delta: float) -> void:
 				else: _set_state(State.RECOVERY)
 		State.DASH_RETURN: _dash_step(delta, true)
 		State.RECOVERY:
+			if _can_pursue() and attack_count > 0 and not _return_after_recovery: _pursuit_step(delta)
+			else:
+				velocity = Vector3.ZERO
+				_stop_pursuit()
 			if elapsed >= active_attack.recovery_seconds: _set_state(State.RETURN if _return_after_recovery else State.CHASE)
 		State.RETURN:
 			if global_position.distance_to(home) <= 0.04: _set_state(State.IDLE)
@@ -121,15 +133,64 @@ func locomotion_held() -> bool:
 	var combat = player.combat
 	return combat.is_busy() and (combat.target == targetable or combat.queued_attack_target == targetable)
 
-func _walk_towards(at: Vector3, delta: float) -> void:
+func _walk_towards(at: Vector3, delta: float, speed_override: float = -1.0) -> void:
 	velocity = Vector3.ZERO
 	if locomotion_held(): return # Chase waits but its attack state machine still runs.
 	var direction := _horizontal_direction(at)
-	var next := global_position + direction * minf(settings.chase_speed * delta, global_position.distance_to(at))
+	var speed := settings.chase_speed if speed_override < 0.0 else speed_override
+	var next := global_position + direction * minf(speed * delta, global_position.distance_to(at))
 	if not Path.clear(self, next, settings.path, global_position): return
 	facing = direction
 	velocity = (next - global_position) / maxf(delta, 0.0001)
-	move_and_collide(next - global_position)
+	var before := global_position
+	move_and_collide(next - before)
+	if speed_override >= 0.0: velocity = (global_position - before) / maxf(delta, 0.0001)
+
+func _can_pursue() -> bool:
+	return settings.pursuit_enabled and active_attack.weapon != null and active_attack.kind == AttackData.Kind.DASH_MELEE
+
+func preferred_distance() -> float:
+	var radius: float = $CollisionShape3D.shape.radius + player.get_node("CollisionShape3D").shape.radius + 0.15
+	return maxf(radius, minf(maxf(settings.preferred_attack_distance, active_attack.stop_distance), engagement_range()))
+
+func _pursuit_step(delta: float) -> void:
+	velocity = Vector3.ZERO
+	if not player_alive() or not has_sight() or locomotion_held():
+		_stop_pursuit()
+		return
+	var offset := player.global_position - global_position
+	var distance := Vector2(offset.x, offset.z).length()
+	if distance > settings.leash_radius or global_position.distance_to(home) > settings.leash_radius or absf(offset.y) > settings.path.floor_tolerance:
+		_stop_pursuit()
+		return
+	# Stop 5mm inside the requested range so float rounding cannot leave the
+	# actor infinitesimally outside its next attack's eligibility boundary.
+	var preferred := maxf(active_attack.stop_distance, preferred_distance() - 0.005)
+	if distance <= preferred:
+		_stop_pursuit()
+		return
+	# A small entry band prevents rapid stop/start at the preferred distance.
+	if not _pursuit_moving and distance <= preferred + 0.1 and not (state == State.CHASE and distance > engagement_range()): return
+	_pursuit_moving = true
+	var direction := _horizontal_direction(player.global_position)
+	var speed := clampf(settings.pursuit_speed, 0.1, 10.0)
+	var to_step := global_position.direction_to(_pursuit_destination)
+	if not _pursuit_step_active or global_position.distance_to(_pursuit_destination) <= 0.001 or direction.dot(to_step) < 0.5:
+		# A step is a retargeting guide, never a cap below one physics tick's travel.
+		var length := minf(maxf(clampf(settings.pursuit_step_distance, 0.1, 3.0), speed * delta), distance - preferred)
+		_pursuit_destination = global_position + direction * length
+		if _pursuit_destination.distance_to(home) > settings.leash_radius or not Path.clear(self, _pursuit_destination, settings.path, global_position):
+			_stop_pursuit()
+			return
+		_pursuit_step_active = true
+	to_step = global_position.direction_to(_pursuit_destination)
+	# Clamp the final increment if the player comes toward an already chosen step.
+	var step := minf(speed * delta, minf(distance - preferred, global_position.distance_to(_pursuit_destination)))
+	_walk_towards(global_position + to_step * step, delta, speed)
+
+func _stop_pursuit() -> void:
+	_pursuit_moving = false
+	_pursuit_step_active = false
 
 func _start_windup(in_place: bool = false) -> void:
 	if not in_place: last_result = ""
@@ -256,13 +317,16 @@ func _execute_attack() -> void:
 		_refresh_visuals()
 
 func _set_state(next: State) -> void:
+	var previous := state
 	state = next
 	attack_executed = false
 	elapsed = 0.0
 	_travel_elapsed = 0.0
 	_held_elapsed = 0.0
 	velocity = Vector3.ZERO
+	_stop_pursuit()
 	_refresh_visuals()
+	if next == State.WINDUP and previous != State.WINDUP: attack_warning_started.emit()
 
 func _die(_source: Node) -> void:
 	_set_state(State.DEAD)

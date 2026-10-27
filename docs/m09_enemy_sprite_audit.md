@@ -1,3 +1,5 @@
+> **後続更新（ADR-035）**：新IdleとWalk素材改名を接続し、踏み込みはWalk、雑兵は帰還後の3秒内に歩いて位置を整える。以下は作成時の履歴。最新の参照名・設定は[m09_enemy_followup_audit.md](m09_enemy_followup_audit.md)。
+
 > **後続更新（ADR-033）**：雑兵専用柄補正と旧敵攻撃時間を、主人公と共通の剣・斬撃・モーション・射程と単発／3秒待機へ更新。以下はADR-032時点の履歴。最新設定は[m09_enemy_sword_combat_audit.md](m09_enemy_sword_combat_audit.md)。
 
 # M09：雑兵・魔導士の画像と雑兵の鉄の剣（ADR-032）

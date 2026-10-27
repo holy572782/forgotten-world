@@ -37,17 +37,23 @@ func _process(_delta: float) -> void:
 	var basis := camera.global_basis if camera != null else Basis.IDENTITY
 	var side: String = SIDES[Controller.direction_sector(actor.facing, basis, 4)]
 	var attacking: bool = actor.state == actor.State.ATTACK
-	var posed: bool = attacking or actor.state in [actor.State.WINDUP, actor.State.DASH_APPROACH]
-	var frames: SpriteFrames = visual.attack_frames if posed else visual.walk_frames
-	var next := StringName(("attack_" if posed else "walk_") + side)
+	var posed: bool = attacking or actor.state == actor.State.WINDUP
+	var moving: bool = actor.velocity.length_squared() > 0.0001
+	if actor.state in [actor.State.DASH_APPROACH, actor.State.DASH_RETURN]:
+		var destination: Vector3 = actor.dash_destination if actor.state == actor.State.DASH_APPROACH else actor.attack_anchor
+		moving = actor.global_position.distance_to(destination) > 0.001 and not actor.locomotion_held()
+	var idle: bool = not posed and not moving and visual.idle_frames != null
+	var frames: SpriteFrames = visual.attack_frames if posed else (visual.idle_frames if idle else visual.walk_frames)
+	var next := StringName(("attack_" if posed else ("idle_" if idle else "walk_")) + side)
 	if frames == null or not frames.has_animation(next): return
 	if sprite_frames != frames: sprite_frames = frames
 	if animation != next: animation = next
+	speed_scale = maxf(0.1, visual.idle_fps) / maxf(0.001, frames.get_animation_speed(next)) if idle else 1.0
 	if attacking:
 		stop()
 		var sampled := Motion.sample(Motion.weights(frames, next, attack_ratios()), attack_phase())
 		set_frame_and_progress(int(sampled.x), sampled.y)
-	elif not posed and actor.state != actor.State.DEAD and actor.velocity.length_squared() > 0.0001:
+	elif not posed and actor.state != actor.State.DEAD and (moving or idle):
 		play()
 	else:
 		stop()

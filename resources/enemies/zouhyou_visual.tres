@@ -1,10 +1,12 @@
-[gd_resource type="Resource" load_steps=5 format=3]
+[gd_resource type="Resource" load_steps=6 format=3]
 [ext_resource type="Script" path="res://scripts/enemies/enemy_visual_data.gd" id="1"]
 [ext_resource type="SpriteFrames" path="res://assets/sprites/enemies/zouhyou_walk_frames.tres" id="2"]
 [ext_resource type="SpriteFrames" path="res://assets/sprites/enemies/zouhyou_attack_frames.tres" id="3"]
 [ext_resource type="Resource" path="res://resources/weapons/iron_sword_visual.tres" id="4"]
+[ext_resource type="SpriteFrames" path="res://assets/sprites/enemies/zouhyou_idle_frames.tres" id="5_idle"]
 [resource]
 script = ExtResource("1")
 walk_frames = ExtResource("2")
+idle_frames = ExtResource("5_idle")
 attack_frames = ExtResource("3")
 weapon_visual = ExtResource("4")

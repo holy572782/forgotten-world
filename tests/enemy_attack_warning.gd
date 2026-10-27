@@ -103,7 +103,7 @@ func _run() -> void:
 			camera.position = Vector3(0,7,10).rotated(Vector3.UP,deg_to_rad(yaw))
 			camera.look_at(Vector3(0,0.8,0))
 			actor.facing = Vector3.BACK
-			_warning(0.05)
+			_warning(0.15)
 			actor.settings.attack_warning_flash_enabled = false
 			var normal := await _image()
 			sprite.hide()
@@ -114,11 +114,11 @@ func _run() -> void:
 			var red_pixels := _difference(normal,red)
 			_check(not red_pixels.is_empty() and red_pixels.keys().all(func(pixel: int) -> bool: return silhouette.has(pixel)), "Red changes only opaque character pixels at each camera yaw")
 			_check(sprite.pixel_size == original_pixel_size and sprite.transform == original_transform and actor.get_node("CollisionShape3D").shape.get_instance_id() == collider_id, "Tint preserves size/transform/collision")
-			_warning(0.3)
+			_warning(0.25)
 			_check(_difference(normal,await _image()).is_empty(), "First pulse returns to exact original image")
-			_warning(0.55)
+			_warning(0.35)
 			_check(not _difference(normal,await _image()).is_empty(), "Second red pulse is visible")
-			_warning(0.8)
+			_warning(0.55)
 			_check(_difference(normal,await _image()).is_empty(), "Second pulse returns to exact original image")
 			if "--capture" in OS.get_cmdline_user_args() and yaw == 0.0:
 				normal.save_png("res://.godot/warning_normal_"+("mage" if ranged else "soldier")+".png")
@@ -127,10 +127,10 @@ func _run() -> void:
 		camera.look_at(Vector3(0,0.8,0))
 		actor.settings.attack_warning_flash_count = 3
 		for index in range(6):
-			_warning((float(index)+0.25)/6.0)
+			_warning((float(index)+1.25)*actor.settings.attack_warning_flash_interval/actor.active_attack.windup_seconds)
 			_check((_strength() > 0.0) == (index % 2 == 0), "Inspector count produces three distinct pulses")
 		actor.settings.attack_warning_flash_count = 2
-		_warning(0.05)
+		_warning(0.15)
 		var strong := await _image()
 		actor.settings.attack_warning_flash_strength = 0.4
 		var weak := await _image()
@@ -139,7 +139,7 @@ func _run() -> void:
 		_check(not _difference(weak,await _image()).is_empty(), "Inspector colour visibly adjusts tint")
 		actor.settings.attack_warning_flash_color = Color(1.0,0.15,0.1,1)
 		actor.settings.attack_warning_flash_strength = 0.75
-		_warning(0.05)
+		_warning(0.15)
 		_check(not actor.telegraph.visible and not actor.dash_guide.visible, "Default hides sector and route during warning")
 		var clean := await _image()
 		actor.settings.attack_range_indicator_enabled = true
@@ -152,7 +152,7 @@ func _run() -> void:
 			actor._set_state(state)
 			warning._process(0.0)
 			_check(_strength() == 0.0, "No warning tint outside WINDUP")
-		_warning(0.05)
+		_warning(0.15)
 		wall.show()
 		wall.collision_layer = 1
 		await physics_frame
@@ -162,15 +162,15 @@ func _run() -> void:
 		wall.hide()
 		wall.collision_layer = 0
 		actor.settings.attack_warning_flash_enabled = true
-		_warning(0.05)
+		_warning(0.15)
 		actor.hide()
 		warning._process(0.0)
 		_check(_strength() == 0.0, "Hiding clears red")
 		actor.show()
-		_warning(0.05)
+		_warning(0.15)
 		actor.health.damage(100,player)
 		_check(_strength() == 0.0 and actor.state == actor.State.DEAD, "Death clears tint immediately without changing death handling")
-	for duration in [0.03,0.08,0.19]:
+	for duration in [0.03,0.08,0.15]:
 		_check(Warning.pulse_on(duration*0.1,duration,8) and Warning.pulse_on(duration*0.9,duration,8) and not Warning.pulse_on(duration,duration,8), "Very short windup uses one steady pulse and ends on time")
 	_check(not Warning.pulse_on(0.0,0.0,2) and not Warning.pulse_on(NAN,1.0,2), "Invalid/instant duration does not leave tint")
 	var settings: Resource = actor.settings.duplicate()
@@ -202,7 +202,7 @@ func _run() -> void:
 	actor.get_node("Targetable/HealthLabel").hide()
 	actor.show_debug_state = false
 	actor.debug_label.hide()
-	_warning(0.05)
+	_warning(0.15)
 	main.get_node("CameraRig").snap_to_target()
 	await _image()
 	actor.health.damage(1,hero)

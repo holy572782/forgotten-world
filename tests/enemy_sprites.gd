@@ -155,7 +155,7 @@ func _run() -> void:
 		_check(sprite.frame != 0, "Walking advances actual engine frames")
 		actor.velocity = Vector3.ZERO
 		sprite._process(0.0)
-		_check(not sprite.is_playing() and sprite.frame == 0, "Idle returns to a still frame")
+		_check(sprite.is_playing() and String(sprite.animation).begins_with("idle_"), "Idle uses its own looping sheet")
 		_pose(0.5)
 		wall.show()
 		wall.collision_layer = 1
@@ -172,6 +172,7 @@ func _run() -> void:
 		actor._set_state(actor.State.IDLE)
 		sprite._process(0.0)
 		sword.hide()
+		sprite.stop() # Freeze the new idle loop when measuring flash pixels.
 		var normal := await _image()
 		if "--capture" in OS.get_cmdline_user_args(): normal.save_png("res://.godot/enemy_sprite_normal_" + ("mage" if ranged else "soldier") + ".png")
 		actor.health.damage(1, player)

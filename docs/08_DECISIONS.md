@@ -6,6 +6,18 @@
 
 # 08 意思決定ログ（ADR簡易版）
 
+## ADR-035（2026-10-27）M09完了後：敵のIdle・高速予告音・帰還後の位置取り
+**状態：M09基本戦闘完了を維持。今回の改善は採用、F5確認待ち。**
+
+- 実在する雑兵_wait／魔導士_waitをゲーム用Idleへ無加工コピーし、横3コマ×下／左／右／上の4方向を循環再生する。初期Idle FPSは4.0、EnemyVisualで変更する。各方向の3コマは同じ画素のため、見た目の動きは素材側の差分に依存する。雑兵_w→雑兵_walk、魔導士_wl→魔導士_walkは元ゲーム用コピーとバイト一致で対応を確認。元画像をリネーム／削除しない。
+- Idle／停止中は新Idle、歩行・踏み込み・帰還・帰還後の追跡はWalk、攻撃中はAttackを使用する。WINDUPの既存予備姿勢は維持する。サイズは各FramesのAtlas領域と既存pixel_size／offsetを使用し、48pxに正規化しない。
+- 予告は通常→赤→通常→赤→通常。既存Flash Intervalを新設して切替0.09秒（Inspector 0.08〜1.0秒）、既存回数2・色・強度・ON/OFFを再利用する。既存WINDUP時間と攻撃開始時刻は変更せず、回数が入らない短い予告は減らす。白い被弾flash優先・範囲OFFは継続する。ADR-034の予告全体へ均等配分する速度だけを今回の指定で更新する。
+- SEフォルダーに実在するFire1.oggを選択して無加工コピー。各WINDUPへの実遷移通知からAudioStreamPlayerを1回再生する。色点滅とは独立させ、Flash OFFでもSound ONなら鳴る。既存EnemySettingsへAudioStream・Enabled・Volume Db（-12）・Pitch Scale（1.0、0.5〜2.0）を追加する。既存の主人公SEは変更しない。
+- 雑兵だけPursuit Enabled=true、Speed=2.0m/s、Preferred Attack Distance=5.0m、Step Distance=1.0mを既存EnemySettingsへ設定する。最初の索敵CHASEは維持し、攻撃・必要な帰還を終えてから既存RECOVERYの間に歩いて位置を整える。攻撃間隔／RECOVERY時間は変えない。OFFなら従来のRECOVERY待機と通常CHASEに戻る。
+- 目標距離は攻撃開始範囲以下・元の停止距離とカプセル余裕以上に制限する。歩行は既存Path.clear／move_and_collideで検査し、視線・高低差・足場／壁・元のleash・主人公による対象予約を尊重する。0.1mの再開帯で境界の細かな往復を防ぎ、範囲境界の丸めで攻撃不能にならないよう停止位置を最大5mm内側へ補正する。短い歩行区間の目標を更新し、転送はしない。
+- attack_anchorは各_start_windup時の現在位置を記録し、帰還中／位置取り中には上書きしない。Aへ帰還してからBへ歩き、次の攻撃はBを基準にする。WINDUP・踏み込み・攻撃・帰還・死亡には追跡を重ねない。魔導士は新追跡の対象外、射程・ダメージ・移動／帰還時間・主人公の処理は維持する。
+- 素材・調整箇所・検査・F5手順は[m09_enemy_followup_audit.md](m09_enemy_followup_audit.md)。新しい工程番号を作らず、M10は別指示待ち。
+
 ## ADR-034（2026-10-27）M09基本戦闘の完了と攻撃予告の赤色点滅
 **状態：M09完了（試作範囲・基本戦闘）。今回の表示改善は採用、ユーザーF5確認待ち。**
 

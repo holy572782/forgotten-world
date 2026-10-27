@@ -2,6 +2,8 @@ extends Resource
 ## Presentation only: sheet size and equipment never determine attack reach.
 const WeaponVisual = preload("res://scripts/player/weapon_attack_visual_data.gd")
 @export var walk_frames: SpriteFrames
+@export var idle_frames: SpriteFrames
+@export_range(0.1, 30.0, 0.1) var idle_fps := 4.0
 @export var attack_frames: SpriteFrames
 @export var weapon_visual: WeaponVisual
 @export_range(0.001, 0.1) var pixel_size := 0.0375
