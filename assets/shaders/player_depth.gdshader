@@ -5,6 +5,9 @@ uniform sampler2D sprite_sheet : source_color, filter_nearest, repeat_disable;
 uniform sampler2D scene_depth : hint_depth_texture, repeat_disable, filter_nearest;
 uniform float body_radius = 0.3;
 uniform float body_height = 1.8;
+// Optional enemy tint. Zero preserves the player's existing presentation.
+uniform vec4 attack_warning_color : source_color = vec4(1.0, 0.15, 0.1, 1.0);
+uniform float attack_warning_strength : hint_range(0.0, 1.0) = 0.0;
 varying vec3 local_point;
 varying vec3 feet_world;
 varying vec3 horizontal_right;
@@ -20,7 +23,7 @@ void vertex() {
 void fragment() {
 	vec4 pixel = texture(sprite_sheet, UV);
 	if (pixel.a < 0.5) { discard; }
-	ALBEDO = pixel.rgb;
+	ALBEDO = mix(pixel.rgb, attack_warning_color.rgb, clamp(attack_warning_strength * attack_warning_color.a, 0.0, 1.0));
 	// Depth comes from an upright cross-section inside the actual capsule.
 	// Screen position, image size and alpha silhouette remain untouched.
 	float height = clamp(local_point.y, 0.001, body_height - 0.001);

@@ -287,7 +287,7 @@ func _refresh_visuals() -> void:
 	debug_label.visible = show_debug_state
 	debug_label.text = ("RANGED  " if active_attack.kind == AttackData.Kind.PROJECTILE else "MELEE  ") + State.keys()[state]
 	if not last_result.is_empty(): debug_label.text += "\n" + last_result
-	telegraph.visible = state in [State.WINDUP, State.DASH_APPROACH, State.ATTACK]
+	telegraph.visible = settings.attack_range_indicator_enabled and state in [State.WINDUP, State.DASH_APPROACH, State.ATTACK]
 	var mesh := ImmediateMesh.new()
 	if telegraph.visible:
 		mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -309,7 +309,7 @@ func _refresh_visuals() -> void:
 	telegraph.material_override = material
 	_update_telegraph_position()
 	# Fixed route line is independent of the moving body; it is never a hit shape.
-	dash_guide.visible = state in [State.WINDUP, State.DASH_APPROACH] and active_attack.kind == AttackData.Kind.DASH_MELEE
+	dash_guide.visible = settings.attack_range_indicator_enabled and state in [State.WINDUP, State.DASH_APPROACH] and active_attack.kind == AttackData.Kind.DASH_MELEE
 	var guide := ImmediateMesh.new()
 	if dash_guide.visible:
 		guide.surface_begin(Mesh.PRIMITIVE_LINES)

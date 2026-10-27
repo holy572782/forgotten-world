@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cjljvptjoy2wj"
-path="res://.godot/imported/魔導士_wl.png-f6feef68ebd7d239f19f20bff27f7142.ctex"
+uid="uid://bchrywwxu15q8"
+path="res://.godot/imported/雑兵_wait.png-b5afbbf3c6f9e1f5c5140e75835c7d41.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://画像フォルダ/敵/魔導士_wl.png"
-dest_files=["res://.godot/imported/魔導士_wl.png-f6feef68ebd7d239f19f20bff27f7142.ctex"]
+source_file="res://画像フォルダ/敵/雑兵_wait.png"
+dest_files=["res://.godot/imported/雑兵_wait.png-b5afbbf3c6f9e1f5c5140e75835c7d41.ctex"]
 
 [params]
 
