@@ -47,8 +47,13 @@ func _run() -> void:
 	_check(not main.get_node("TrainingEnemy").visible, "stationary enemies isolated at startup")
 	var ai: CharacterBody3D = selector.active_enemy
 	var home: Vector3 = ai.global_position
-	await _ticks(180)
-	_check(ai.global_position.distance_to(home) > 1.0 and ai.attack_count >= 1, "default enemy approaches and attacks without pressing trial buttons")
+	var starts_in_reach: bool = home.distance_to(player.global_position) <= ai.active_attack.hit_radius
+	var maximum_travel := 0.0
+	for tick in range(180):
+		await _ticks(1)
+		maximum_travel = maxf(maximum_travel, ai.global_position.distance_to(home))
+	# A completed dash returns to home; net displacement is not proof of no attack.
+	_check((starts_in_reach or maximum_travel > 0.05) and ai.attack_count >= 1, "default enemy uses range-appropriate movement and attacks without trial buttons")
 	player.reset_motion(ai.global_position + ai.facing * 1.2)
 	var health: HealthComponent = player.get_node("HealthComponent")
 	var before := health.current_hp

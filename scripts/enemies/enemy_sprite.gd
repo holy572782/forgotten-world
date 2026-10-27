@@ -28,6 +28,9 @@ func attack_phase() -> float:
 	var duration: float = maxf(0.001, maxf(actor.active_attack.attack_seconds, actor.active_attack.hit_delay_seconds))
 	return clampf(actor.elapsed / duration, 0.0, 1.0)
 
+func attack_ratios() -> PackedFloat32Array:
+	return actor.active_attack.weapon.motion.frame_time_ratios if actor.active_attack != null and actor.active_attack.weapon != null else PackedFloat32Array()
+
 func _process(_delta: float) -> void:
 	if visual == null or actor.active_attack == null: return
 	var camera := get_viewport().get_camera_3d()
@@ -42,7 +45,7 @@ func _process(_delta: float) -> void:
 	if animation != next: animation = next
 	if attacking:
 		stop()
-		var sampled := Motion.sample(Motion.weights(frames, next), attack_phase())
+		var sampled := Motion.sample(Motion.weights(frames, next, attack_ratios()), attack_phase())
 		set_frame_and_progress(int(sampled.x), sampled.y)
 	elif not posed and actor.state != actor.State.DEAD and actor.velocity.length_squared() > 0.0001:
 		play()

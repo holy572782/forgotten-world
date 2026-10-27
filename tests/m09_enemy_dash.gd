@@ -1,5 +1,6 @@
 extends "res://tests/m09_enemy_combat.gd"
-## Physics-driven dash profiles, fixed aim, safe movement and competing TargetDash.
+## Legacy unarmed dash profiles, fixed aim, safe movement and competing TargetDash.
+## The production shared sword profile is covered by enemy_sword_combat.gd.
 const Attack = preload("res://scripts/enemies/enemy_attack_data.gd")
 var metrics: Array[Dictionary] = []
 var phase_frames: Dictionary = {}
@@ -13,7 +14,7 @@ func _ticks(count: int) -> void:
 			_last_phase = ai.state
 			phase_frames[ai.state] = Engine.get_physics_frames()
 
-func _dash_fresh(profile: String = "res://resources/enemies/melee_attack.tres", distance: float = 1.7) -> void:
+func _dash_fresh(profile: String = "res://tests/fixtures/enemy_dash_attack.tres", distance: float = 1.7) -> void:
 	player.set_physics_process(true)
 	await _fresh(0,Vector3(distance,0,0))
 	ai.settings.attack = load(profile).duplicate(true)
@@ -38,7 +39,7 @@ func _run() -> void:
 	for child in main.get_children():
 		if child is StaticBody3D and child.has_node("Targetable"): child.position = Vector3(12,0,10)
 	await _ticks(5)
-	for profile in ["res://resources/enemies/melee_attack.tres","res://tests/fixtures/enemy_fast_attack.tres","res://tests/fixtures/enemy_heavy_attack.tres"]:
+	for profile in ["res://tests/fixtures/enemy_dash_attack.tres","res://tests/fixtures/enemy_fast_attack.tres","res://tests/fixtures/enemy_heavy_attack.tres"]:
 		await _dash_fresh(profile)
 		await _windup()
 		var anchor: Vector3 = ai.attack_anchor
@@ -199,7 +200,7 @@ func _run() -> void:
 	# The same warned counterattack must hit both a direct strike and a real Approach.
 	var original_weapon: WeaponData = combat.equipped_weapon
 	for reach in [1.4,0.9]:
-		await _dash_fresh("res://resources/enemies/melee_attack.tres",1.2)
+		await _dash_fresh("res://tests/fixtures/enemy_dash_attack.tres",1.2)
 		combat.equipped_weapon = original_weapon.duplicate()
 		combat.equipped_weapon.melee_reach = reach
 		ai._start_windup(true)

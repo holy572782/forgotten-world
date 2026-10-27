@@ -1,5 +1,6 @@
 extends SceneTree
 ## Render real scene sprites against floor/walls; AI regressions run separately.
+const Motion = preload("res://scripts/combat/attack_motion_settings.gd")
 const EnemyScene = preload("res://scenes/enemies/practice_enemy.tscn")
 var failures: Array[String] = []
 var assertions := 0
@@ -81,7 +82,11 @@ func _spawn(ranged: bool) -> void:
 	actor.debug_label.hide()
 	actor.get_node("Targetable/HealthLabel").hide() # Text changes must not count as a visible flash.
 	sprite = actor.get_node("AnimatedSprite3D")
-	sword = actor.get_node("WeaponSwing")
+	sword = actor.get_node("SlashEffect" if "--effect" in OS.get_cmdline_user_args() else "WeaponSwing")
+	for name in ["WeaponSwing", "WeaponEffect", "SlashEffect"]:
+		var layer := actor.get_node(name)
+		layer.set_process(false)
+		layer.hide()
 	sprite.set_process(false)
 	sword.set_process(false)
 	sprite.get_node("Shadow").hide()
@@ -120,15 +125,13 @@ func _run() -> void:
 				var expected: String = ["down", "right", "up", "left"][side_index]
 				actor.facing = Vector3.BACK.rotated(Vector3.UP, side_index*PI/2 + deg_to_rad(yaw))
 				for index in range(3):
-					_pose((index + 0.3) / 3.0)
+					var weights := Motion.weights(sprite.visual.attack_frames, StringName("attack_"+expected), sprite.attack_ratios())
+					_pose(Motion.phase_at(weights, index, 0.3))
 					_check(sprite.animation == StringName("attack_" + expected) and sprite.frame == index, "Four camera yaws/directions follow attack elapsed time")
 					_check(sword.visible == not ranged, "Sword only visible on melee attack")
 					if not ranged:
 						_check(sword.frame == index and sword.animation == sprite.animation and sword.transform == sprite.transform and sword.pixel_size == sprite.pixel_size, "Sword/body same phase/centre/pixel scale")
-						var grips := {"down": [Vector2(85,42),Vector2(85,85),Vector2(26,85)], "left": [Vector2(85,42),Vector2(26,42),Vector2(26,69)], "right": [Vector2(26,42),Vector2(85,42),Vector2(85,69)], "up": [Vector2(26,69),Vector2(26,42),Vector2(85,42)]}
-						var hands := {"down": Vector2(38,33), "left": Vector2(7,26), "right": Vector2(41,26), "up": Vector2(10,30)}
-						var extra := sword.offset - sprite.offset
-						_check(grips[expected][index] - Vector2(32,32) + Vector2(extra.x,-extra.y) == hands[expected], "Each sword hilt stays on the authored fist without resizing")
+						_check(sword.offset == sprite.offset, "Weapon/effect uses the same centred layout as the player")
 						ground.hide()
 						var absent := await _sword_mask()
 						ground.show()

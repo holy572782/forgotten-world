@@ -1,6 +1,10 @@
 extends Resource
 ## Configuration only; timers and anchors belong to each enemy.
+const Motion = preload("res://scripts/combat/attack_motion_settings.gd")
 enum Kind { DASH_MELEE, STATIONARY_MELEE, PROJECTILE }
+## Optional shared player weapon profile; null preserves legacy/ranged attacks.
+@export var weapon: WeaponData
+@export var travel_settings: Resource
 @export var kind: Kind = Kind.DASH_MELEE
 @export var windup_seconds := 0.9
 @export var dash_max_distance := 1.5
@@ -22,3 +26,23 @@ enum Kind { DASH_MELEE, STATIONARY_MELEE, PROJECTILE }
 @export var projectile_lifetime := 6.0
 @export var projectile_range := 18.0
 @export var maximum_projectiles := 1
+
+func snapshot() -> Resource:
+	var result := duplicate(true)
+	if weapon == null: return result
+	result.weapon = weapon.duplicate() # External Resources remain shared by duplicate(true).
+	result.kind = Kind.DASH_MELEE
+	var motion := (weapon.motion if weapon.motion != null else Motion.new()).snapshot()
+	result.weapon.motion = motion
+	result.attack_seconds = weapon.swing_duration()
+	result.hit_radius = weapon.melee_reach
+	result.hit_half_angle_degrees = weapon.sweep_angle_degrees * 0.5
+	result.hit_yaw_degrees = 0.0
+	result.hit_height_tolerance = weapon.hit_height_tolerance
+	result.dash_max_distance = weapon.attack_range
+	if travel_settings != null: result.stop_distance = minf(travel_settings.stop_distance, weapon.melee_reach)
+	var visual := weapon.attack_visual
+	if visual != null and visual.is_valid():
+		var weights := Motion.weights(visual.attack_frames, &"attack_down", motion.frame_time_ratios)
+		result.hit_delay_seconds = result.attack_seconds * Motion.phase_at(weights, clampi(motion.hit_frame, 0, weights.size()-1), motion.hit_frame_percent/100.0)
+	return result

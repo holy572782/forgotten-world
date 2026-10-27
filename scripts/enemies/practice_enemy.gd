@@ -3,6 +3,7 @@ const Settings = preload("res://scripts/enemies/enemy_settings.gd")
 const AttackData = preload("res://scripts/enemies/enemy_attack_data.gd")
 const Projectile = preload("res://scripts/enemies/practice_projectile.gd")
 const Path = preload("res://scripts/combat/dash_path.gd")
+const Sweep = preload("res://scripts/combat/melee_sweep.gd")
 # RETURN = home/leash return; DASH_RETURN = attack_anchor.
 enum State { IDLE, CHASE, WINDUP, ATTACK, RECOVERY, RETURN, DEAD, DASH_APPROACH, DASH_RETURN }
 @export var settings: Settings = preload("res://resources/enemies/melee_practice.tres")
@@ -36,7 +37,7 @@ var _in_place := false
 func _ready() -> void:
 	process_physics_priority = 1 # Player reserves a stable target before enemy motion.
 	home = global_position
-	active_attack = settings.attack.duplicate(true)
+	active_attack = settings.attack.snapshot()
 	health.depleted.connect(_die)
 	telegraph = MeshInstance3D.new()
 	add_child(telegraph)
@@ -55,6 +56,16 @@ func player_alive() -> bool:
 
 func has_sight() -> bool:
 	return player_alive() and Path.sight(self, player.global_position)
+
+func engagement_range() -> float:
+	return settings.attack.weapon.attack_range if settings.attack.weapon != null else settings.attack_start_distance
+
+func current_weapon_visual() -> Resource:
+	if active_attack != null and active_attack.weapon != null: return active_attack.weapon.attack_visual
+	return settings.visual.weapon_visual if settings.visual != null else null
+
+func _weapon_strike_clear(at: Vector3) -> bool:
+	return Sweep.contains(global_position, facing, at, active_attack.weapon) and Path.strike_clear(self, at, settings.path)
 
 func _physics_process(delta: float) -> void:
 	if state == State.DEAD: return
@@ -79,8 +90,8 @@ func _physics_process(delta: float) -> void:
 		State.IDLE:
 			if sight and distance <= settings.detection_radius: _set_state(State.CHASE)
 		State.CHASE:
-			if sight and distance <= settings.attack_start_distance and cooldown <= 0.0: _start_windup()
-			elif sight and distance > settings.attack_start_distance: _walk_towards(player.global_position, delta)
+			if sight and distance <= engagement_range() and cooldown <= 0.0: _start_windup()
+			elif sight and distance > engagement_range(): _walk_towards(player.global_position, delta)
 		State.WINDUP:
 			if elapsed >= active_attack.windup_seconds:
 				if active_attack.kind == AttackData.Kind.DASH_MELEE: _begin_dash()
@@ -88,7 +99,8 @@ func _physics_process(delta: float) -> void:
 		State.DASH_APPROACH: _dash_step(delta, false)
 		State.ATTACK:
 			if not attack_executed and elapsed >= active_attack.hit_delay_seconds: _execute_attack()
-			if state == State.ATTACK and elapsed >= maxf(active_attack.attack_seconds, active_attack.hit_delay_seconds):
+			var final_wait: float = active_attack.weapon.motion.final_attack_wait if active_attack.weapon != null else 0.0
+			if state == State.ATTACK and elapsed >= maxf(active_attack.attack_seconds, active_attack.hit_delay_seconds) + final_wait:
 				if active_attack.kind == AttackData.Kind.DASH_MELEE: _begin_attack_return("")
 				else: _set_state(State.RECOVERY)
 		State.DASH_RETURN: _dash_step(delta, true)
@@ -121,21 +133,33 @@ func _walk_towards(at: Vector3, delta: float) -> void:
 
 func _start_windup(in_place: bool = false) -> void:
 	if not in_place: last_result = ""
-	active_attack = settings.attack.duplicate(true)
+	active_attack = settings.attack.snapshot()
 	attack_anchor = global_position
 	aimed_position = player.global_position
 	facing = _horizontal_direction(aimed_position)
 	_in_place = in_place or locomotion_held()
 	_return_after_recovery = false
+	if active_attack.weapon != null:
+		if not Path.strike_clear(self, aimed_position, settings.path):
+			last_result = "Unsafe weapon strike path"
+			_set_state(State.RECOVERY)
+			return
+		_in_place = _in_place or _weapon_strike_clear(aimed_position)
 	var offset := aimed_position - attack_anchor
 	offset.y = 0.0
 	# Both original capsules plus 0.15m gap, never a reduced collision shape.
 	var radius: float = $CollisionShape3D.shape.radius + player.get_node("CollisionShape3D").shape.radius + 0.15
 	var travel := clampf(offset.length() - maxf(active_attack.stop_distance, radius), 0.0, maxf(0.0, active_attack.dash_max_distance))
 	dash_destination = attack_anchor + facing * travel if active_attack.kind == AttackData.Kind.DASH_MELEE and not _in_place else attack_anchor
+	if active_attack.weapon != null:
+		var motion: Resource = active_attack.weapon.motion
+		active_attack.dash_seconds = clampf(attack_anchor.distance_to(dash_destination) / motion.approach_speed, motion.minimum_travel_time, motion.maximum_travel_time)
 	_set_state(State.WINDUP)
 
 func _begin_dash() -> void:
+	if active_attack.weapon != null and global_position.distance_to(dash_destination) <= 0.001:
+		_begin_attack()
+		return
 	if not Path.clear(self, dash_destination, settings.path, global_position):
 		_begin_attack_return("Unsafe approach: cancelled")
 		return
@@ -153,6 +177,12 @@ func _begin_attack_return(reason: String) -> void:
 		_set_state(State.RETURN if _return_after_recovery else State.RECOVERY)
 		return
 	_travel_start = global_position
+	if active_attack.weapon != null:
+		if global_position.distance_to(attack_anchor) <= 0.001:
+			_set_state(State.RECOVERY)
+			return
+		var motion: Resource = active_attack.weapon.motion
+		active_attack.return_seconds = clampf(global_position.distance_to(attack_anchor) / motion.return_speed, motion.return_minimum_travel_time, motion.return_maximum_travel_time)
 	_set_state(State.DASH_RETURN)
 
 func _dash_step(delta: float, returning: bool) -> void:
@@ -190,10 +220,13 @@ func _dash_step(delta: float, returning: bool) -> void:
 		else: _begin_attack_return("Approach collision: cancelled")
 	elif fraction >= 1.0:
 		if returning: _set_state(State.RECOVERY)
-		else: _begin_attack()
+		else:
+			var wait: float = active_attack.weapon.motion.approach_attack_delay if active_attack.weapon != null else 0.0
+			if _travel_elapsed >= duration + wait: _begin_attack()
 
 func melee_hits() -> bool:
 	if not player_alive() or not has_sight(): return false
+	if active_attack.weapon != null: return _weapon_strike_clear(player.global_position)
 	var offset := player.global_position - global_position
 	if absf(offset.y) > active_attack.hit_height_tolerance: return false
 	offset.y = 0.0
