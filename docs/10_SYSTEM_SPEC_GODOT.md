@@ -409,3 +409,7 @@ Approachは既存Motionのapproach_speed12m/s・minimum_travel_time0.25秒・max
 
 右クリックは既存の直接指定を優先し、直接の有効対象がなければ現在カメラで主人公足元→敵の攻撃基準点と主人公足元→クリックの画面方向を比較する。既存TargetDashSettings.directional_click_tolerance_degreesの初期半角20度（0〜90）以内から、選択中→画面角度差→既存の近距離優先→NodePath順で選ぶ。金色マークの高さ・画像offsetは方向へ使わない。候補は既存valid_candidatesと画面内条件を満たし、3Dの距離・高さ・壁／足場安全性、連撃受付とストックを維持する。
 右クリックのFREE入力は既存の物理tick受信、戦闘中は既存1個の次段予約へ渡す。左クリックの直接指定・L／J・向き自動照準・金色マーク・InputMapと攻撃／命中／移動シーケンスは変更しない。候補なしは不発。帰還は着手時の現物ADR-024とユーザー保存値を維持し、会話上の一定速度版との差は実装記録に残す。仕様・検査・手順は[方向クリック実装記録](m09_directional_click_audit.md)。M09ユーザーF5受入待ち。
+
+
+### M09完了後の画像用途訂正（2026-10-27、ADR-036）
+敵は日本語名の歩行／攻撃／攻撃態勢PNGを直接参照する。WINDUPは攻撃態勢の先頭コマを固定し、既存の赤点滅を重ねる。専用Idle未提供のため通常停止は従来のWalk先頭コマ、歩行／踏み込み／帰還はWalk、実攻撃はAttack。旧waitの通常Idle扱いは訂正済み。設定・大きさ・足元・4方向／カメラ・Fire1単発・白flash・戦闘／追跡の時間と判定は維持する。詳細は[m09_enemy_warning_pose_audit.md](m09_enemy_warning_pose_audit.md)。M09完了を維持、追加表示はF5確認待ち。

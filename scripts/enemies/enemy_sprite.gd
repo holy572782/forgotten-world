@@ -22,6 +22,7 @@ func _ready() -> void:
 	material.set_shader_parameter("body_radius", capsule.radius)
 	material.set_shader_parameter("body_height", capsule.height)
 	material_override = material
+	actor.attack_warning_started.connect(_process.bind(0.0))
 	_process(0.0)
 
 func attack_phase() -> float:
@@ -37,14 +38,19 @@ func _process(_delta: float) -> void:
 	var basis := camera.global_basis if camera != null else Basis.IDENTITY
 	var side: String = SIDES[Controller.direction_sector(actor.facing, basis, 4)]
 	var attacking: bool = actor.state == actor.State.ATTACK
-	var posed: bool = attacking or actor.state == actor.State.WINDUP
+	var warning: bool = actor.state == actor.State.WINDUP
+	var posed: bool = attacking or warning
 	var moving: bool = actor.velocity.length_squared() > 0.0001
 	if actor.state in [actor.State.DASH_APPROACH, actor.State.DASH_RETURN]:
 		var destination: Vector3 = actor.dash_destination if actor.state == actor.State.DASH_APPROACH else actor.attack_anchor
 		moving = actor.global_position.distance_to(destination) > 0.001 and not actor.locomotion_held()
 	var idle: bool = not posed and not moving and visual.idle_frames != null
 	var frames: SpriteFrames = visual.attack_frames if posed else (visual.idle_frames if idle else visual.walk_frames)
-	var next := StringName(("attack_" if posed else ("idle_" if idle else "walk_")) + side)
+	var family := "attack_" if posed else ("idle_" if idle else "walk_")
+	if warning and visual.warning_frames != null:
+		frames = visual.warning_frames
+		family = "warning_"
+	var next := StringName(family + side)
 	if frames == null or not frames.has_animation(next): return
 	if sprite_frames != frames: sprite_frames = frames
 	if animation != next: animation = next
@@ -53,7 +59,7 @@ func _process(_delta: float) -> void:
 		stop()
 		var sampled := Motion.sample(Motion.weights(frames, next, attack_ratios()), attack_phase())
 		set_frame_and_progress(int(sampled.x), sampled.y)
-	elif not posed and actor.state != actor.State.DEAD and (moving or idle):
+	elif not posed and actor.state != actor.State.DEAD and (moving or (idle and frames.get_frame_count(next) > 1)):
 		play()
 	else:
 		stop()

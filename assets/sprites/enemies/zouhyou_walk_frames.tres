@@ -1,6 +1,6 @@
 [gd_resource type="SpriteFrames" load_steps=14 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/sprites/enemies/zouhyou_walk.png" id="1"]
+[ext_resource type="Texture2D" path="res://画像フォルダ/敵/雑兵_歩行.png" id="1"]
 
 [sub_resource type="AtlasTexture" id="frame_0_0"]
 

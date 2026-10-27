@@ -759,3 +759,8 @@ weapon_depth.gdは新配置の低い剣をdownの第2コマで検査し、--effe
 `tests/enemy_followup.gd`を実描画60／30fpsと別プロセス--reloadで確認する。Idle全3コマ・4方向／FPS、異なるAtlas寸法、実踏み込みのWalk・攻撃／停止時の切替、0.09秒の通常→赤2回、実WINDUPごとのFire1単発と独立したEnabled／Volume／Pitchを確認する。
 実戦でAから攻撃→Aへ帰還→RECOVERY中にBまで歩行→Bから攻撃→Bへ帰還を観測する。各tickの歩行上限・実測速度、既存3秒のRECOVERY、射程内停止と再開帯、区間目標・対象予約／予告中の停止、壁／崖・接近しすぎ／死亡・魔導士の追跡除外、設定保存を検査する。境界試験のRECOVERY開始状態は明示したfixture、2回攻撃は実AIで完走する。
 既存の予告描画検査は新しい通常開始の点滅時刻へ更新し、敵画像の検査は新Idle再生と静止画比較の停止を反映する。敵剣／既存AI／時間・実F5・被弾／音・防御／連撃を回帰する。F5・聴感・滑らかさ・素材の表情はユーザー確認待ち。M09完了は維持。最終結果は[m09_enemy_followup_audit.md](m09_enemy_followup_audit.md)。
+
+
+## M09完了後：日本語画像と予告姿勢（2026-10-27、ADR-036）
+`enemy_followup.gd`の通常Idle期待値を歩行先頭1コマへ訂正し、両敵の日本語実パス／通常待機と予告素材の分離、実WINDUP入り際の即時切替、全カメラYawで赤／通常の間も専用先頭コマ固定、攻撃・移動・帰還・停止・死亡で予告素材が残らないことを検査する。Fire1の実遷移単発と既存追跡A→B・停止／衝突・時間、Resource再読込を維持。異なるセルサイズや将来の独立Idleも既存fixtureで検査する。
+`enemy_attack_warning.gd`は全方向の予告姿勢と実画素の赤色／復帰・白優先・火花・壁遮蔽を検査する。敵画像／剣、予告／弾時間、実F5入口・入力、被弾演出・防御を回帰する。ユーザーF5では通常停止→攻撃態勢赤点滅→Walk踏み込み→Attack→Walk帰還→停止／追跡、魔導士の予告→発射、Q/Eと防御を確認。最新結果は[m09_enemy_warning_pose_audit.md](m09_enemy_warning_pose_audit.md)。

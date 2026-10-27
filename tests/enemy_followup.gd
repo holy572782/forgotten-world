@@ -38,7 +38,7 @@ func _reload_followup() -> void:
 	var settings: Resource = load("res://.godot/enemy_followup_saved.tres")
 	_check(is_equal_approx(settings.pursuit_speed,3.2) and is_equal_approx(settings.preferred_attack_distance,3.5) and is_equal_approx(settings.pursuit_step_distance,0.6), "Pursuit tuning persists")
 	_check(is_equal_approx(settings.attack_warning_flash_interval,0.1) and is_equal_approx(settings.attack_warning_pitch_scale,0.8) and settings.attack_warning_sound.resource_path.ends_with("mz_fire1.ogg"), "Warning speed/stream/pitch persist")
-	_check(settings.visual.idle_frames.get_frame_count(&"idle_down") == 3 and is_equal_approx(settings.visual.idle_fps,6), "Idle frames/speed persist")
+	_check(settings.visual.idle_frames.get_frame_count(&"idle_down") == 1 and is_equal_approx(settings.visual.idle_fps,6), "Idle frames/speed persist")
 	for failure in failures: push_error(failure)
 	print("ENEMY FOLLOWUP RELOAD ","PASS" if failures.is_empty() else "FAIL")
 	quit(0 if failures.is_empty() else 1)
@@ -68,13 +68,17 @@ func _run() -> void:
 		body_sprite.visual = visual
 		for side in ["down","left","right","up"]:
 			var frames: SpriteFrames = visual.idle_frames
-			_check(frames.get_frame_count(StringName("idle_"+side)) == 3, "Idle has three frames in each authored direction")
+			_check(frames.get_frame_count(StringName("idle_"+side)) == 1, "Normal stand has one historical walk pose per direction")
+		for frames in [visual.walk_frames,visual.attack_frames,visual.warning_frames,visual.idle_frames]:
+			for animation in frames.get_animation_names():
+				_check(FileAccess.file_exists(frames.get_frame_texture(animation,0).atlas.resource_path) and frames.get_frame_texture(animation,0).atlas.resource_path.begins_with("res://画像フォルダ/敵/"), "All active sheets read existing Japanese filenames")
 		ai._set_state(ai.State.IDLE)
+		_check(visual.idle_frames.get_frame_texture(&"idle_down",0).atlas == visual.walk_frames.get_frame_texture(&"walk_down",0).atlas, "Normal stand uses walk sheet, not warning sheet")
 		var seen: Dictionary = {}
 		for tick in range(65):
 			await _ticks(1)
 			seen[body_sprite.frame] = true
-		_check(seen.has(0) and seen.has(1) and seen.has(2) and String(body_sprite.animation).begins_with("idle_"), "Idle advances all three real engine frames")
+		_check(seen.size() == 1 and seen.has(0) and String(body_sprite.animation).begins_with("idle_") and not body_sprite.is_playing(), "Normal stand stays on walk column zero")
 		visual.idle_fps = 8.0
 		await _ticks(2)
 		_check(is_equal_approx(body_sprite.speed_scale*body_sprite.sprite_frames.get_animation_speed(body_sprite.animation),8.0), "Inspector controls idle fps")
@@ -98,7 +102,7 @@ func _run() -> void:
 		_check(String(body_sprite.animation).begins_with("walk_"), "Post-attack walking uses walk sheet")
 		ai.velocity = Vector3.ZERO
 		await _ticks(2)
-		_check(String(body_sprite.animation).begins_with("idle_"), "Stopped recovery returns to idle loop")
+		_check(String(body_sprite.animation).begins_with("idle_"), "Stopped recovery returns to normal stand")
 		ai._set_state(ai.State.CHASE)
 		ai.cooldown = 1.0
 		ai.velocity = Vector3.RIGHT
@@ -112,20 +116,38 @@ func _run() -> void:
 		warning.warning_sound_presented.connect(_cue)
 		ai._start_windup()
 		_check(cue_count == 1 and warning.warning_audio.playing and is_equal_approx(warning.warning_audio.pitch_scale,1.0) and not warning.warning_audio.stream.loop, "Real windup entry plays Fire1 once at pitch 1.0, without looping")
+		_check(body_sprite.sprite_frames == visual.warning_frames and String(body_sprite.animation).begins_with("warning_"), "WINDUP entry immediately switches to warning pose")
+		for yaw in [0.0,90.0,180.0,270.0]:
+			main.get_node("CameraRig").rotation.y = deg_to_rad(yaw)
+			main.get_node("CameraRig").snap_to_target()
+			ai.facing = Vector3.BACK.rotated(Vector3.UP,deg_to_rad(yaw))
+			await _ticks(2) # Let the existing camera rig update its actual Camera3D.
+			for time in [0.0,0.1,0.2,0.3,0.4,0.8]:
+				ai.elapsed = time
+				body_sprite._process(0.0)
+				warning._process(0.0)
+				_check(body_sprite.animation == &"warning_down" and body_sprite.frame == 0 and not body_sprite.is_playing() and body_sprite.sprite_frames == visual.warning_frames, "Red/normal pulses hold the same warning texture at each camera yaw")
+				_check(body_sprite.sprite_frames.get_frame_texture(body_sprite.animation,0).atlas.resource_path.contains("攻撃態勢"), "Warning reads existing Japanese filename directly")
+		for state in [ai.State.ATTACK,ai.State.DASH_APPROACH,ai.State.DASH_RETURN,ai.State.RECOVERY,ai.State.IDLE,ai.State.DEAD]:
+			ai._set_state(state)
+			body_sprite._process(0.0)
+			_check(body_sprite.sprite_frames != visual.warning_frames, "Warning texture never remains after windup")
+		ai._set_state(ai.State.WINDUP)
+		_check(cue_count == 2, "Second real WINDUP entry emits exactly one more sound")
 		ai._set_state(ai.State.WINDUP)
 		await _seconds(0.45)
-		_check(cue_count == 1, "Holding windup / colour cycles never retrigger sound")
+		_check(cue_count == 2, "Holding windup / colour cycles never retrigger sound")
 		ai._set_state(ai.State.IDLE)
 		ai.settings.attack_warning_flash_enabled = false
 		ai.settings.attack_warning_pitch_scale = 0.8
 		ai.settings.attack_warning_volume_db = -20.0
 		ai._start_windup()
-		_check(cue_count == 2 and is_equal_approx(warning.warning_audio.pitch_scale,0.8) and warning.warning_audio.volume_db == -20.0, "Sound tuning is independent of flash on/off")
+		_check(cue_count == 3 and is_equal_approx(warning.warning_audio.pitch_scale,0.8) and warning.warning_audio.volume_db == -20.0, "Sound tuning is independent of flash on/off")
 		ai._set_state(ai.State.IDLE)
 		ai.settings.attack_warning_sound_enabled = false
 		ai._start_windup()
 		await _ticks(2)
-		_check(cue_count == 2 and not warning.warning_audio.playing, "Sound switch disables cue and stops playback")
+		_check(cue_count == 3 and not warning.warning_audio.playing, "Sound switch disables cue and stops playback")
 	for index in range(10):
 		var times := [0.0,0.08,0.095,0.17,0.185,0.26,0.275,0.35,0.365,0.8]
 		_check(Warning.pulse_on(times[index],0.9,2,0.09) == (index in [2,3,6,7]), "Fast normal/red sequence at 0.09-second intervals")

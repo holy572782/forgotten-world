@@ -104,6 +104,7 @@ func _run() -> void:
 			camera.look_at(Vector3(0,0.8,0))
 			actor.facing = Vector3.BACK
 			_warning(0.15)
+			_check(sprite.sprite_frames == actor.settings.visual.warning_frames and sprite.frame == 0 and not sprite.is_playing(), "Each view uses fixed warning pose during red pulse")
 			actor.settings.attack_warning_flash_enabled = false
 			var normal := await _image()
 			sprite.hide()

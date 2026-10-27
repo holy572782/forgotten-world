@@ -259,3 +259,7 @@ M09内で、武器別Motion Resource、既存の一振り時間、3コマ比率�
 
 右クリックだけを直接指定優先＋画面半角20度の補助へ拡張。既存Settingsとvalid_candidates、selected_target、request_attack／request_followupを再利用し、左指定・L／J・自動照準・マークと3Dの戦闘安全性を保護する。帰還処理やMotion原本は編集しない。
 新directional_clickの実描画60／30・別プロセス再読込で角度境界・優先順位・移動中WASD／矢印・Q/E・右クリック3体予約・不発／遮断・保存を検査。既存選択／左／操作／自動照準とM06〜M09の戦闘を回帰する。旧「空地なら常に不発」の検査は「有効候補のない方向は不発」に更新し、命中・消費・安全性は緩めない。ユーザーF5 A〜Eは別途待ち、M09内の追加改善で新工程なし。詳細は[方向クリック実装記録](m09_directional_click_audit.md)。
+
+
+### M09完了後の画像用途訂正（2026-10-27、ADR-036）
+敵は日本語名の歩行／攻撃／攻撃態勢PNGを直接参照する。WINDUPは攻撃態勢の先頭コマを固定し、既存の赤点滅を重ねる。専用Idle未提供のため通常停止は従来のWalk先頭コマ、歩行／踏み込み／帰還はWalk、実攻撃はAttack。旧waitの通常Idle扱いは訂正済み。設定・大きさ・足元・4方向／カメラ・Fire1単発・白flash・戦闘／追跡の時間と判定は維持する。詳細は[m09_enemy_warning_pose_audit.md](m09_enemy_warning_pose_audit.md)。M09完了を維持、追加表示はF5確認待ち。

@@ -155,7 +155,7 @@ func _run() -> void:
 		_check(sprite.frame != 0, "Walking advances actual engine frames")
 		actor.velocity = Vector3.ZERO
 		sprite._process(0.0)
-		_check(sprite.is_playing() and String(sprite.animation).begins_with("idle_"), "Idle uses its own looping sheet")
+		_check(not sprite.is_playing() and String(sprite.animation).begins_with("idle_") and sprite.frame == 0, "Normal stand holds walk column zero, never the warning pose")
 		_pose(0.5)
 		wall.show()
 		wall.collision_layer = 1
