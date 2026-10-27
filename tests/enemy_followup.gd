@@ -287,7 +287,7 @@ func _run() -> void:
 	ai.health.damage(100,player)
 	held = ai.global_position
 	await _seconds(0.3)
-	_check(ai.global_position == held, "Defeated actor never pursues")
+	_check(not is_instance_valid(ai) or ai.global_position == held, "Defeated actor never pursues and may finish visual cleanup")
 	await _fresh(1,Vector3(7,0,0))
 	ai.settings = ai.settings.duplicate()
 	ai.settings.pursuit_enabled = true

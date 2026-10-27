@@ -31,6 +31,8 @@ func _ready() -> void:
 
 func select_mode(next: int) -> void:
 	var main := get_parent()
+	for effect in get_tree().get_nodes_in_group("enemy_defeat_visuals"):
+		if main.is_ancestor_of(effect): effect.queue_free()
 	var player: CharacterBody3D = main.get_node("Player")
 	player.combat.cancel()
 	player.combat.selected_target = null

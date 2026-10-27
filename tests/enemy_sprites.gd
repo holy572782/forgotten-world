@@ -72,6 +72,7 @@ func _pose(phase: float) -> void:
 	sword.update_depth_occlusion()
 
 func _spawn(ranged: bool) -> void:
+	for effect in get_nodes_in_group("enemy_defeat_visuals"): effect.free()
 	if is_instance_valid(actor): actor.free()
 	actor = EnemyScene.instantiate()
 	actor.player = player

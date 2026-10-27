@@ -417,3 +417,15 @@
 - 次回攻撃の開始位置を毎回記録し、その場所へ帰還。元の回復時間3秒・攻撃間隔は維持する。新設定は他敵で既定OFF、魔導士は従来どおり。
 - 金色マークはTargetableが生成するImmediateMeshのMeshInstance3Dが既定で影を落としていた。Marker/Meshだけcast_shadow=OFFにし、共有スクリプトと既存2シーンへ適用。形状・位置・色・選択／クリック・他の影は変更しない。
 - 詳細・検査・設定表・F5手順は `m09_enemy_tactics_audit.md`。commit／pushはユーザーが行う。
+
+
+## ADR-038 — 雑兵の共通SEと敵の画面外撃破表示（2026-10-28）
+- 状態：採用（ユーザー追加指示）。M09完了後の追加演出。M09基本戦闘完了を維持し、新工程を作らない。
+- 雑兵はactive_attack.weapon.feedbackから主人公と同じResourceを参照し、一振り開始時にsnapshotする。共通加重時計の剣振りでEvasion1、実プレイヤーHP減少確認でSlash1を各1回。Guard成功通知で防御された振りを識別し、既存プレイヤー側Sword2のみ再生する。Fire1の予告開始1回と魔導士の攻撃音は変更しない。
+- 両敵のHP0時は即DEAD・移動／攻撃停止、bodyのcollision_layer／mask=0、shape無効化、Targetable無効、残弾破棄。Health／ダメージ計算・主人公の攻撃／連撃／撃破後の残時間・帰還処理は変更しない。
+- EnemySettings.defeatに敵別のEnemyDefeatSettingsを指定。通常2敵は共通flyoff_defeat.tres、NONE／SCENEを選択可能。将来の大型敵／ボスはsceneを別実装に差し替えられるが、今回は制作しない。
+- 撃破表示は元の敵とは独立したCanvasLayer上のSprite2D。既存の日本語Walk先頭コマとpixel_size／足元offsetをCamera3Dで投影し、Nearestで表示。最後の実攻撃のstrike_facing（不明なら攻撃者→敵の方向）をカメラに投影して吹き飛ばし、回転・Viewport変更に追従する。元画像・存命中の深度／影は変更しない。
+- 初期最低速度18m/s相当・浮き上がり0.7m相当・目安0.65秒。Viewportの端と画像全体の大きさから必要な速度を補い、途中で寿命だけを理由に消さず、画像全体が画面外＋余白24pxとなってから解放。Camera欠落などは既定最大2.5秒の安全期限で解放する。
+- 飛行中の死亡表示だけを地形より手前へ合成し、壁の物理／深度で途中停止・消失しないようにする。生存中の敵／主人公／剣は従来の3D遮蔽を維持。致死打の白flashは表示へ引き継ぎ、火花は従来どおり独立再生。
+- 表示終了で元の無効な実体も解放。実体の先行削除でも表示は生存し、モードリセット／表示の強制破棄でも元実体の掃除を行う。二重開始／二重終了を防止し、飛行表示に当たり判定／Targetableを持たせない。
+- 設定・検査・未確認事項は `m09_enemy_defeat_audio_audit.md`。commit／pushはユーザーが行う。

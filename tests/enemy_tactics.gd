@@ -216,7 +216,7 @@ func _run() -> void:
 	ai.health.damage(100,player)
 	stopped = ai.global_position
 	await _seconds(0.3)
-	_check(ai.global_position == stopped and ai.combat_move_mode.is_empty(), "Death stops all combat movement")
+	_check(not is_instance_valid(ai) or (ai.global_position == stopped and ai.combat_move_mode.is_empty()), "Death stops all combat movement and may finish visual cleanup")
 	await _fresh(1,Vector3(3.5,0,0))
 	_check(not ai.settings.track_windup_target and not ai.settings.combat_movement_enabled, "Ranged profile remains unchanged")
 	ai.settings = ai.settings.duplicate()

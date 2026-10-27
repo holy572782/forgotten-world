@@ -6,6 +6,7 @@ const Path = preload("res://scripts/combat/dash_path.gd")
 const Sweep = preload("res://scripts/combat/melee_sweep.gd")
 # RETURN = home/leash return; DASH_RETURN = attack_anchor.
 enum State { IDLE, CHASE, WINDUP, ATTACK, RECOVERY, RETURN, DEAD, DASH_APPROACH, DASH_RETURN }
+signal attack_started
 signal attack_warning_started
 @export var settings: Settings = preload("res://resources/enemies/melee_practice.tres")
 @export var player: CharacterBody3D
@@ -342,6 +343,7 @@ func _begin_dash() -> void:
 
 func _begin_attack() -> void:
 	_set_state(State.ATTACK)
+	attack_started.emit()
 	# Keep the original ranged release timing (no extra physical tick).
 	if active_attack.hit_delay_seconds <= 0.0: _execute_attack()
 
@@ -442,11 +444,17 @@ func _set_state(next: State) -> void:
 	_refresh_visuals()
 	if next == State.WINDUP and previous != State.WINDUP: attack_warning_started.emit()
 
-func _die(_source: Node) -> void:
+func _die(source: Node) -> void:
+	if state == State.DEAD: return
+	set_physics_process(false)
 	_set_state(State.DEAD)
 	targetable.set_available(false)
 	clear_shots()
+	collision_layer = 0
+	collision_mask = 0
+	$CollisionShape3D.set_deferred("disabled",true)
 	$Body.position.y = 0.26
+	$DefeatPresentation.start(source)
 
 func clear_shots() -> void:
 	for shot in shots:

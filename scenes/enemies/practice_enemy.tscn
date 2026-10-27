@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://scripts/combat/targetable.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/combat/health_component.gd" id="2"]
@@ -11,6 +11,8 @@
 [ext_resource type="Shader" path="res://assets/shaders/enemy_sprite_flash.gdshader" id="9_flash"]
 [ext_resource type="Script" path="res://scripts/enemies/enemy_effect_visual.gd" id="10_effect"]
 [ext_resource type="Script" path="res://scripts/enemies/enemy_attack_warning.gd" id="11_warning"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_sword_audio.gd" id="12_audio"]
+[ext_resource type="Script" path="res://scripts/effects/enemy_defeat_presentation.gd" id="13_defeat"]
 [sub_resource type="Resource" id="Health"]
 script = ExtResource("3")
 max_hp = 40.0
@@ -93,3 +95,8 @@ material_override = SubResource("MarkerMaterial")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Targetable/Marker"]
 shape = SubResource("MarkerShape")
 
+
+[node name="SwordAudio" type="Node" parent="."]
+script = ExtResource("12_audio")
+[node name="DefeatPresentation" type="Node" parent="."]
+script = ExtResource("13_defeat")
