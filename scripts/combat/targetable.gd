@@ -19,6 +19,7 @@ func _ready() -> void:
 	material.albedo_color = Color(1.0, 0.72, 0.12)
 	material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	$Marker/Mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	$Marker/Mesh.material_override = material
 	set_available(false)
 	health.hp_changed.connect(_update_label)

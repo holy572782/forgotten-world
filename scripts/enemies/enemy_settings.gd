@@ -25,6 +25,22 @@ const Visual = preload("res://scripts/enemies/enemy_visual_data.gd")
 @export_range(0.5, 2.0, 0.01) var attack_warning_pitch_scale := 1.0
 @export_group("Post-attack pursuit")
 @export var pursuit_enabled := false
+## Shared walk speed for range-closing pursuit and post-return local movement.
 @export_range(0.1, 10.0, 0.1) var pursuit_speed := 2.0
 @export_range(0.5, 20.0, 0.1) var preferred_attack_distance := 5.0
+## Also the maximum goal distance of each local combat movement interval.
 @export_range(0.1, 3.0, 0.1) var pursuit_step_distance := 1.0
+
+@export_group("Melee aim commitment")
+@export var track_windup_target := false
+## Minimum time from final aim lock to damage; includes fixed-route travel.
+@export_range(0.1, 1.5, 0.01) var aim_commit_minimum_seconds := 0.45
+@export_group("Post-return combat movement")
+## Uses existing pursuit_speed / pursuit_step_distance / preferred_attack_distance.
+@export var combat_movement_enabled := false
+@export_range(0.2, 3.0, 0.05) var combat_direction_interval := 0.7
+@export_range(0.05, 2.0, 0.05) var combat_wait_seconds := 0.2
+@export_range(0, 8, 1) var combat_strafe_weight := 2
+@export_range(0, 8, 1) var combat_approach_weight := 1
+@export_range(0, 8, 1) var combat_retreat_weight := 1
+@export_range(0, 8, 1) var combat_wait_weight := 1

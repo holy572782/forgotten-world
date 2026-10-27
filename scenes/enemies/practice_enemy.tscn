@@ -87,6 +87,7 @@ collision_layer = 8
 collision_mask = 0
 monitoring = false
 [node name="Mesh" type="MeshInstance3D" parent="Targetable/Marker"]
+cast_shadow = 0
 mesh = SubResource("MarkerMesh")
 material_override = SubResource("MarkerMaterial")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Targetable/Marker"]

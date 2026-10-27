@@ -18,6 +18,11 @@ class MotionTrace extends Node:
 		elif actor.state == actor.State.RECOVERY: recovery_moves.append(last_position.distance_to(actor.global_position))
 		last_position = actor.global_position
 
+func _fresh_sword(distance: float) -> void:
+	await super._fresh_sword(distance)
+	ai.settings.combat_movement_enabled = false
+	ai.settings.preferred_attack_distance = 5.0
+
 func _seconds(seconds: float) -> void:
 	var start := Engine.get_physics_frames()
 	while float(Engine.get_physics_frames()-start)/Engine.physics_ticks_per_second < seconds: await _ticks(1)

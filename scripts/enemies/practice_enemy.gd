@@ -37,6 +37,18 @@ var _in_place := false
 var _pursuit_moving := false
 var _pursuit_step_active := false
 var _pursuit_destination := Vector3.ZERO
+var aim_locked := false
+var _late_aim := false
+var _forced_in_place := false
+var _commit_minimum := 0.0
+var _commit_elapsed := 0.0
+var _commit_wait := 0.0
+var combat_move_mode := ""
+var _combat_move_elapsed := 0.0
+var _combat_move_duration := 0.0
+var _combat_move_goal := Vector3.ZERO
+var _combat_move_blocked := false
+var _combat_move_index := 0
 
 func _ready() -> void:
 	process_physics_priority = 1 # Player reserves a stable target before enemy motion.
@@ -98,12 +110,10 @@ func _physics_process(delta: float) -> void:
 			elif sight and distance > engagement_range():
 				if _can_pursue() and attack_count > 0: _pursuit_step(delta)
 				else: _walk_towards(player.global_position, delta)
-			elif _can_pursue() and attack_count > 0: _pursuit_step(delta)
+			elif _can_pursue() and attack_count > 0: _post_attack_step(delta)
 			else: velocity = Vector3.ZERO # Stopped cooldown uses Idle, not a stale walk velocity.
 		State.WINDUP:
-			if elapsed >= active_attack.windup_seconds:
-				if active_attack.kind == AttackData.Kind.DASH_MELEE: _begin_dash()
-				else: _begin_attack()
+			_windup_step(delta)
 		State.DASH_APPROACH: _dash_step(delta, false)
 		State.ATTACK:
 			if not attack_executed and elapsed >= active_attack.hit_delay_seconds: _execute_attack()
@@ -113,7 +123,7 @@ func _physics_process(delta: float) -> void:
 				else: _set_state(State.RECOVERY)
 		State.DASH_RETURN: _dash_step(delta, true)
 		State.RECOVERY:
-			if _can_pursue() and attack_count > 0 and not _return_after_recovery: _pursuit_step(delta)
+			if _can_pursue() and attack_count > 0 and not _return_after_recovery: _post_attack_step(delta)
 			else:
 				velocity = Vector3.ZERO
 				_stop_pursuit()
@@ -152,6 +162,78 @@ func _can_pursue() -> bool:
 func preferred_distance() -> float:
 	var radius: float = $CollisionShape3D.shape.radius + player.get_node("CollisionShape3D").shape.radius + 0.15
 	return maxf(radius, minf(maxf(settings.preferred_attack_distance, active_attack.stop_distance), engagement_range()))
+
+func _stop_combat_move() -> void:
+	combat_move_mode = ""
+	_combat_move_elapsed = 0.0
+	_combat_move_blocked = false
+
+func _post_attack_step(delta: float) -> void:
+	if not settings.combat_movement_enabled:
+		_pursuit_step(delta)
+		return
+	velocity = Vector3.ZERO
+	if not player_alive() or not has_sight() or locomotion_held():
+		_stop_combat_move()
+		_stop_pursuit()
+		return
+	var offset := player.global_position - global_position
+	var distance := Vector2(offset.x, offset.z).length()
+	if distance > settings.leash_radius or global_position.distance_to(home) > settings.leash_radius or absf(offset.y) > settings.path.floor_tolerance:
+		_stop_combat_move()
+		return
+	# Outside the local fighting band, reuse the existing safe pursuit rather than orbit away.
+	if distance > engagement_range() + 0.15 or _pursuit_moving:
+		_stop_combat_move()
+		_pursuit_step(delta)
+		return
+	_stop_pursuit()
+	_combat_move_elapsed += delta
+	if combat_move_mode.is_empty() or _combat_move_elapsed >= _combat_move_duration:
+		_choose_combat_move()
+	if combat_move_mode == "wait" or _combat_move_blocked: return
+	var speed := clampf(settings.pursuit_speed, 0.1, 10.0)
+	var remaining := global_position.distance_to(_combat_move_goal)
+	if remaining <= 0.001: return # Keep the selected direction until its interval expires.
+	var next := global_position.move_toward(_combat_move_goal, speed * delta)
+	if next.distance_to(player.global_position) < maxf(active_attack.stop_distance, 0.95) or not Path.clear(self, next, settings.path, global_position):
+		_combat_move_blocked = true
+		return
+	var before := global_position
+	_walk_towards(next, delta, speed)
+	if global_position.distance_to(before) < minf(speed * delta, remaining) * 0.5:
+		_combat_move_blocked = true
+
+func _choose_combat_move() -> void:
+	# Weighted, interleaved cycle: reproducible and stable without per-tick random turns.
+	var modes: Array[String] = []
+	var weights := [clampi(settings.combat_strafe_weight,0,8), clampi(settings.combat_strafe_weight,0,8), clampi(settings.combat_approach_weight,0,8), clampi(settings.combat_retreat_weight,0,8), clampi(settings.combat_wait_weight,0,8)]
+	var names := ["left", "right", "approach", "retreat", "wait"]
+	for pass_index in range(8):
+		for index in range(names.size()):
+			if pass_index < weights[index]: modes.append(names[index])
+	if modes.is_empty(): modes.append("wait")
+	combat_move_mode = modes[_combat_move_index % modes.size()]
+	_combat_move_index += 1
+	_combat_move_elapsed = 0.0
+	_combat_move_duration = clampf(settings.combat_wait_seconds if combat_move_mode == "wait" else settings.combat_direction_interval, 0.05 if combat_move_mode == "wait" else 0.2, 3.0)
+	_combat_move_blocked = false
+	var toward := _horizontal_direction(player.global_position)
+	var distance := global_position.distance_to(player.global_position)
+	var step := clampf(settings.pursuit_step_distance, 0.1, 3.0)
+	var direction := Vector3.ZERO
+	match combat_move_mode:
+		"left": direction = toward.cross(Vector3.UP)
+		"right": direction = -toward.cross(Vector3.UP)
+		"approach":
+			direction = toward
+			step = minf(step, maxf(0.0, distance - preferred_distance()))
+		"retreat":
+			direction = -toward
+			step = minf(step, maxf(0.0, minf(engagement_range()+0.5, preferred_distance()+0.9) - distance))
+	_combat_move_goal = global_position + direction * step
+	if _combat_move_goal.distance_to(home) > settings.leash_radius or _combat_move_goal.distance_to(player.global_position) < maxf(active_attack.stop_distance,0.95) or not Path.clear(self, _combat_move_goal, settings.path, global_position):
+		_combat_move_blocked = true
 
 func _pursuit_step(delta: float) -> void:
 	velocity = Vector3.ZERO
@@ -196,15 +278,27 @@ func _start_windup(in_place: bool = false) -> void:
 	if not in_place: last_result = ""
 	active_attack = settings.attack.snapshot()
 	attack_anchor = global_position
+	_late_aim = settings.track_windup_target and active_attack.weapon != null and active_attack.kind == AttackData.Kind.DASH_MELEE
+	aim_locked = not _late_aim
+	_forced_in_place = in_place
+	_commit_minimum = clampf(settings.aim_commit_minimum_seconds, 0.1, 1.5)
+	_commit_elapsed = 0.0
+	_commit_wait = 0.0
+	_return_after_recovery = false
+	if not _plan_attack():
+		last_result = "Unsafe weapon strike path"
+		_set_state(State.RECOVERY)
+		return
+	_set_state(State.WINDUP)
+
+func _plan_attack() -> bool:
+	# Preview follows the player only during WINDUP. Once committed this is never called.
 	aimed_position = player.global_position
 	facing = _horizontal_direction(aimed_position)
-	_in_place = in_place or locomotion_held()
-	_return_after_recovery = false
+	_in_place = _forced_in_place or locomotion_held()
 	if active_attack.weapon != null:
 		if not Path.strike_clear(self, aimed_position, settings.path):
-			last_result = "Unsafe weapon strike path"
-			_set_state(State.RECOVERY)
-			return
+			return false
 		_in_place = _in_place or _weapon_strike_clear(aimed_position)
 	var offset := aimed_position - attack_anchor
 	offset.y = 0.0
@@ -215,7 +309,26 @@ func _start_windup(in_place: bool = false) -> void:
 	if active_attack.weapon != null:
 		var motion: Resource = active_attack.weapon.motion
 		active_attack.dash_seconds = clampf(attack_anchor.distance_to(dash_destination) / motion.approach_speed, motion.minimum_travel_time, motion.maximum_travel_time)
-	_set_state(State.WINDUP)
+	return true
+
+func _windup_step(delta: float) -> void:
+	if _late_aim:
+		if not aim_locked:
+			if not _plan_attack():
+				_begin_attack_return("Unsafe tracked strike: cancelled")
+				return
+			if settings.attack_range_indicator_enabled: _refresh_visuals() # Optional debug route follows the preview too.
+			if elapsed < active_attack.windup_seconds: return
+			aim_locked = true
+			var travel := active_attack.dash_seconds if global_position.distance_to(dash_destination) > 0.001 else 0.0
+			var arrival_wait: float = active_attack.weapon.motion.approach_attack_delay
+			_commit_wait = maxf(0.0, _commit_minimum - travel - arrival_wait - active_attack.hit_delay_seconds)
+			_commit_elapsed = 0.0
+		else: _commit_elapsed += delta
+		if _commit_elapsed + 0.000001 < _commit_wait: return
+	elif elapsed < active_attack.windup_seconds: return
+	if active_attack.kind == AttackData.Kind.DASH_MELEE: _begin_dash()
+	else: _begin_attack()
 
 func _begin_dash() -> void:
 	if active_attack.weapon != null and global_position.distance_to(dash_destination) <= 0.001:
@@ -325,6 +438,7 @@ func _set_state(next: State) -> void:
 	_held_elapsed = 0.0
 	velocity = Vector3.ZERO
 	_stop_pursuit()
+	_stop_combat_move()
 	_refresh_visuals()
 	if next == State.WINDUP and previous != State.WINDUP: attack_warning_started.emit()
 

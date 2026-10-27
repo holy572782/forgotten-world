@@ -9,3 +9,8 @@ attack = ExtResource("2")
 visual = ExtResource("3_visual")
 attack_warning_sound = ExtResource("4_warning")
 pursuit_enabled = true
+
+track_windup_target = true
+aim_commit_minimum_seconds = 0.45
+combat_movement_enabled = true
+preferred_attack_distance = 3.5
