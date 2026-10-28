@@ -363,3 +363,8 @@ ATTACKからRETURNへ移る条件・Combo Input Window・Final Attack Wait・撃
 雑兵の剣音は主人公と同じWeaponData.feedbackを使用。一振りごとの共通時間でEvasion1、実HP減少でSlash1、防御成立なら既存のSword2のみ。予告Fire1と魔導士の攻撃音は維持する。
 両敵のHP0は即DEAD・攻撃／移動／衝突／選択無効。元の戦闘実体とは別の表示が現在のCamera／Viewportへ投影され、最後の攻撃方向へ少し浮いて画面外へ飛ぶ。画像全体の画面外確認で表示と無効実体を解放し、Camera欠落などは安全期限で解放する。画面外表示だけ地形より前に合成し、元の存命時の3D深度は維持。敵別Defeat Resource／sceneで将来の演出差し替えに対応する。
 主人公の攻撃時間・コンボ／対象切替・撃破後の残時間と帰還・既存命中／ダメージ／敵AIは変更しない。初期設定／仕組み／自動検査とF5は[m09_enemy_defeat_audio_audit.md](m09_enemy_defeat_audio_audit.md)。M09完了維持、追加演出のF5・聴感は確認待ち。
+
+
+### M09完了後：撃破飛行の弾み・Cry1（2026-10-29、ADR-039）
+両敵の撃破表示は、前方向の移動を継続しつつ大きな初回弧＋減衰する小さな弧を加える。既存Lift Heightを初回高さ0.9m相当として再利用、小さな弾み2回・高さ比0.45／以降減衰0.55、目安0.65秒。Camera／Viewportで画像全体が画面外へ出てから削除する方式、安全期限、即DEAD／衝突・選択無効・コンボ／帰還は維持する。
+Cry1をHP0時に1回だけ、音量-12dB／pitch0.5で独立したAudioStreamPlayerから再生。表示／実体の削除では止めず、自然なfinishedで解放。音声と設定は敵別Defeat Resourceで差し替え・調整可能。既存SE・画像は変更しない。設定／検査／F5は[m09_enemy_bounce_cry_audit.md](m09_enemy_bounce_cry_audit.md)。M09完了維持・今回の演出／聴感F5確認待ち。

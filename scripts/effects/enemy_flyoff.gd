@@ -65,6 +65,18 @@ func _exit_distance(at: Vector2, direction: Vector2, bounds: Rect2) -> float:
 	if absf(direction.y) > 0.0001: y = ((bounds.end.y if direction.y > 0.0 else bounds.position.y)-at.y)/direction.y
 	return maxf(0.0,minf(x,y)) + 2.0
 
+static func bounce_height_at(phase: float, height: float, count: int, secondary_scale: float, decay: float) -> float:
+	# Initial hop is fast; smaller successive arcs keep forward flight independent.
+	var t := clampf(phase,0.0,1.0)
+	if t <= 0.0 or t >= 1.0: return 0.0
+	var hops := clampi(count,0,4)
+	var first_fraction := 0.45 if hops > 0 else 1.0
+	if t < first_fraction: return maxf(0.0,height)*sin(PI*t/first_fraction)
+	var later := (t-first_fraction)/(1.0-first_fraction)*hops
+	var index := mini(floori(later),hops-1)
+	var amplitude := maxf(0.0,height)*clampf(secondary_scale,0.0,1.0)*pow(clampf(decay,0.0,0.95),index)
+	return amplitude*sin(PI*(later-index))
+
 func _place() -> void:
 	var camera := get_viewport().get_camera_3d()
 	if camera == null:
@@ -97,7 +109,7 @@ func _place() -> void:
 	var target_rect := viewport_rect.grow_individual(half.x,half.y,half.x,half.y)
 	var duration := clampf(settings.flyoff_duration,0.2,1.5)
 	var speed := maxf(clampf(settings.minimum_fly_speed,1.0,60.0)*pixels_per_metre,_exit_distance(at,direction,target_rect)/duration)
-	var lift := sin(PI*clampf(elapsed/duration,0.0,1.0))*clampf(settings.lift_height,0.0,3.0)*up.length()
+	var lift := bounce_height_at(elapsed/duration,clampf(settings.lift_height,0.0,3.0),settings.bounce_count,settings.secondary_bounce_scale,settings.bounce_decay)*up.length()
 	sprite.position = at + direction*speed*elapsed + Vector2.UP*lift
 	var local := sprite.get_rect()
 	last_rect = Rect2(sprite.position+local.position*sprite.scale,local.size*sprite.scale)
