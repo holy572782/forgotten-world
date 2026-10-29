@@ -41,6 +41,8 @@ tests/combat_audio_pitch.gdを実描画60／30上限と別プロセス--reload�
 - 途中のPCフリーズ後は未完了のM09機能検査だけを再開。結果とログ、初回描画ERRORからの修正は `m09_enemy_combat_audit.md` の同日修正節を参照。30fps／時間比較は今回再実行せず、前回結果を維持。ユーザーF5確認は未実行。
 
 ## テスト環境記録票
+最新追加（2026-10-29、ADR-041）：Effekseer 1.80.5.1のheadless editor import、Compatibility実描画の13項目、既存m09_startup／enemy_jump_strike（543項目）がPASS・終了0。独立F6プレビューを追加。検査コマンドと残件は [導入記録](effekseer_integration_audit.md)。2D実描画・高度な材質／GPU粒子・音声・他OS／エクスポート・長時間性能とユーザーのF6／F5受入は未実行。M09基本戦闘完了・既存改善F5待ちを維持。
+
 - Godot exact version: `4.7.2.stable.official.ed1daf0bf`（M03検証）
 - OS / CPU / GPU / メモリ: Windows / 未計測 / NVIDIA GeForce GTX 1080 / 未計測
 - 解像度 / 描画API: 1152×720 / Compatibility・OpenGL 3.3.0 NVIDIA 572.16

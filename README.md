@@ -1,3 +1,5 @@
+> **Effekseer導入（2026-10-29、ADR-041）**：公式Godot 4用安定版1.80.5.1を有効化済み。Godotを開き直し、`scenes/tests/effekseer_preview.tscn` を開いて **F6** で公式サンプルを再生できます（J／ボタンで再生、F8で停止）。3D用はEffekseerEmitter3DのEffectへ `.efkefc` を指定。[導入版・素材配置・検査・使用手順](docs/effekseer_integration_audit.md)。既存戦闘への演出割当は未変更、M09基本戦闘完了・M10別指示待ちを維持。
+
 > **敵の最新改善（2026-10-27、ADR-035）**：新Idle3コマ・4fps、踏み込みはWalk。予告は切替0.09秒とFire1を開始時1回。雑兵は帰還後のクールダウン中に安全に歩いて距離を整え、次の開始位置へ帰還します。M09完了維持、追加改善はF5確認待ち。[設定と手順](docs/m09_enemy_followup_audit.md)。
 
 最新画像割当（ADR-036）：旧waitは攻撃態勢専用です。通常停止はWalk先頭コマ、日本語ファイルを直接参照します。詳細は[画像用途の修正記録](docs/m09_enemy_warning_pose_audit.md)。
@@ -87,7 +89,7 @@
 
 - 対象：Godot 4.x。今回の検証版：`4.7.2.stable.official.ed1daf0bf`。
 - 検証（2026-10-13）：ユーザーがF5で灰色の実行画面を確認。Codexがヘッドレス読み込み・60フレーム実行・InputMap全12アクション／30割り当ての合成入力検査に成功（終了コード0、エラー・警告なし）。記録は `docs/DEVELOPMENT_STATUS.md` を参照。
-- `project.godot` と `scenes/main.tscn`（Node3D）から起動します。M01で `scenes/test_arena.tscn` を接続しました。外部アセットやプラグインは不要です。
+- `project.godot` と `scenes/main.tscn`（Node3D）から起動します。M01で `scenes/test_arena.tscn` を接続しました。現在はEffekseerを `addons/effekseer/` に同梱済みで、別途インストールは不要です（M00作成当時は外部プラグインなし）。
 - Compatibilityレンダラーは起動用の仮設定、物理は仕様の初期値60 tick/sです。対応OSや最終描画方式を確定するものではありません。
 - 既存資料に残る「エンジン未決定」については、Godot採用を決定したADR-003を優先します。
 

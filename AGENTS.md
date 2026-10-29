@@ -1,5 +1,8 @@
 # AGENTS.md — Codex / AI 制作指示
 
+## 最新導入（2026-10-29、ADR-041）
+- Effekseer Godot 4公式安定版1.80.5.1を `addons/effekseer/` へ導入・有効化済み。コード／バイナリとMIT LICENSEを保持し、更新元は同フォルダーの `UPSTREAM.md` を参照。F6プレビュー・利用／検査は `docs/effekseer_integration_audit.md`。既存戦闘へのエフェクト割当は未変更。M09基本戦闘完了・既存改善F5待ち・M10別指示待ちを維持する。
+
 ## 最新修正（2026-10-29、ADR-040）
 - 雑兵の経路は実地面へ投影、命中は実際の空中高さで判定する。通常ジャンプで予告を中断せず、敵AttackDataの専用overrideで上下1.4m（主人公武器0.3mは維持）。地面未検出・実高所／壁／崖／段差の安全性と照準時刻／既存戦闘は維持。最新検査・設定・F5は `docs/m09_enemy_jump_strike_audit.md`。M09基本戦闘完了・追加修正F5待ち・M10別指示待ちを区別する。
 

@@ -18,6 +18,18 @@ config/name="忘れられた世界の旅人"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/effekseer/plugin.cfg")
+
+[effekseer]
+
+instance_max_count=4000
+square_max_count=16000
+draw_max_count=256
+sound_script="res://addons/effekseer/src/EffekseerSound.gd"
+color_space=0
+
 [input]
 
 move_left={

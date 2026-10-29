@@ -1,0 +1,55 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/effects/effekseer_preview.gd" id="1_script"]
+[ext_resource type="Resource" path="res://assets/effects/effekseer_sample/Simple_Sprite_BillBoard.efkefc" id="2_effect"]
+
+[sub_resource type="Environment" id="Environment_preview"]
+background_mode = 1
+background_color = Color(0.025, 0.035, 0.06, 1)
+
+[sub_resource type="Shortcut" id="Shortcut_replay"]
+events = [Object(InputEventKey,"physical_keycode":74)]
+
+[node name="EffekseerPreview" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_preview")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+position = Vector3(0, 1, 8)
+current = true
+
+[node name="Emitter" type="EffekseerEmitter3D" parent="."]
+scale = Vector3(0.3, 0.3, 0.3)
+effect = ExtResource("2_effect")
+autoplay = true
+autofree = false
+
+[node name="ReplayTimer" type="Timer" parent="."]
+wait_time = 3.0
+autostart = true
+
+[node name="Instructions" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="PanelContainer" parent="Instructions"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 550.0
+offset_bottom = 134.0
+
+[node name="Content" type="VBoxContainer" parent="Instructions/Panel"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Instructions/Panel/Content"]
+layout_mode = 2
+text = "Effekseer 3D 再生確認（公式サンプル）"
+
+[node name="Help" type="Label" parent="Instructions/Panel/Content"]
+layout_mode = 2
+text = "3秒ごとに再生 / J またはボタンで再生 / F8で停止"
+
+[node name="Replay" type="Button" parent="Instructions/Panel/Content"]
+layout_mode = 2
+shortcut = SubResource("Shortcut_replay")
+text = "再生（J）"
