@@ -15,7 +15,11 @@ enum Kind { DASH_MELEE, STATIONARY_MELEE, PROJECTILE }
 @export var hit_radius := 1.4
 @export var hit_half_angle_degrees := 45.0
 @export var hit_yaw_degrees := 0.0 # Hit sector offset only; never changes the straight route.
-@export var hit_height_tolerance := 1.0
+## Enemy-only override; the shared player weapon is never edited.
+@export var override_weapon_hit_height := false
+@export_range(0.01, 10.0, 0.01) var hit_height_tolerance := 1.0
+## Ground search depth is independent of whether the blade can reach airborne feet.
+@export_range(0.1, 10.0, 0.1) var target_ground_probe_depth := 2.0
 @export var damage := 10.0
 @export var return_seconds := 0.35
 @export var recovery_seconds := 1.2
@@ -38,7 +42,8 @@ func snapshot() -> Resource:
 	result.hit_radius = weapon.melee_reach
 	result.hit_half_angle_degrees = weapon.sweep_angle_degrees * 0.5
 	result.hit_yaw_degrees = 0.0
-	result.hit_height_tolerance = weapon.hit_height_tolerance
+	result.hit_height_tolerance = Motion.bounded(hit_height_tolerance,0.01,10.0,1.0) if override_weapon_hit_height else weapon.hit_height_tolerance
+	result.weapon.hit_height_tolerance = result.hit_height_tolerance
 	result.dash_max_distance = weapon.attack_range
 	if travel_settings != null: result.stop_distance = minf(travel_settings.stop_distance, weapon.melee_reach)
 	var visual := weapon.attack_visual

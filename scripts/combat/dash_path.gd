@@ -95,3 +95,13 @@ static func contact_position(body: CharacterBody3D, at: Vector3, settings: Resou
 static func sight(body: CharacterBody3D, destination: Vector3) -> bool:
 	var ray := PhysicsRayQueryParameters3D.create(body.global_position + Vector3.UP * 0.8, destination + Vector3.UP * 0.8, 1)
 	return body.get_world_3d().direct_space_state.intersect_ray(ray).is_empty()
+
+
+static func ground_below(body: CharacterBody3D, at: Vector3, maximum_drop: float = 2.0) -> Vector3:
+	# Resolve airborne feet onto real terrain only; never invent a floor at actor height.
+	if not at.is_finite() or not is_finite(maximum_drop) or maximum_drop <= 0.0: return Vector3.INF
+	var ray := PhysicsRayQueryParameters3D.create(at+Vector3.UP*0.05,at-Vector3.UP*maximum_drop,1)
+	ray.exclude = [body.get_rid()]
+	var hit := body.get_world_3d().direct_space_state.intersect_ray(ray)
+	if hit.is_empty() or hit.normal.y < 0.99: return Vector3.INF
+	return Vector3(at.x,hit.position.y,at.z)

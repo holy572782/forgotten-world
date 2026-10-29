@@ -1,3 +1,5 @@
+> 2026-10-29追記（ADR-040）：雑兵だけ命中高さを敵専用snapshotで上下1.4mへoverrideし、実地面の経路と空中の命中を分離。主人公の武器0.3mは維持。最新は [m09_enemy_jump_strike_audit.md](m09_enemy_jump_strike_audit.md)。以下の全共有高さ0.3mは導入当時の記録。
+
 > **後続更新（ADR-035）**：新IdleとWalk素材改名を接続し、踏み込みはWalk、雑兵は帰還後の3秒内に歩いて位置を整える。以下は作成時の履歴。最新の参照名・設定は[m09_enemy_followup_audit.md](m09_enemy_followup_audit.md)。
 
 # M09：雑兵の主人公共通武器・踏み込み・単発攻撃（ADR-033）

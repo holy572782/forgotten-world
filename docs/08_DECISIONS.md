@@ -439,3 +439,14 @@
 - HP0処理の既存DefeatPresentation.startから1回だけ再生。EnemyDefeatSettingsにStream／Volume Db初期-12／Pitch Scale初期0.5を追加。ピッチはAudioStreamPlayerの再生設定で変え、音声データは加工しない。
 - 音声ノードは実体・飛行表示の子にせず同じ親へ追加し、自然なfinished通知で解放する。表示終了・実体解放／表示の強制削除でも止めない。シーン全体の終了では通常どおり片づく。表示NONEでもSoundが設定されていれば再生し、Sound=nullで無効化する。
 - HP0即DEAD／衝突・選択無効、コンボ／帰還、既存の剣／命中／Guard／Fire1・画像／3D深度は変更しない。最終検査／設定とF5は `m09_enemy_bounce_cry_audit.md`。見た目／聴感はユーザー確認待ち。
+
+
+## ADR-040 — 雑兵のジャンプ中攻撃・経路と高さの分離（2026-10-29）
+- 状態：採用（ユーザー指示）。M09完了後の修正。基本戦闘完了と今回のF5確認待ちを分け、新工程を作らない。
+- 原因：雑兵の予告中再計画が空中のplayer.global_positionをPath.strike_clearへ渡し、supportedの平坦な足場条件floor_tolerance=0.04mで失敗していた。共有Weaponのhit_height_tolerance=0.3mも通常ジャンプより低かった。
+- Weaponを使う近接計画はterrain layer1への下向きrayで実際の地面を探し、地面のXZ／Yで既存Path.strike_clearを検査。地面未検出／非平坦な面は不許可。仮の敵高さへ置換せず、実際の高台・穴／壁・崖／段差と元の視線／全身掃引／足場検査を維持する。
+- 予告の追跡値aimed_positionは引き続き実際のプレイヤー座標。照準固定0.9秒・固定後の最低猶予0.45秒は変えない。踏み込み先は地面に沿う水平位置、近距離の踏み込み省略も地面を基準に判定する。実命中だけは実際の高さと既存Sweep.containsを使用する。
+- EnemyAttackDataの既存hit_height_toleranceを利用し、override_weapon_hit_height（既定false）を追加。雑兵melee_attack.tresのみtrue／1.4m。snapshotで既に複製している敵専用Weaponへ反映し、主人公の共有Weapon／0.3m・Shape／ダメージ・入力は変更しない。小型／大型は別AttackDataで設定できる。
+- 独立したtarget_ground_probe_depthを追加（既定2.0m）。命中高さを低くしても足元検索の距離は短くならず、跳躍が届かない剣でも攻撃継続＋高さによる空振りとなる。高いジャンプを許す将来の敵は検索深さも別調整可能。
+- 魔導士のweapon未指定PROJECTILEは従来の3D目標／弾軌道・物理衝突を維持。AIの回復／歩行／帰還、赤予告／SE／マーク／撃破演出、主人公の防御／ジャンプ／コンボ／素早い方向帰還も非変更。
+- 実ジャンプ最高点は今回の検査で約1.284m。近距離と踏み込み後の命中を確認し、水平WASD回避・実高所と壁／崖の不許可を別に検証する。詳細と最終結果は `m09_enemy_jump_strike_audit.md`。F5のユーザー操作は確認待ち。

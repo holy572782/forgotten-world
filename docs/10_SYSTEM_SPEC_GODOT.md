@@ -430,3 +430,8 @@ Approachは既存Motionのapproach_speed12m/s・minimum_travel_time0.25秒・max
 ### M09完了後：撃破飛行の弾み・Cry1（2026-10-29、ADR-039）
 両敵の撃破表示は、前方向の移動を継続しつつ大きな初回弧＋減衰する小さな弧を加える。既存Lift Heightを初回高さ0.9m相当として再利用、小さな弾み2回・高さ比0.45／以降減衰0.55、目安0.65秒。Camera／Viewportで画像全体が画面外へ出てから削除する方式、安全期限、即DEAD／衝突・選択無効・コンボ／帰還は維持する。
 Cry1をHP0時に1回だけ、音量-12dB／pitch0.5で独立したAudioStreamPlayerから再生。表示／実体の削除では止めず、自然なfinishedで解放。音声と設定は敵別Defeat Resourceで差し替え・調整可能。既存SE・画像は変更しない。設定／検査／F5は[m09_enemy_bounce_cry_audit.md](m09_enemy_bounce_cry_audit.md)。M09完了維持・今回の演出／聴感F5確認待ち。
+
+
+### M09完了後：ジャンプ中の雑兵攻撃（2026-10-29、ADR-040）
+通常ジャンプの高さを経路異常として扱わない。Weaponを使う近接の計画／経路安全性は、現在の目標XZの下にある実terrain（既定検索2m）の高さを用いて既存Pathを検査する。足元未検出・実高所・壁／低障害物・崖／段差を通さず、元の視線／カプセル掃引／足場条件を維持する。予告の実座標追跡と0.9秒の固定、最低猶予／踏み込み／帰還は維持。
+命中は実座標と共通Sweepを使い、雑兵のみEnemyAttackData.override_weapon_hit_height=true／既存Hit Height Tolerance=1.4mを適用。敵のsnapshot Weaponへ値を写し、主人公の共有Weaponの0.3mは変更しない。小型／大型は別設定可能、魔導士の弾は従来の3D軌道を維持。設定／検査／F5は[m09_enemy_jump_strike_audit.md](m09_enemy_jump_strike_audit.md)。M09完了維持、追加修正F5待ち。

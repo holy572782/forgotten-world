@@ -82,7 +82,9 @@ func current_weapon_visual() -> Resource:
 	return settings.visual.weapon_visual if settings.visual != null else null
 
 func _weapon_strike_clear(at: Vector3) -> bool:
-	return Sweep.contains(global_position, facing, at, active_attack.weapon) and Path.strike_clear(self, at, settings.path)
+	if not Sweep.contains(global_position, facing, at, active_attack.weapon): return false
+	var floor_point := Path.ground_below(self,at,active_attack.target_ground_probe_depth)
+	return floor_point.is_finite() and Path.strike_clear(self,floor_point,settings.path)
 
 func _physics_process(delta: float) -> void:
 	if state == State.DEAD: return
@@ -297,11 +299,14 @@ func _plan_attack() -> bool:
 	aimed_position = player.global_position
 	facing = _horizontal_direction(aimed_position)
 	_in_place = _forced_in_place or locomotion_held()
+	var route_position := aimed_position
 	if active_attack.weapon != null:
-		if not Path.strike_clear(self, aimed_position, settings.path):
+		route_position = Path.ground_below(self,aimed_position,active_attack.target_ground_probe_depth)
+		if not route_position.is_finite() or not Path.strike_clear(self,route_position,settings.path):
 			return false
-		_in_place = _in_place or _weapon_strike_clear(aimed_position)
-	var offset := aimed_position - attack_anchor
+		# Travel depends on the grounded horizontal reach, not the current jump height.
+		_in_place = _in_place or Sweep.contains(global_position,facing,route_position,active_attack.weapon)
+	var offset := route_position - attack_anchor
 	offset.y = 0.0
 	# Both original capsules plus 0.15m gap, never a reduced collision shape.
 	var radius: float = $CollisionShape3D.shape.radius + player.get_node("CollisionShape3D").shape.radius + 0.15
