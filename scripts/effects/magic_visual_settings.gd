@@ -2,6 +2,8 @@ extends Resource
 ## Visual dimensions never affect projectile_radius or damage.
 @export_group("Casting circle")
 @export var circle_enabled := true
+## Native Effekseer effect; null retains the original procedural circle.
+@export var circle_effect: EffekseerEffect
 @export_range(0.2, 8.0, 0.1) var circle_diameter := 2.8
 @export_range(0.01, 0.1, 0.005) var ground_offset := 0.035
 @export_range(-1.0, 1.0, 0.01) var circle_rotation_speed := 0.25

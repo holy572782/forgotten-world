@@ -1,4 +1,6 @@
-[gd_resource type="Resource" load_steps=2 format=3]
+[gd_resource type="Resource" load_steps=3 format=3]
 [ext_resource type="Script" path="res://scripts/effects/magic_visual_settings.gd" id="1"]
+[ext_resource type="Resource" path="res://assets/effects/mage_circle/mage_circle.efkefc" id="2_circle"]
 [resource]
 script = ExtResource("1")
+circle_effect = ExtResource("2_circle")

@@ -1,4 +1,6 @@
-> **Effekseer導入（2026-10-29、ADR-041）**：公式Godot 4用安定版1.80.5.1を有効化済み。Godotを開き直し、`scenes/tests/effekseer_preview.tscn` を開いて **F6** で公式サンプルを再生できます（J／ボタンで再生、F8で停止）。3D用はEffekseerEmitter3DのEffectへ `.efkefc` を指定。[導入版・素材配置・検査・使用手順](docs/effekseer_integration_audit.md)。既存戦闘への演出割当は未変更、M09基本戦闘完了・M10別指示待ちを維持。
+> **魔導士のEffekseer魔法陣（2026-10-29、ADR-043）**：F5→「遠距離敵」で詠唱時の足元に赤い二重円／逆回転する幾何学模様を表示。編集可能な `assets/effects/mage_circle/mage_circle.efkefc` とSVG／XML原本を保持。Circle Effect・色／サイズ／回転はMagic Visualで調整。[制作元・設定・検査・F5](docs/m09_mage_effekseer_circle_audit.md)。見た目はユーザー確認待ち。
+
+> **Effekseer導入（2026-10-29、ADR-041）**：公式Godot 4用安定版1.80.5.1を有効化済み。`scenes/tests/effekseer_preview.tscn` を開いて **F6** で公式サンプルを再生できます（J／ボタンで再生、F8で停止）。3D用はEffekseerEmitter3DのEffectへ `.efkefc` を指定。[導入版・素材配置・検査・使用手順](docs/effekseer_integration_audit.md)。M09基本戦闘完了・M10別指示待ちを維持。
 
 > **敵の最新改善（2026-10-27、ADR-035）**：新Idle3コマ・4fps、踏み込みはWalk。予告は切替0.09秒とFire1を開始時1回。雑兵は帰還後のクールダウン中に安全に歩いて距離を整え、次の開始位置へ帰還します。M09完了維持、追加改善はF5確認待ち。[設定と手順](docs/m09_enemy_followup_audit.md)。
 

@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://cfmrm30hd6eup"
+path="res://.godot/imported/mage_circle.efkefc-4f2527e1f1c49b26a78750178cbe1614.res"
+
+[deps]
+
+source_file="res://assets/effects/mage_circle/mage_circle.efkefc"
+dest_files=["res://.godot/imported/mage_circle.efkefc-4f2527e1f1c49b26a78750178cbe1614.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

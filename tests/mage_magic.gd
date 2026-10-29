@@ -23,6 +23,7 @@ func _reload_magic() -> void:
 	var saved: Resource = load("res://.godot/mage_saved.tres")
 	_check(saved.attack.damage_kind == Types.Kind.MAGIC and saved.attack.projectile_speed == 5.0 and is_equal_approx(saved.attack.projectile_range,13.2), "Magic damage, speed and range persist")
 	_check(is_equal_approx(saved.attack.magic_visual.fireball_diameter,2.1) and is_equal_approx(saved.attack.projectile_radius,0.2) and is_equal_approx(saved.ranged_stop_margin,0.3), "Separate visual/collision size and pursuit margin persist")
+	_check(saved.attack.magic_visual.circle_effect != null and saved.attack.magic_visual.circle_effect.get_subresources().size() == 2, "Native circle and both texture dependencies persist")
 	for failure in failures: push_error(failure)
 	print("MAGE MAGIC RELOAD ","PASS" if failures.is_empty() else "FAIL")
 	quit(0 if failures.is_empty() else 1)
@@ -47,12 +48,13 @@ func _run() -> void:
 	_check(ai.settings.attack_start_distance==6.0 and ai.active_attack.damage_kind==Types.Kind.MAGIC, "Mage starts at the original 6m with explicit magic damage")
 	_check(ai.active_attack.projectile_speed==5.0 and is_equal_approx(ai.active_attack.projectile_range,13.2) and ai.active_attack.projectile_lifetime>13.2/5.0, "5m/s and 13.2m are compatible with the 6s safety lifetime")
 	var circle: Node3D = ai.get_node("CastingCircle")
-	_check(not circle.mesh.visible and circle.mesh.cast_shadow==0 and not ai.telegraph.visible, "Circle has no shadow/collision and is separate from the disabled range indicator")
+	_check(not circle.is_presenting() and circle.mesh.cast_shadow==0 and not ai.telegraph.visible, "Circle has no shadow/collision and is separate from the disabled range indicator")
 	cue_count=0
 	ai.get_node("AttackWarning").warning_sound_presented.connect(_cue)
 	await _windup()
 	await _ticks(4)
-	_check(circle.mesh.visible and absf(circle.global_position.y-0.035)<0.001 and circle.global_basis.y.dot(Vector3.UP)>0.999, "Real WINDUP displays a horizontal circle just above terrain")
+	_check(circle.is_presenting() and absf(circle.global_position.y-0.035)<0.001 and circle.global_basis.y.dot(Vector3.UP)>0.999, "Real WINDUP displays a horizontal circle just above terrain")
+	_check(circle.emitter.effect != null and circle.emitter.is_playing() and not circle.mesh.visible, "Mage actually plays the native Effekseer circle without doubling the old shader")
 	ai.set_physics_process(false)
 	var rotation_before := circle.rotation.y
 	await _seconds(0.15)
@@ -65,14 +67,14 @@ func _run() -> void:
 		await _ticks(2)
 		circle.set_process(false)
 		var visible_image := await _image()
-		circle.mesh.hide()
+		circle.hide()
 		var hidden_image := await _image()
 		var point := camera.unproject_position(circle.global_position)
 		var changes := _changed(visible_image,hidden_image,Rect2i(Vector2i(point)-Vector2i(110,75),Vector2i(220,150)))
 		_check(changes>30,"Circle actually renders at camera yaw "+str(yaw))
 		visuals.append({"yaw":yaw,"circle_pixels":changes})
 		if yaw==0.0: visible_image.save_png("res://.godot/mage_circle.png")
-		circle.mesh.show()
+		circle.show()
 		circle.set_process(true)
 	ai.set_physics_process(true)
 	await _state(ai.State.ATTACK)
@@ -87,7 +89,7 @@ func _run() -> void:
 	_press("move_down",false)
 	var seconds:=float(Engine.get_physics_frames()-tick_before)/60.0
 	_check(is_instance_valid(bolt) and bolt.direction==direction and absf(bolt.global_position.distance_to(position_before)/seconds-5.0)<0.01, "Real release travels at 5m/s without homing after player movement")
-	_check(not circle.mesh.visible, "Circle finishes its short release fade")
+	_check(not circle.is_presenting() and not circle.emitter.is_playing(), "Circle finishes its short release fade and stops native playback")
 	if is_instance_valid(bolt):
 		var travelling := await _image()
 		travelling.save_png("res://.godot/mage_flying.png")
@@ -185,11 +187,19 @@ func _run() -> void:
 	ai.set_physics_process(false) # Isolate cancellation from a subsequent new encounter.
 	ai._set_state(ai.State.RETURN)
 	await _ticks(2)
-	_check(not circle.mesh.visible,"Interrupted warning hides the circle")
+	_check(not circle.is_presenting() and not circle.emitter.is_playing(),"Interrupted warning hides and stops the circle")
 	ai._start_windup()
-	_check(circle.mesh.visible,"A new warning restores the circle")
+	_check(circle.is_presenting(),"A new warning restores the circle")
+	var native_effect: EffekseerEffect = ai.active_attack.magic_visual.circle_effect
+	ai.active_attack.magic_visual = ai.active_attack.magic_visual.duplicate()
+	ai.active_attack.magic_visual.circle_effect = null
+	await _ticks(2)
+	_check(circle.mesh.visible and not circle.emitter.is_playing(), "A null native effect preserves the previous procedural circle")
+	ai.active_attack.magic_visual.circle_effect = native_effect
+	await _ticks(2)
+	_check(circle.emitter.is_playing() and not circle.mesh.visible, "Restoring the native effect does not double the floor visual")
 	ai.health.damage(100,player)
-	_check(not circle.mesh.visible and ai.state==ai.State.DEAD,"HP0 clears the circle without waiting for death flight")
+	_check(not circle.is_presenting() and not circle.emitter.is_playing() and ai.state==ai.State.DEAD,"HP0 clears the circle without waiting for death flight")
 	# Mage moves only to recover range; no strafing / wandering inside range.
 	await _fresh(1,Vector3(7,0,0))
 	var initial: Vector3=ai.global_position

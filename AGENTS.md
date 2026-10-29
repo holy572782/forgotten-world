@@ -1,5 +1,8 @@
 # AGENTS.md — Codex / AI 制作指示
 
+## 最新表示（2026-10-29、ADR-043）
+- 魔導士の足元魔法陣はEffekseer製へ更新。編集可能なefkefc・SVG／XML原本と再生成スクリプトを保持。Magic VisualのCircle Effectで差し替え、nullは旧Shader。既存地面配置・サイズ／赤色／回転・詠唱／発射fade・中断／死亡消去を維持。設定・検査・F5は `docs/m09_mage_effekseer_circle_audit.md`。炎弾／MAGIC／AIはADR-042を維持、M09基本戦闘完了・今回F5待ち・M10別指示待ち。
+
 ## 最新改善（2026-10-29、ADR-042）
 - 魔導士は標準Mesh／Shaderの赤い足元魔法陣と炎弾（見た目1.8m／衝突半径0.2m、速度5m/s、射程6m／飛距離13.2m）。明示MAGIC属性だけ通常Guardを貫通し、物理／既存2引数damageは従来どおり。射程内停止・外側のみ安全追跡、雑兵は維持。設定・検査・F5は `docs/m09_mage_magic_audit.md`。M09基本戦闘完了・追加改善F5待ち・M10別指示待ちを維持。
 
