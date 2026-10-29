@@ -162,7 +162,7 @@ func _run() -> void:
 	await _seconds(0.7)
 	await _jump()
 	await _state(ai.State.ATTACK)
-	_check(ai.shots.size() == 1 and ai.shots[0].direction.y > 0.15 and is_equal_approx(ai.shots[0].settings.projectile_speed,3.0), "Mage still releases its original 3D projectile toward actual airborne height")
+	_check(ai.shots.size() == 1 and ai.shots[0].direction.y > 0.15 and is_equal_approx(ai.shots[0].settings.projectile_speed,5.0), "Mage still releases its original 3D projectile toward actual airborne height")
 	ai.clear_shots()
 	await _fresh_sword(2.0)
 	ai.settings.attack.hit_height_tolerance = 0.8

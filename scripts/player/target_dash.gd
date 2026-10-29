@@ -1,4 +1,5 @@
 extends Node
+const DamageTypes = preload("res://scripts/combat/damage_types.gd")
 const MotionSettings = preload("res://scripts/combat/attack_motion_settings.gd")
 ## Single-owner state machine. Controller calls physics_step before locomotion.
 const Settings = preload("res://scripts/combat/target_dash_settings.gd")
@@ -297,6 +298,7 @@ func _recover(_delta: float) -> void:
 		_begin_return("Defense follow-up window ended")
 
 func filter_damage(amount: float, source: Node) -> float:
+	if body.get_node("HealthComponent").incoming_damage_kind == DamageTypes.Kind.MAGIC and not defense.guard_magic_enabled: return amount
 	# Unknown/freed/nonspatial or colocated sources get full damage, never a free guard.
 	if state != State.Guard or not is_instance_valid(source) or not source is Node3D: return amount
 	var direction: Vector3 = source.global_position - body.global_position

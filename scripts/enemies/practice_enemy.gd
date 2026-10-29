@@ -1,6 +1,7 @@
 extends CharacterBody3D
 const Settings = preload("res://scripts/enemies/enemy_settings.gd")
 const AttackData = preload("res://scripts/enemies/enemy_attack_data.gd")
+const CastingVisual = preload("res://scripts/effects/mage_cast_visual.gd")
 const Projectile = preload("res://scripts/enemies/practice_projectile.gd")
 const Path = preload("res://scripts/combat/dash_path.gd")
 const Sweep = preload("res://scripts/combat/melee_sweep.gd")
@@ -50,12 +51,17 @@ var _combat_move_duration := 0.0
 var _combat_move_goal := Vector3.ZERO
 var _combat_move_blocked := false
 var _combat_move_index := 0
+var _ranged_pursuit_active := false
 
 func _ready() -> void:
 	process_physics_priority = 1 # Player reserves a stable target before enemy motion.
 	home = global_position
 	active_attack = settings.attack.snapshot()
 	health.depleted.connect(_die)
+	if active_attack.magic_visual != null:
+		var casting := CastingVisual.new()
+		casting.name = "CastingCircle"
+		add_child(casting)
 	telegraph = MeshInstance3D.new()
 	add_child(telegraph)
 	dash_guide = MeshInstance3D.new()
@@ -109,7 +115,8 @@ func _physics_process(delta: float) -> void:
 		State.IDLE:
 			if sight and distance <= settings.detection_radius: _set_state(State.CHASE)
 		State.CHASE:
-			if sight and distance <= engagement_range() and cooldown <= 0.0: _start_windup()
+			if active_attack.kind == AttackData.Kind.PROJECTILE: _ranged_chase_step(delta, distance, sight, true)
+			elif sight and distance <= engagement_range() and cooldown <= 0.0: _start_windup()
 			elif sight and distance > engagement_range():
 				if _can_pursue() and attack_count > 0: _pursuit_step(delta)
 				else: _walk_towards(player.global_position, delta)
@@ -126,7 +133,8 @@ func _physics_process(delta: float) -> void:
 				else: _set_state(State.RECOVERY)
 		State.DASH_RETURN: _dash_step(delta, true)
 		State.RECOVERY:
-			if _can_pursue() and attack_count > 0 and not _return_after_recovery: _post_attack_step(delta)
+			if active_attack.kind == AttackData.Kind.PROJECTILE and not _return_after_recovery: _ranged_chase_step(delta, distance, sight, false)
+			elif _can_pursue() and attack_count > 0 and not _return_after_recovery: _post_attack_step(delta)
 			else:
 				velocity = Vector3.ZERO
 				_stop_pursuit()
@@ -158,6 +166,20 @@ func _walk_towards(at: Vector3, delta: float, speed_override: float = -1.0) -> v
 	var before := global_position
 	move_and_collide(next - before)
 	if speed_override >= 0.0: velocity = (global_position - before) / maxf(delta, 0.0001)
+
+func _ranged_chase_step(delta: float, distance: float, sight: bool, allow_attack: bool) -> void:
+	velocity = Vector3.ZERO
+	if not sight: return
+	var reach := engagement_range()
+	if allow_attack and distance <= reach and cooldown <= 0.0:
+		_start_windup()
+		return
+	var margin := clampf(settings.ranged_stop_margin, 0.0, minf(1.0, reach*0.5))
+	if distance > reach: _ranged_pursuit_active = true
+	elif distance <= reach - margin: _ranged_pursuit_active = false
+	if not _ranged_pursuit_active: return
+	var step := minf(settings.chase_speed * delta, maxf(0.0, distance - (reach-margin)))
+	_walk_towards(global_position + _horizontal_direction(player.global_position)*step, delta)
 
 func _can_pursue() -> bool:
 	return settings.pursuit_enabled and active_attack.weapon != null and active_attack.kind == AttackData.Kind.DASH_MELEE
@@ -420,7 +442,7 @@ func _execute_attack() -> void:
 	attack_count += 1
 	cooldown = active_attack.minimum_attack_interval
 	if active_attack.kind != AttackData.Kind.PROJECTILE:
-		if melee_hits(): player.get_node("HealthComponent").damage(active_attack.damage, self)
+		if melee_hits(): player.get_node("HealthComponent").damage(active_attack.damage, self, active_attack.damage_kind)
 	elif has_sight() and global_position.distance_to(player.global_position) <= settings.attack_start_distance:
 		for index in range(shots.size() - 1, -1, -1):
 			if not is_instance_valid(shots[index]) or shots[index].is_queued_for_deletion(): shots.remove_at(index)
@@ -439,6 +461,7 @@ func _execute_attack() -> void:
 func _set_state(next: State) -> void:
 	var previous := state
 	state = next
+	_ranged_pursuit_active = false
 	attack_executed = false
 	elapsed = 0.0
 	_travel_elapsed = 0.0

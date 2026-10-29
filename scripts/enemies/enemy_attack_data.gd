@@ -1,5 +1,7 @@
 extends Resource
 ## Configuration only; timers and anchors belong to each enemy.
+const DamageTypes = preload("res://scripts/combat/damage_types.gd")
+const MagicVisual = preload("res://scripts/effects/magic_visual_settings.gd")
 const Motion = preload("res://scripts/combat/attack_motion_settings.gd")
 enum Kind { DASH_MELEE, STATIONARY_MELEE, PROJECTILE }
 ## Optional shared player weapon profile; null preserves legacy/ranged attacks.
@@ -21,6 +23,9 @@ enum Kind { DASH_MELEE, STATIONARY_MELEE, PROJECTILE }
 ## Ground search depth is independent of whether the blade can reach airborne feet.
 @export_range(0.1, 10.0, 0.1) var target_ground_probe_depth := 2.0
 @export var damage := 10.0
+@export var damage_kind: DamageTypes.Kind = DamageTypes.Kind.PHYSICAL
+## Optional presentation only: physical arrows need not look like fire.
+@export var magic_visual: MagicVisual
 @export var return_seconds := 0.35
 @export var recovery_seconds := 1.2
 @export var minimum_attack_interval := 2.1

@@ -214,7 +214,7 @@ func _run() -> void:
 				else:
 					bolt = _shot(origin + Vector3(-1,0.9,0), Vector3.RIGHT, 300)
 					await _ticks(3)
-				var expected := 5.0 if guarded and front else 10.0
+				var expected := 5.0 if kind == 0 and guarded and front else 10.0 # Mage magic bypasses ordinary guard (ADR-042).
 				_check(is_equal_approx(before-health.current_hp,expected), "20/21/22 melee/bolt guard=" + str(guarded) + " front=" + str(front))
 				_press("guard",false)
 

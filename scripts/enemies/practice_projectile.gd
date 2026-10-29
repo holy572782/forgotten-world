@@ -1,5 +1,6 @@
 extends CharacterBody3D
 ## Swept sphere; non-homing. Enemy is the guard-direction source for its lifetime.
+const FireVisual = preload("res://scripts/effects/fireball_visual.gd")
 var source: Node3D
 var player: CharacterBody3D
 var settings: Resource
@@ -18,6 +19,11 @@ func _ready() -> void:
 	sphere.radius = settings.projectile_radius
 	shape.shape = sphere
 	add_child(shape)
+	if settings.magic_visual != null:
+		var fire := FireVisual.new()
+		fire.name = "FireballVisual"
+		add_child(fire)
+		return
 	var visual := MeshInstance3D.new()
 	var mesh := SphereMesh.new()
 	mesh.radius = sphere.radius
@@ -55,10 +61,11 @@ func _physics_process(delta: float) -> void:
 	var collision := move_and_collide(motion)
 	travelled += motion.length()
 	if collision != null: _consume(collision.get_collider())
+	elif travelled >= settings.projectile_range: _consume(null)
 
 func _consume(collider: Object) -> void:
 	if consumed: return
 	consumed = true
 	if collider == player and is_instance_valid(source):
-		player.get_node("HealthComponent").damage(settings.damage, source)
+		player.get_node("HealthComponent").damage(settings.damage, source, settings.damage_kind)
 	queue_free()

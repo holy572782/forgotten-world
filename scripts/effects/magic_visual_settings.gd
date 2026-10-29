@@ -1,0 +1,14 @@
+extends Resource
+## Visual dimensions never affect projectile_radius or damage.
+@export_group("Casting circle")
+@export var circle_enabled := true
+@export_range(0.2, 8.0, 0.1) var circle_diameter := 2.8
+@export_range(0.01, 0.1, 0.005) var ground_offset := 0.035
+@export_range(-1.0, 1.0, 0.01) var circle_rotation_speed := 0.25
+@export var circle_color := Color(0.95, 0.12, 0.055, 1.0)
+@export_range(0.0, 0.3, 0.01) var release_fade_seconds := 0.12
+@export_group("Fireball")
+@export_range(0.1, 5.0, 0.1) var fireball_diameter := 1.8
+@export_range(8, 64, 1) var pixel_grid := 24
+@export_range(0, 10, 1) var trail_count := 5
+@export_range(0.0, 3.0, 0.05) var trail_length := 1.1

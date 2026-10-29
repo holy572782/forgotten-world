@@ -1,5 +1,8 @@
 # AGENTS.md — Codex / AI 制作指示
 
+## 最新改善（2026-10-29、ADR-042）
+- 魔導士は標準Mesh／Shaderの赤い足元魔法陣と炎弾（見た目1.8m／衝突半径0.2m、速度5m/s、射程6m／飛距離13.2m）。明示MAGIC属性だけ通常Guardを貫通し、物理／既存2引数damageは従来どおり。射程内停止・外側のみ安全追跡、雑兵は維持。設定・検査・F5は `docs/m09_mage_magic_audit.md`。M09基本戦闘完了・追加改善F5待ち・M10別指示待ちを維持。
+
 ## 最新導入（2026-10-29、ADR-041）
 - Effekseer Godot 4公式安定版1.80.5.1を `addons/effekseer/` へ導入・有効化済み。コード／バイナリとMIT LICENSEを保持し、更新元は同フォルダーの `UPSTREAM.md` を参照。F6プレビュー・利用／検査は `docs/effekseer_integration_audit.md`。既存戦闘へのエフェクト割当は未変更。M09基本戦闘完了・既存改善F5待ち・M10別指示待ちを維持する。
 

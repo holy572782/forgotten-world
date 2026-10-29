@@ -18,6 +18,9 @@ class PhysicsTrace extends Node:
 func _spawn(ranged: bool) -> void:
 	super._spawn(ranged)
 	actor.settings = actor.settings.duplicate() # Never edit authored resources.
+	if actor.has_node("CastingCircle"):
+		actor.get_node("CastingCircle").set_process(false)
+		actor.get_node("CastingCircle").clear() # New mage circle has its own rendered regression.
 
 func _warning(phase: float) -> void:
 	actor._set_state(actor.State.WINDUP)

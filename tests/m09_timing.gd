@@ -42,7 +42,7 @@ func _run() -> void:
 	while Engine.get_physics_frames() - frame_start < 20: await _ticks(1)
 	var flight_time := float(Engine.get_physics_frames() - frame_start) / Engine.physics_ticks_per_second
 	var speed: float = start.distance_to(bolt.global_position) / flight_time
-	_check(absf(speed - 3.0) < 0.01, "36 projectile speed 3 m/s")
+	_check(absf(speed - 5.0) < 0.01, "36 mage projectile speed 5 m/s (ADR-042)")
 	# Stay alive long enough to observe the next actual launch.
 	while ai.attack_count < 2:
 		health.heal(100)

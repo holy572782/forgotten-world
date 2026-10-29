@@ -373,3 +373,8 @@ Cry1をHP0時に1回だけ、音量-12dB／pitch0.5で独立したAudioStreamPla
 ### M09完了後：ジャンプ中の雑兵攻撃（2026-10-29、ADR-040）
 通常ジャンプの高さを経路異常として扱わない。Weaponを使う近接の計画／経路安全性は、現在の目標XZの下にある実terrain（既定検索2m）の高さを用いて既存Pathを検査する。足元未検出・実高所・壁／低障害物・崖／段差を通さず、元の視線／カプセル掃引／足場条件を維持する。予告の実座標追跡と0.9秒の固定、最低猶予／踏み込み／帰還は維持。
 命中は実座標と共通Sweepを使い、雑兵のみEnemyAttackData.override_weapon_hit_height=true／既存Hit Height Tolerance=1.4mを適用。敵のsnapshot Weaponへ値を写し、主人公の共有Weaponの0.3mは変更しない。小型／大型は別設定可能、魔導士の弾は従来の3D軌道を維持。設定／検査／F5は[m09_enemy_jump_strike_audit.md](m09_enemy_jump_strike_audit.md)。M09完了維持、追加修正F5待ち。
+
+
+### M09完了後：魔法属性と魔導士（2026-10-29、ADR-042）
+魔導士の弾はMAGICとし、通常Guard中も通常ダメージ、物理防御成功通知／SEなし。Guard姿勢と既存HP経路は維持。PHYSICALの矢／近接と既存damage(amount,source)は元の方向軽減を使用する。将来の魔法対応盾はDefense.guard_magic_enabled（既定false）で既存判定へ接続可能。
+赤い足元魔法陣はWINDUPだけ、発射後0.12秒で消え、中断／死亡で解除。炎弾は発射時の3D方向を固定、速度5m/s、飛距離13.2m、寿命6秒、半径0.2m。視覚直径1.8mと独立。魔導士の攻撃開始6m・予告／回復／最短発射間隔は維持し、射程内停止、射程外のみ既存の安全歩行（6m外で再開・停止目安5.8m（余裕0.2m））を行う。雑兵の攻撃／歩行と主人公の踏み込み・連撃・ジャンプ・Guard・方向帰還は変更しない。設定／検査／F5は[m09_mage_magic_audit.md](m09_mage_magic_audit.md)。
