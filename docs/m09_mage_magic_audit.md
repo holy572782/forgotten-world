@@ -1,5 +1,7 @@
 # M09完了後：魔導士の魔法陣・炎弾・防御貫通
 
+> ADR-044更新：魔法陣はFireAll3参照の床面投影、詠唱音はMagic1／pitch0.9。炎の実命中はFireOne1＋Fire2とGuard中もダメージ画像を表示。炎弾の属性・数値とAIは本書の仕様を維持。[最新の表示・検査](m09_mage_fire_feedback_audit.md)。
+
 > 2026-10-29、ADR-043追記：足元魔法陣はユーザー指定でEffekseer製へ更新。以下の標準Mesh／Shaderの説明は初回実装履歴であり、Effect=null時の互換表示として保持。最新の制作元・接続・検査・F5は [Effekseer魔法陣記録](m09_mage_effekseer_circle_audit.md)。炎弾／MAGIC・Guard／移動と時間は本書の仕様を維持。
 
 2026-10-29／ADR-042。M09基本戦闘完了を維持。今回の操作・見た目・聴感はユーザーF5確認待ち、M10へ移行しない。commit／push未実行。

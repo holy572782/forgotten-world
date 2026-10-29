@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://dmu53peg2bm43"
+path="res://.godot/imported/LightPillar2.efkefc-4f4e67250b6fbd9bab36c62cc2ef3b6f.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/LightPillar2.efkefc"
+dest_files=["res://.godot/imported/LightPillar2.efkefc-4f4e67250b6fbd9bab36c62cc2ef3b6f.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

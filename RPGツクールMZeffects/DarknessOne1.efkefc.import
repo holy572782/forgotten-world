@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://n18eorbo5b30"
+path="res://.godot/imported/DarknessOne1.efkefc-5e95c2ab9274b514492786992146127a.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/DarknessOne1.efkefc"
+dest_files=["res://.godot/imported/DarknessOne1.efkefc-5e95c2ab9274b514492786992146127a.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

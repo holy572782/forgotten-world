@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://dt3rf18dox37k"
+path="res://.godot/imported/ShootBarrage.efkefc-fa6acd1c39145b0f039cca71f71abce8.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/ShootBarrage.efkefc"
+dest_files=["res://.godot/imported/ShootBarrage.efkefc-fa6acd1c39145b0f039cca71f71abce8.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

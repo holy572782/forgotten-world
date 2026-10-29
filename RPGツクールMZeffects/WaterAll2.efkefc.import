@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://boy6agk7uuo27"
+path="res://.godot/imported/WaterAll2.efkefc-486760310be6ae0df614e87a80f06f02.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/WaterAll2.efkefc"
+dest_files=["res://.godot/imported/WaterAll2.efkefc-486760310be6ae0df614e87a80f06f02.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

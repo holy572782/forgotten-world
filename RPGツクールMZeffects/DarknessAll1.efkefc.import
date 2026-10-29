@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://d1b0cefubr2bu"
+path="res://.godot/imported/DarknessAll1.efkefc-67b4a45aa1d9ff046fd7d7b413e82615.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/DarknessAll1.efkefc"
+dest_files=["res://.godot/imported/DarknessAll1.efkefc-67b4a45aa1d9ff046fd7d7b413e82615.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

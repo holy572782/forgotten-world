@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://cp8qlbvnh44ou"
+path="res://.godot/imported/SlashEffect.efkefc-750ed6f1bf987f8e8f3241cfdc6f74f5.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/SlashEffect.efkefc"
+dest_files=["res://.godot/imported/SlashEffect.efkefc-750ed6f1bf987f8e8f3241cfdc6f74f5.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

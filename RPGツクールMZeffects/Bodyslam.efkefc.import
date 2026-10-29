@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://bri7irhmm2ryq"
+path="res://.godot/imported/Bodyslam.efkefc-9b8fb4b2664fb2c21a1bf211605bf79a.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/Bodyslam.efkefc"
+dest_files=["res://.godot/imported/Bodyslam.efkefc-9b8fb4b2664fb2c21a1bf211605bf79a.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

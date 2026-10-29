@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://bxy6rch81wrqh"
+path="res://.godot/imported/LaserAll.efkefc-d92454c1d4c109bc1b509715825e3e80.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/LaserAll.efkefc"
+dest_files=["res://.godot/imported/LaserAll.efkefc-d92454c1d4c109bc1b509715825e3e80.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

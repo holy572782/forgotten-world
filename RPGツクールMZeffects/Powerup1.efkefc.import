@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://c7h57gsyp1ejp"
+path="res://.godot/imported/Powerup1.efkefc-19fb1783b4362859edabd51d4128a9ba.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/Powerup1.efkefc"
+dest_files=["res://.godot/imported/Powerup1.efkefc-19fb1783b4362859edabd51d4128a9ba.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://1iby3ce7hs2n"
+path="res://.godot/imported/ShootNormal.efkefc-2141177313d85721cbca055f087c31e5.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/ShootNormal.efkefc"
+dest_files=["res://.godot/imported/ShootNormal.efkefc-2141177313d85721cbca055f087c31e5.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

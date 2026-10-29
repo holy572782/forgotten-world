@@ -120,7 +120,8 @@ func _run() -> void:
 		cue_count = 0
 		warning.warning_sound_presented.connect(_cue)
 		ai._start_windup()
-		_check(cue_count == 1 and warning.warning_audio.playing and is_equal_approx(warning.warning_audio.pitch_scale,1.0) and not warning.warning_audio.stream.loop, "Real windup entry plays Fire1 once at pitch 1.0, without looping")
+		var expected_pitch := 0.9 if ai.settings.attack_warning_sound.resource_path.ends_with("mz_magic1.ogg") else 1.0
+		_check(cue_count == 1 and warning.warning_audio.playing and is_equal_approx(warning.warning_audio.pitch_scale,expected_pitch) and not warning.warning_audio.stream.loop, "Real windup entry plays its configured sound once at the saved pitch, without looping")
 		_check(body_sprite.sprite_frames == visual.warning_frames and String(body_sprite.animation).begins_with("warning_"), "WINDUP entry immediately switches to warning pose")
 		for yaw in [0.0,90.0,180.0,270.0]:
 			main.get_node("CameraRig").rotation.y = deg_to_rad(yaw)
@@ -288,7 +289,9 @@ func _run() -> void:
 	held = ai.global_position
 	await _seconds(0.3)
 	_check(not is_instance_valid(ai) or ai.global_position == held, "Defeated actor never pursues and may finish visual cleanup")
-	await _fresh(1,Vector3(7,0,0))
+	# ADR-042 intentionally pursues outside 6m even in recovery. Isolate the
+	# absence of melee strafing inside ranged attack distance instead.
+	await _fresh(1,Vector3(5,0,0))
 	ai.settings = ai.settings.duplicate()
 	ai.settings.pursuit_enabled = true
 	ai.attack_count = 1

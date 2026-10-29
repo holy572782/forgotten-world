@@ -1,0 +1,15 @@
+[remap]
+
+importer="effekseer.resource"
+type="Resource"
+uid="uid://dl6u3bw8y227x"
+path="res://.godot/imported/Skull.efkmodel-063aadd21fd94946862fea2ddb7bc650.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/Model/Skull.efkmodel"
+dest_files=["res://.godot/imported/Skull.efkmodel-063aadd21fd94946862fea2ddb7bc650.res"]
+
+[params]
+
+compress=true

@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://cyy0cufn15l66"
+path="res://.godot/imported/FireAll1.efkefc-57b1618513e5d9346a158811014a1d6d.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/FireAll1.efkefc"
+dest_files=["res://.godot/imported/FireAll1.efkefc-57b1618513e5d9346a158811014a1d6d.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

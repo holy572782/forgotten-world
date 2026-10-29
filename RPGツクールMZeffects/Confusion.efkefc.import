@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://cnygkf0a48ak8"
+path="res://.godot/imported/Confusion.efkefc-bd4b962ae6e7d82de49dddcc738ee5de.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/Confusion.efkefc"
+dest_files=["res://.godot/imported/Confusion.efkefc-bd4b962ae6e7d82de49dddcc738ee5de.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

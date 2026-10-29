@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://c2vdpd7r4wqea"
+path="res://.godot/imported/NeutralOne2.efkefc-1f26f090822ef14e6c6b232d45a7ff25.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/NeutralOne2.efkefc"
+dest_files=["res://.godot/imported/NeutralOne2.efkefc-1f26f090822ef14e6c6b232d45a7ff25.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

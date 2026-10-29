@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://dg3jmv0xbs3pt"
+path="res://.godot/imported/EarthAll1.efkefc-af54ab9906c2ef98db0e8b74e0ab0cd0.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/EarthAll1.efkefc"
+dest_files=["res://.godot/imported/EarthAll1.efkefc-af54ab9906c2ef98db0e8b74e0ab0cd0.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

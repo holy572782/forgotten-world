@@ -1,0 +1,15 @@
+[remap]
+
+importer="effekseer.resource"
+type="Resource"
+uid="uid://jkt3fyhpnu1n"
+path="res://.godot/imported/NightHand4.efkmodel-f4ea334c38cd03db94fe307710ecdf5d.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/Model/NightHand4.efkmodel"
+dest_files=["res://.godot/imported/NightHand4.efkmodel-f4ea334c38cd03db94fe307710ecdf5d.res"]
+
+[params]
+
+compress=true

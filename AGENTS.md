@@ -1,5 +1,8 @@
 # AGENTS.md — Codex / AI 制作指示
 
+## 最新表示・音（2026-10-29、ADR-044）
+- 魔導士の魔法陣は提供FireAll3のHexCircleを使う床面投影。Nativeの透明Viewportを地面＋0.01mへ投影し本体の下へ表示、Magic1／pitch0.9。実MAGIC弾のHP減少で提供FireOne1＋Fire2と主人公のダメージ3コマを通常／Guard共通で再生し、保持Guardへ復帰する。物理Guard・炎弾の判定／属性／数値・AIは維持。原本素材・旧制作物を保持し、設定・検査・F5は `docs/m09_mage_fire_feedback_audit.md`。M09基本戦闘完了・今回F5待ち・M10別指示待ち。
+
 ## 最新表示（2026-10-29、ADR-043）
 - 魔導士の足元魔法陣はEffekseer製へ更新。編集可能なefkefc・SVG／XML原本と再生成スクリプトを保持。Magic VisualのCircle Effectで差し替え、nullは旧Shader。既存地面配置・サイズ／赤色／回転・詠唱／発射fade・中断／死亡消去を維持。設定・検査・F5は `docs/m09_mage_effekseer_circle_audit.md`。炎弾／MAGIC／AIはADR-042を維持、M09基本戦闘完了・今回F5待ち・M10別指示待ち。
 

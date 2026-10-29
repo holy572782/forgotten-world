@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://4y3e0pfgf1ip"
+path="res://.godot/imported/Absorb.efkefc-94c1977c110eb42f0c51b185700aaeee.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/Absorb.efkefc"
+dest_files=["res://.godot/imported/Absorb.efkefc-94c1977c110eb42f0c51b185700aaeee.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

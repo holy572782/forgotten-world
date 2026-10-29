@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://c4wrdy1e8mdqr"
+path="res://.godot/imported/Pollen.efkefc-d85adf98a9b255893bc54c1a27c50cba.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/Pollen.efkefc"
+dest_files=["res://.godot/imported/Pollen.efkefc-d85adf98a9b255893bc54c1a27c50cba.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://dm8gvah1pfdik"
+path="res://.godot/imported/Death.efkefc-a89400289911c46b7993d05102c5dcca.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/Death.efkefc"
+dest_files=["res://.godot/imported/Death.efkefc-a89400289911c46b7993d05102c5dcca.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

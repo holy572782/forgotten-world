@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://bn13vlv1rgcxp"
+path="res://.godot/imported/PierceIce.efkefc-5d35b68877b15c573e0b12025cc1b709.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/PierceIce.efkefc"
+dest_files=["res://.godot/imported/PierceIce.efkefc-5d35b68877b15c573e0b12025cc1b709.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

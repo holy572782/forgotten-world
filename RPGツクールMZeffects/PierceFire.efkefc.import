@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://bu7h0xx68avea"
+path="res://.godot/imported/PierceFire.efkefc-8747fb15a072780166381b3a62724277.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/PierceFire.efkefc"
+dest_files=["res://.godot/imported/PierceFire.efkefc-8747fb15a072780166381b3a62724277.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

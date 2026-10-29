@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://cb183iano2kra"
+path="res://.godot/imported/LightAll1.efkefc-0e821a5fee6205569bbd1d4a5b488a61.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/LightAll1.efkefc"
+dest_files=["res://.godot/imported/LightAll1.efkefc-0e821a5fee6205569bbd1d4a5b488a61.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

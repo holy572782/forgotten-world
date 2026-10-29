@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://b7hklqib8e8v"
+path="res://.godot/imported/SlashFire.efkefc-21e9c9f19b5ba78f612874a98d6e832a.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/SlashFire.efkefc"
+dest_files=["res://.godot/imported/SlashFire.efkefc-21e9c9f19b5ba78f612874a98d6e832a.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

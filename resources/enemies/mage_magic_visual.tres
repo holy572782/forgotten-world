@@ -1,6 +1,13 @@
-[gd_resource type="Resource" load_steps=3 format=3]
+[gd_resource type="Resource" load_steps=5 format=3]
 [ext_resource type="Script" path="res://scripts/effects/magic_visual_settings.gd" id="1"]
-[ext_resource type="Resource" path="res://assets/effects/mage_circle/mage_circle.efkefc" id="2_circle"]
+[ext_resource type="Resource" path="res://assets/effects/mage_circle_fire/mage_circle_fire.efkefc" id="2_circle"]
+[ext_resource type="Resource" path="res://assets/effects/mage_fire_hit/fire_one1.efkefc" id="3_hit"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/mz_fire2.ogg" id="4_sound"]
 [resource]
 script = ExtResource("1")
 circle_effect = ExtResource("2_circle")
+circle_effect_is_floor = true
+ground_offset = 0.01
+circle_color = Color(1, 0.62, 0.28, 1)
+hit_effect = ExtResource("3_hit")
+hit_sound = ExtResource("4_sound")

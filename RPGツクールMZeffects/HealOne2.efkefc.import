@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://b71dbpn8na7vr"
+path="res://.godot/imported/HealOne2.efkefc-f7e9420d31f3e3d92a0e6b8bb05d7a6a.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/HealOne2.efkefc"
+dest_files=["res://.godot/imported/HealOne2.efkefc-f7e9420d31f3e3d92a0e6b8bb05d7a6a.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

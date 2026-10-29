@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://dwl74sni66two"
+path="res://.godot/imported/HitEffect.efkefc-81b17da049b0ee619e389eae1431ea32.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/HitEffect.efkefc"
+dest_files=["res://.godot/imported/HitEffect.efkefc-81b17da049b0ee619e389eae1431ea32.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

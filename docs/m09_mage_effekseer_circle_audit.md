@@ -1,5 +1,7 @@
 # 魔導士のEffekseer魔法陣（2026-10-29、ADR-043）
 
+> ADR-044更新：ユーザー指定によりFireAll3参照の床面投影へ変更し、Magic1／pitch0.9とFireOne1／Fire2の実命中・Guard中ダメージ表示を追加。以下は最初の制作履歴。旧データ／原本は保持し、最新の設定と検査は [炎命中演出記録](m09_mage_fire_feedback_audit.md) を優先する。
+
 ## 目的と対象
 
 ユーザーの「魔導士の足元に魔法使用時に出る魔法陣をEffekseerで作成」依頼。着手時git statusはクリーン。ローカルではADR-042の標準Mesh／Shader魔法陣・炎弾／MAGIC属性・射程内停止まで実装されており、最新進捗と一致した。

@@ -1,4 +1,4 @@
-> **魔導士のEffekseer魔法陣（2026-10-29、ADR-043）**：F5→「遠距離敵」で詠唱時の足元に赤い二重円／逆回転する幾何学模様を表示。編集可能な `assets/effects/mage_circle/mage_circle.efkefc` とSVG／XML原本を保持。Circle Effect・色／サイズ／回転はMagic Visualで調整。[制作元・設定・検査・F5](docs/m09_mage_effekseer_circle_audit.md)。見た目はユーザー確認待ち。
+> **魔導士の床面魔法陣・炎命中（2026-10-29、ADR-044）**：F5→「遠距離敵」。FireAll3参照の橙色魔法陣を魔導士の下へ投影し、詠唱音はMagic1／pitch90%。実炎弾の命中は通常／防御中ともFireOne1＋Fire2と主人公のダメージ3コマ、保持中なら防御表示へ復帰。[設定・素材・検査・F5](docs/m09_mage_fire_feedback_audit.md)。見た目／聴感はユーザー確認待ち。旧オリジナル制作物は保持。
 
 > **Effekseer導入（2026-10-29、ADR-041）**：公式Godot 4用安定版1.80.5.1を有効化済み。`scenes/tests/effekseer_preview.tscn` を開いて **F6** で公式サンプルを再生できます（J／ボタンで再生、F8で停止）。3D用はEffekseerEmitter3DのEffectへ `.efkefc` を指定。[導入版・素材配置・検査・使用手順](docs/effekseer_integration_audit.md)。M09基本戦闘完了・M10別指示待ちを維持。
 

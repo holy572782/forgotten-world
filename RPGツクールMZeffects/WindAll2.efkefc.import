@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://c1meajbnoyeeh"
+path="res://.godot/imported/WindAll2.efkefc-f6b6538d2663d6b0fba324637e1bb7a3.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/WindAll2.efkefc"
+dest_files=["res://.godot/imported/WindAll2.efkefc-f6b6538d2663d6b0fba324637e1bb7a3.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

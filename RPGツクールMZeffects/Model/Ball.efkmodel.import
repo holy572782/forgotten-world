@@ -1,0 +1,15 @@
+[remap]
+
+importer="effekseer.resource"
+type="Resource"
+uid="uid://dd8ekoycuc316"
+path="res://.godot/imported/Ball.efkmodel-7b9f869a3a23a82e37b6500e07093a45.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/Model/Ball.efkmodel"
+dest_files=["res://.godot/imported/Ball.efkmodel-7b9f869a3a23a82e37b6500e07093a45.res"]
+
+[params]
+
+compress=true

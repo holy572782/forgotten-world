@@ -8,6 +8,7 @@ const SIDES := ["down", "left", "right", "up"]
 var _previous_hp := 0.0
 var _remaining := 0.0
 var _restore_visible := true
+var _allow_guard_reaction := false
 
 func _ready() -> void:
 	visible = false
@@ -30,6 +31,11 @@ func _on_hp_changed(current: float, _maximum: float) -> void:
 
 func _guarding() -> bool:
 	return is_instance_valid(body.combat) and body.combat.state == body.combat.State.Guard
+
+func show_magic_hit() -> void:
+	# Only a confirmed damaging magic projectile opts into the guard reaction.
+	_allow_guard_reaction = true
+	_show_damage()
 
 func _damage_animation() -> StringName:
 	# Reuse the action sprite's existing camera-relative direction, including combat.
@@ -62,7 +68,7 @@ func _show_damage() -> void:
 
 func _process(delta: float) -> void:
 	if _remaining <= 0.0: return
-	if _guarding():
+	if _guarding() and not _allow_guard_reaction:
 		clear_damage()
 		return
 	_remaining = maxf(0.0, _remaining - delta)
@@ -78,6 +84,7 @@ func _process(delta: float) -> void:
 	_sync_shadow()
 
 func clear_damage() -> void:
+	_allow_guard_reaction = false
 	if _remaining > 0.0 or visible:
 		if is_instance_valid(action_sprite): action_sprite.visible = _restore_visible
 	_remaining = 0.0

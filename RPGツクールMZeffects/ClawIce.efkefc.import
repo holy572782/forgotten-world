@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://b8byk5my60xmb"
+path="res://.godot/imported/ClawIce.efkefc-c1c1a96a093be635c8ce905bd7ba7613.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/ClawIce.efkefc"
+dest_files=["res://.godot/imported/ClawIce.efkefc-c1c1a96a093be635c8ce905bd7ba7613.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<EffekseerProject><Root><Name>Root</Name><Children><Node><Name>FireAll3 floor circle</Name>
+<CommonValues><MaxGeneration><Value>1</Value></MaxGeneration><Life><Center>60000</Center><Max>60000</Max><Min>60000</Min></Life></CommonValues>
+<RotationValues><Type>0</Type><Fixed><Rotation><X>90</X></Rotation></Fixed></RotationValues>
+<RendererCommonValues><ColorTexture>../../../effects/mage_circle_fire/Texture/HexCircle.png</ColorTexture><AlphaBlend>1</AlphaBlend><ZTest>True</ZTest><ZWrite>False</ZWrite><FadeInType>1</FadeInType><FadeIn><Frame>7</Frame></FadeIn></RendererCommonValues>
+<DrawingValues><Type>2</Type><Sprite><Billboard>2</Billboard><ColorAll_Fixed><R>255</R><G>255</G><B>255</B><A>255</A></ColorAll_Fixed><Position>1</Position><Position_Fixed_LL><X>-0.5</X><Y>-0.5</Y></Position_Fixed_LL><Position_Fixed_LR><X>0.5</X><Y>-0.5</Y></Position_Fixed_LR><Position_Fixed_UL><X>-0.5</X><Y>0.5</Y></Position_Fixed_UL><Position_Fixed_UR><X>0.5</X><Y>0.5</Y></Position_Fixed_UR></Sprite></DrawingValues><Children/></Node></Children></Root><ToolVersion>1.80.5</ToolVersion><Version>3</Version><StartFrame>0</StartFrame><EndFrame>120</EndFrame><IsLoop>True</IsLoop></EffekseerProject>

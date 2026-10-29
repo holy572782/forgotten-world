@@ -41,6 +41,8 @@ tests/combat_audio_pitch.gdを実描画60／30上限と別プロセス--reload�
 - 途中のPCフリーズ後は未完了のM09機能検査だけを再開。結果とログ、初回描画ERRORからの修正は `m09_enemy_combat_audit.md` の同日修正節を参照。30fps／時間比較は今回再実行せず、前回結果を維持。ユーザーF5確認は未実行。
 
 ## テスト環境記録票
+最新追加（2026-10-29、ADR-044）：新mage_fire_feedbackは素材hash・Magic1／0.9pitch・4方向の身体非重複・実弾の通常／Guard共通FireOne1／Fire2／ダメージ3コマと復帰・壁不発／完走解放を検査。Native DLL競合を避け検証用コピーを使用。結果とF5は [実装記録](m09_mage_fire_feedback_audit.md)。ユーザーの聴感／見た目・他OS／性能は未実行。
+
 最新追加（2026-10-29、ADR-043）：魔導士のNative Effekseer魔法陣を4カメラ方向の実画像、60／30fps上限、別プロセス保存再読込、発射fade／中断／HP0停止・null時の旧表示で検証。120／84項目とreload、main起動／雑兵445項目・プラグイン13項目がPASS。ユーザーのF5見た目・GUIでの制作往復・他OS／性能は未実行。[結果と再現](m09_mage_effekseer_circle_audit.md)。
 
 最新追加（2026-10-29、ADR-041）：Effekseer 1.80.5.1のheadless editor import、Compatibility実描画の13項目、既存m09_startup／enemy_jump_strike（543項目）がPASS・終了0。独立F6プレビューを追加。検査コマンドと残件は [導入記録](effekseer_integration_audit.md)。2D実描画・高度な材質／GPU粒子・音声・他OS／エクスポート・長時間性能とユーザーのF6／F5受入は未実行。M09基本戦闘完了・既存改善F5待ちを維持。

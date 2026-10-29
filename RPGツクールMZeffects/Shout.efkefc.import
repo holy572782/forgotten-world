@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://1hxsqgdb2te7"
+path="res://.godot/imported/Shout.efkefc-8ae6374ed136bf61067e223aef458985.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/Shout.efkefc"
+dest_files=["res://.godot/imported/Shout.efkefc-8ae6374ed136bf61067e223aef458985.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

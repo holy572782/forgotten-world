@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://dxt7emyxelcf1"
+path="res://.godot/imported/Song.efkefc-c9d4ca9c7ec8b0cbebaff97c6803ff66.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/Song.efkefc"
+dest_files=["res://.godot/imported/Song.efkefc-c9d4ca9c7ec8b0cbebaff97c6803ff66.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

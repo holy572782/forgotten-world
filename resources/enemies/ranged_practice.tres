@@ -2,7 +2,7 @@
 [ext_resource type="Script" path="res://scripts/enemies/enemy_settings.gd" id="1"]
 [ext_resource type="Resource" path="res://resources/enemies/ranged_attack.tres" id="2"]
 [ext_resource type="Resource" path="res://resources/enemies/mage_visual.tres" id="3_visual"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/mz_fire1.ogg" id="4_warning"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/mz_magic1.ogg" id="4_warning"]
 [ext_resource type="Resource" path="res://resources/enemies/flyoff_defeat.tres" id="5_defeat"]
 [resource]
 script = ExtResource("1")
@@ -12,5 +12,6 @@ detection_radius = 8.0
 attack_start_distance = 6.0
 leash_radius = 10.0
 attack_warning_sound = ExtResource("4_warning")
+attack_warning_pitch_scale = 0.9
 
 defeat = ExtResource("5_defeat")

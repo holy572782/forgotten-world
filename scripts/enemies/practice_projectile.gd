@@ -1,6 +1,8 @@
 extends CharacterBody3D
 ## Swept sphere; non-homing. Enemy is the guard-direction source for its lifetime.
 const FireVisual = preload("res://scripts/effects/fireball_visual.gd")
+const FireHit = preload("res://scripts/effects/fire_hit_presentation.gd")
+const DamageTypes = preload("res://scripts/combat/damage_types.gd")
 var source: Node3D
 var player: CharacterBody3D
 var settings: Resource
@@ -67,5 +69,11 @@ func _consume(collider: Object) -> void:
 	if consumed: return
 	consumed = true
 	if collider == player and is_instance_valid(source):
-		player.get_node("HealthComponent").damage(settings.damage, source, settings.damage_kind)
+		var health: HealthComponent = player.get_node("HealthComponent")
+		var before := health.current_hp
+		health.damage(settings.damage, source, settings.damage_kind)
+		if health.current_hp < before and settings.damage_kind == DamageTypes.Kind.MAGIC and settings.magic_visual != null:
+			FireHit.present(player,settings.magic_visual)
+			var hurt := player.get_node_or_null("DamageVisual")
+			if hurt != null: hurt.show_magic_hit()
 	queue_free()

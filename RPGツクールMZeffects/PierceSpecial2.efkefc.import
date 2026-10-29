@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://c278cm36j4ai"
+path="res://.godot/imported/PierceSpecial2.efkefc-294957f48b6104a9c984e327daaafc71.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/PierceSpecial2.efkefc"
+dest_files=["res://.godot/imported/PierceSpecial2.efkefc-294957f48b6104a9c984e327daaafc71.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

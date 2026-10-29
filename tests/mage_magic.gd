@@ -23,7 +23,7 @@ func _reload_magic() -> void:
 	var saved: Resource = load("res://.godot/mage_saved.tres")
 	_check(saved.attack.damage_kind == Types.Kind.MAGIC and saved.attack.projectile_speed == 5.0 and is_equal_approx(saved.attack.projectile_range,13.2), "Magic damage, speed and range persist")
 	_check(is_equal_approx(saved.attack.magic_visual.fireball_diameter,2.1) and is_equal_approx(saved.attack.projectile_radius,0.2) and is_equal_approx(saved.ranged_stop_margin,0.3), "Separate visual/collision size and pursuit margin persist")
-	_check(saved.attack.magic_visual.circle_effect != null and saved.attack.magic_visual.circle_effect.get_subresources().size() == 2, "Native circle and both texture dependencies persist")
+	_check(saved.attack.magic_visual.circle_effect != null and saved.attack.magic_visual.circle_effect.get_subresources().size() == 1 and saved.attack.magic_visual.hit_effect != null, "Floor circle and fire-hit effect dependencies persist")
 	for failure in failures: push_error(failure)
 	print("MAGE MAGIC RELOAD ","PASS" if failures.is_empty() else "FAIL")
 	quit(0 if failures.is_empty() else 1)
@@ -53,12 +53,12 @@ func _run() -> void:
 	ai.get_node("AttackWarning").warning_sound_presented.connect(_cue)
 	await _windup()
 	await _ticks(4)
-	_check(circle.is_presenting() and absf(circle.global_position.y-0.035)<0.001 and circle.global_basis.y.dot(Vector3.UP)>0.999, "Real WINDUP displays a horizontal circle just above terrain")
+	_check(circle.is_presenting() and absf(circle.global_position.y-ai.active_attack.magic_visual.ground_offset)<0.001 and circle.global_basis.y.dot(Vector3.UP)>0.999, "Real WINDUP displays a horizontal circle just above terrain")
 	_check(circle.emitter.effect != null and circle.emitter.is_playing() and not circle.mesh.visible, "Mage actually plays the native Effekseer circle without doubling the old shader")
 	ai.set_physics_process(false)
 	var rotation_before := circle.rotation.y
 	await _seconds(0.15)
-	_check(circle.rotation.y>rotation_before and cue_count==1, "Circle rotates without replaying Fire1 or advancing AI")
+	_check(circle.rotation.y>rotation_before and cue_count==1, "Circle rotates without replaying the casting sound or advancing AI")
 	# A/B rendered pixels at four camera views, rather than shader existence alone.
 	var camera: Camera3D = main.get_node("CameraRig").camera
 	for yaw in [0.0,90.0,180.0,270.0]:
@@ -67,14 +67,16 @@ func _run() -> void:
 		await _ticks(2)
 		circle.set_process(false)
 		var visible_image := await _image()
-		circle.hide()
+		circle.emitter.hide()
+		circle.mesh.hide()
+		await _ticks(3) # Native viewport texture needs a render before the A/B sample.
 		var hidden_image := await _image()
 		var point := camera.unproject_position(circle.global_position)
 		var changes := _changed(visible_image,hidden_image,Rect2i(Vector2i(point)-Vector2i(110,75),Vector2i(220,150)))
 		_check(changes>30,"Circle actually renders at camera yaw "+str(yaw))
 		visuals.append({"yaw":yaw,"circle_pixels":changes})
 		if yaw==0.0: visible_image.save_png("res://.godot/mage_circle.png")
-		circle.show()
+		circle.emitter.show()
 		circle.set_process(true)
 	ai.set_physics_process(true)
 	await _state(ai.State.ATTACK)

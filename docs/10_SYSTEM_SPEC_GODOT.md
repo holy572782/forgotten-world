@@ -37,6 +37,8 @@ WeaponData.feedbackに表示専用の設定Resourceを追加する。風切り�
 更新: 2026-10-17 / 対象: Godot 4.x 安定版（導入時に具体的なバージョンを固定）
 
 ## 0. ステータス
+**魔導士の床面魔法陣・炎命中（2026-10-29、ADR-044）**：FireAll3参照のNative魔法陣を実地面へ投影し本体の下に表示、Magic1／pitch0.9。実MAGIC弾でHPが減少したときFireOne1＋Fire2と既存ダメージ3コマを通常／Guard共通で表示し、保持Guardへ戻す。論理Guard・魔法属性／戦闘数値／AIと通常物理の表示は維持。[素材・設定・検査](m09_mage_fire_feedback_audit.md)。
+
 **魔導士の魔法陣（2026-10-29、ADR-043）**：足元の詠唱表示をEffekseerへ移行。Magic VisualのCircle Effectを指定、nullはADR-042のShader。詠唱・発射fade／実地面／サイズ・色・外周回転・中断／HP0停止と炎弾／属性／戦闘処理は維持。編集データ・検査は [魔法陣制作記録](m09_mage_effekseer_circle_audit.md)。
 
 **Effekseer導入（2026-10-29、ADR-041）**：公式Godot 4プラグイン1.80.5.1を有効化済み。現行4.7.2／Compatibilityで公式最小サンプルの3D実描画を検証。F6確認用 `scenes/tests/effekseer_preview.tscn` と利用基盤のみ追加し、既存の戦闘イベント／斬撃／火花／音とメインシーンは維持。設定・出典・再現は [導入記録](effekseer_integration_audit.md)。最終対象OS・描画方式・ゲーム演出の仕様確定ではない。

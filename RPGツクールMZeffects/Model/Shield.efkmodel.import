@@ -1,0 +1,15 @@
+[remap]
+
+importer="effekseer.resource"
+type="Resource"
+uid="uid://b52kida0dhloy"
+path="res://.godot/imported/Shield.efkmodel-93d89a73233625c6175f58facf39be77.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/Model/Shield.efkmodel"
+dest_files=["res://.godot/imported/Shield.efkmodel-93d89a73233625c6175f58facf39be77.res"]
+
+[params]
+
+compress=true

@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://oxllimb6nhp6"
+path="res://.godot/imported/Radiation.efkefc-6d635f1fac2d59c8351a2633f746f40f.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/Radiation.efkefc"
+dest_files=["res://.godot/imported/Radiation.efkefc-6d635f1fac2d59c8351a2633f746f40f.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://b6awxy2mxphft"
+path="res://.godot/imported/GeneralSpecial1.efkefc-4d8ee3ece4e4cede62c67db44235c69a.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/GeneralSpecial1.efkefc"
+dest_files=["res://.godot/imported/GeneralSpecial1.efkefc-4d8ee3ece4e4cede62c67db44235c69a.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

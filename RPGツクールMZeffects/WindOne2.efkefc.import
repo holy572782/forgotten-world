@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://ror5kiv7kdnt"
+path="res://.godot/imported/WindOne2.efkefc-9cbc46e03899a33385d029c00f49a387.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/WindOne2.efkefc"
+dest_files=["res://.godot/imported/WindOne2.efkefc-9cbc46e03899a33385d029c00f49a387.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

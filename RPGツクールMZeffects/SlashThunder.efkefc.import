@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://8mpamy2dsqjn"
+path="res://.godot/imported/SlashThunder.efkefc-7e014df4aa1fce7b0dbda47cc5918a13.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/SlashThunder.efkefc"
+dest_files=["res://.godot/imported/SlashThunder.efkefc-7e014df4aa1fce7b0dbda47cc5918a13.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

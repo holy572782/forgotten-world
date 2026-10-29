@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://bsairx1ct8qal"
+path="res://.godot/imported/ThunderOne2.efkefc-0008a16101bfe358d1a2a2f7787165db.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/ThunderOne2.efkefc"
+dest_files=["res://.godot/imported/ThunderOne2.efkefc-0008a16101bfe358d1a2a2f7787165db.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true

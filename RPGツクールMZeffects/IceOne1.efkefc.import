@@ -1,0 +1,17 @@
+[remap]
+
+importer="effekseer.effect"
+type="Resource"
+uid="uid://dm1rywd0i0gtn"
+path="res://.godot/imported/IceOne1.efkefc-1c4e6bd47bc79e11265ff35f8a490b34.res"
+
+[deps]
+
+source_file="res://RPGツクールMZeffects/IceOne1.efkefc"
+dest_files=["res://.godot/imported/IceOne1.efkefc-1c4e6bd47bc79e11265ff35f8a490b34.res"]
+
+[params]
+
+scale=1.0
+data_type=0
+compress=true
