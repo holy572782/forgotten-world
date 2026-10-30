@@ -35,6 +35,8 @@ enum Kind { DASH_MELEE, STATIONARY_MELEE, PROJECTILE }
 @export var projectile_lifetime := 6.0
 @export var projectile_range := 18.0
 @export var maximum_projectiles := 1
+## Once a ranged warning has started, range alone cannot cancel its release.
+@export var commit_projectile_on_windup := false
 
 func snapshot() -> Resource:
 	var result := duplicate(true)

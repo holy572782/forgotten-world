@@ -48,7 +48,7 @@ func _run() -> void:
 		health.heal(100)
 		await _ticks(1)
 	var interval := float(Engine.get_physics_frames() - launch_frame) / Engine.physics_ticks_per_second
-	_check(interval >= 2.5, "19 minimum interval between actual releases")
+	_check(interval >= 11.0, "19 mage waits ten seconds after attack end plus the next one-second warning")
 	_check(ai.shots.size() == 1 and is_instance_valid(ai.shots[0]), "19 second release prunes freed projectile and creates exactly one")
 	var metrics := {"fps_cap":Engine.max_fps,"chase_speed":chase_speed,"melee_windup":melee_windup,"recovery":recovery,"ranged_windup":ranged_windup,"projectile_speed":speed,"release_interval":interval}
 	var file := FileAccess.open("res://.godot/m09_timing"+str(Engine.max_fps)+".json",FileAccess.WRITE)

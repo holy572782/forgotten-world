@@ -1,5 +1,8 @@
 # AGENTS.md — Codex / AI 制作指示
 
+## 最新調整（2026-10-30、ADR-045）
+- 魔導士の炎命中倍率は0.3（旧0.06の5倍）、実発射だけFire3を1回。Commit Projectile On Windup=trueで詠唱後は開始射程／leash距離超過だけでは中断せず現在位置へ発射し、壁／死亡／同時弾数と弾の距離・速度は維持。Recovery／Minimum Attack Intervalは10秒、攻撃終了→次の詠唱約10秒。その他の敵は明示フラグ既定false。設定・検査・F5は `docs/m09_mage_cast_commit_audit.md`。M09基本戦闘完了・今回F5待ち・M10別指示待ち。
+
 ## 最新表示・音（2026-10-29、ADR-044）
 - 魔導士の魔法陣は提供FireAll3のHexCircleを使う床面投影。Nativeの透明Viewportを地面＋0.01mへ投影し本体の下へ表示、Magic1／pitch0.9。実MAGIC弾のHP減少で提供FireOne1＋Fire2と主人公のダメージ3コマを通常／Guard共通で再生し、保持Guardへ復帰する。物理Guard・炎弾の判定／属性／数値・AIは維持。原本素材・旧制作物を保持し、設定・検査・F5は `docs/m09_mage_fire_feedback_audit.md`。M09基本戦闘完了・今回F5待ち・M10別指示待ち。
 

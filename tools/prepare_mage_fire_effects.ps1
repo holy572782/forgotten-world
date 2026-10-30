@@ -47,7 +47,7 @@ $xml=@"
 $arguments=@('-cui','-in',('"'+$source+'/mage_circle_fire.efkproj"'),'-o',('"'+$circle+'/mage_circle_fire.efkefc"'))
 $process=Start-Process -FilePath $tool -ArgumentList $arguments -WorkingDirectory (Split-Path $tool) -WindowStyle Hidden -Wait -PassThru
 if($process.ExitCode -ne 0 -or -not (Test-Path "$circle/mage_circle_fire.efkefc")) { throw 'Circle export failed' }
-foreach($sound in @('Magic1','Fire2')) {
+foreach($sound in @('Magic1','Fire2','Fire3')) {
     Copy-Item -LiteralPath "$projectRoot/RPGツクールMZのaudio/se/$sound.ogg" -Destination "$projectRoot/assets/audio/sfx/mz_$($sound.ToLowerInvariant()).ogg"
 }
-Write-Output 'Prepared floor circle, unchanged FireOne1 and its textures, Magic1 and Fire2.'
+Write-Output 'Prepared floor circle, unchanged FireOne1 and its textures, Magic1, Fire2 and Fire3.'

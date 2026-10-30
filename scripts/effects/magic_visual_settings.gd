@@ -16,6 +16,10 @@ extends Resource
 @export_range(8, 64, 1) var pixel_grid := 24
 @export_range(0, 10, 1) var trail_count := 5
 @export_range(0.0, 3.0, 0.05) var trail_length := 1.1
+@export_group("Projectile launch sound")
+@export var launch_sound: AudioStream
+@export_range(-60.0, 0.0, 0.5) var launch_volume_db := -12.0
+@export_range(0.5, 2.0, 0.01) var launch_pitch_scale := 1.0
 @export_group("Fire hit")
 @export var hit_effect: EffekseerEffect
 @export_range(0.001, 1.0, 0.001) var hit_effect_scale := 0.06

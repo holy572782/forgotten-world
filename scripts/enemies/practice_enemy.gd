@@ -9,6 +9,7 @@ const Sweep = preload("res://scripts/combat/melee_sweep.gd")
 enum State { IDLE, CHASE, WINDUP, ATTACK, RECOVERY, RETURN, DEAD, DASH_APPROACH, DASH_RETURN }
 signal attack_started
 signal attack_warning_started
+signal projectile_released(shot: CharacterBody3D)
 @export var settings: Settings = preload("res://resources/enemies/melee_practice.tres")
 @export var player: CharacterBody3D
 @export var show_debug_state := true
@@ -105,7 +106,10 @@ func _physics_process(delta: float) -> void:
 	var distance := global_position.distance_to(player.global_position) if player_alive() else INF
 	var sight := has_sight()
 	sight_lost = 0.0 if sight else sight_lost + delta
-	var leashed := distance > settings.leash_radius or global_position.distance_to(home) > settings.leash_radius or sight_lost >= settings.sight_loss_seconds
+	var beyond_leash := distance > settings.leash_radius or global_position.distance_to(home) > settings.leash_radius
+	var committed := _projectile_cast_committed()
+	if committed and beyond_leash: _return_after_recovery = true
+	var leashed := (beyond_leash and not committed) or sight_lost >= settings.sight_loss_seconds
 	# Complete an attack return before going home; never replace its anchor.
 	if leashed and state in [State.CHASE, State.WINDUP]: _set_state(State.RETURN)
 	elif leashed and state in [State.DASH_APPROACH, State.ATTACK, State.DASH_RETURN]:
@@ -148,6 +152,9 @@ func _horizontal_direction(at: Vector3) -> Vector3:
 	var direction := at - global_position
 	direction.y = 0.0
 	return direction.normalized() if not direction.is_zero_approx() else facing
+
+func _projectile_cast_committed() -> bool:
+	return active_attack != null and active_attack.kind == AttackData.Kind.PROJECTILE and active_attack.commit_projectile_on_windup and state in [State.WINDUP,State.ATTACK]
 
 func locomotion_held() -> bool:
 	if not is_instance_valid(player) or not is_instance_valid(player.combat): return false
@@ -443,7 +450,7 @@ func _execute_attack() -> void:
 	cooldown = active_attack.minimum_attack_interval
 	if active_attack.kind != AttackData.Kind.PROJECTILE:
 		if melee_hits(): player.get_node("HealthComponent").damage(active_attack.damage, self, active_attack.damage_kind)
-	elif has_sight() and global_position.distance_to(player.global_position) <= settings.attack_start_distance:
+	elif has_sight() and (_projectile_cast_committed() or global_position.distance_to(player.global_position) <= settings.attack_start_distance):
 		for index in range(shots.size() - 1, -1, -1):
 			if not is_instance_valid(shots[index]) or shots[index].is_queued_for_deletion(): shots.remove_at(index)
 		if shots.size() >= active_attack.maximum_projectiles: return
@@ -455,8 +462,24 @@ func _execute_attack() -> void:
 		shot.global_position = global_position + Vector3.UP * 0.9
 		shot.direction = (player.global_position + Vector3.UP * 0.9 - shot.global_position).normalized()
 		shots.append(shot)
+		_play_projectile_launch_sound()
+		projectile_released.emit(shot)
 		facing = _horizontal_direction(player.global_position)
 		_refresh_visuals()
+
+func _play_projectile_launch_sound() -> void:
+	var visual: Resource = active_attack.magic_visual
+	if visual == null or visual.launch_sound == null: return
+	# Independent of the bolt and caster: point-blank hits/death must not cut it.
+	var audio := AudioStreamPlayer.new()
+	audio.name = "ProjectileLaunchAudio"
+	audio.stream = visual.launch_sound
+	audio.volume_db = clampf(visual.launch_volume_db,-60.0,0.0)
+	audio.pitch_scale = clampf(visual.launch_pitch_scale,0.5,2.0)
+	audio.finished.connect(audio.queue_free)
+	get_parent().add_child(audio)
+	audio.add_to_group("projectile_launch_audio")
+	audio.play()
 
 func _set_state(next: State) -> void:
 	var previous := state
