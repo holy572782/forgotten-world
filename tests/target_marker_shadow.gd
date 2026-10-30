@@ -53,16 +53,26 @@ func _run() -> void:
 	var target: Node3D = actor.get_node("Targetable")
 	var marker: MeshInstance3D = target.get_node("Marker/Mesh")
 	_check(marker.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Runtime target marker alone disables cast_shadow")
+	var current_material:=marker.material_override
+	# Reproduce the former shadow with its actual opaque material. The new late
+	# overlay pass does not participate in the old opaque shadow rendering path.
+	var legacy_material:=StandardMaterial3D.new()
+	legacy_material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+	legacy_material.albedo_color=Color(1,0.72,0.12)
+	legacy_material.billboard_mode=BaseMaterial3D.BILLBOARD_ENABLED
+	legacy_material.cull_mode=BaseMaterial3D.CULL_DISABLED
 	for yaw in [0.0,90.0,180.0,270.0]:
 		camera.position = Vector3(0,9,9).rotated(Vector3.UP,deg_to_rad(yaw))
 		camera.look_at(Vector3.ZERO)
 		target.set_available(true,true)
 		marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		var corrected := await _image()
+		marker.material_override=legacy_material
 		marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		var old := await _image()
 		_check(not _difference(corrected,old).is_empty(), "Old marker cast produces a real floor shadow at each camera yaw")
 		marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		marker.material_override=current_material
 		target.set_available(false)
 		var hidden := await _image()
 		var visible_pixels := _difference(corrected,hidden)

@@ -354,10 +354,11 @@ func filter_damage(amount: float, source: Node) -> float:
 
 func _update_markers() -> void:
 	var near_enemy := false
+	var facing := Vector3(body.facing_world.x, 0.0, body.facing_world.z).normalized()
 	for candidate in get_tree().get_nodes_in_group("combat_targets"):
 		if body.global_position.distance_to(candidate.global_position) <= equipped_weapon.attack_range + 2.0:
 			near_enemy = true
-		candidate.set_available(_candidate_valid(candidate), candidate == selected_target)
+		candidate.set_available(_candidate_valid(candidate), candidate == selected_target, _aim_angle(candidate, facing) <= settings.auto_aim_half_angle_degrees)
 	_ring.visible = show_debug_attack_range and near_enemy and not is_busy() and body.is_on_floor()
 	var mesh: TorusMesh = _ring.mesh
 	if not is_equal_approx(mesh.outer_radius, equipped_weapon.attack_range + 0.025):

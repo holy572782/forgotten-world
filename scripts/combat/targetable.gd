@@ -1,5 +1,6 @@
 extends Node3D
 ## Place this at an attack point, independently of the enemy's visual centre.
+const MarkerShader = preload("res://assets/shaders/target_marker.gdshader")
 @export var health_path: NodePath = NodePath("../HealthComponent")
 ## Explicit selection volumes: whole body for small enemies, individual parts for bosses.
 ## Paths are relative to this attack point. Assign each collider to one Targetable only.
@@ -14,11 +15,10 @@ func _ready() -> void:
 	add_to_group("combat_targets")
 	_filled_mesh = _make_marker(0.0)
 	_hollow_mesh = _make_marker(0.17)
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = Color(1.0, 0.72, 0.12)
-	material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var material := ShaderMaterial.new()
+	material.shader = MarkerShader
+	material.set_shader_parameter("marker_color", Color(1.0, 0.72, 0.12, 1.0))
+	material.render_priority = 10 # After body/white flash/weapon passes; terrain depth remains tested.
 	$Marker/Mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	$Marker/Mesh.material_override = material
 	set_available(false)
@@ -36,9 +36,10 @@ func accepts_click(collider: CollisionObject3D) -> bool:
 			return true
 	return false
 
-func set_available(available: bool, is_selected: bool = false) -> void:
+func set_available(available: bool, is_selected: bool = false, in_front: bool = true) -> void:
 	selected = available and is_selected
-	$Marker/Mesh.mesh = _filled_mesh if selected else _hollow_mesh
+	# Rear fallback/manual selections remain attackable; only their drawing changes.
+	$Marker/Mesh.mesh = _filled_mesh if selected and in_front else _hollow_mesh
 	marker.visible = available
 	marker.collision_layer = 8 if available else 0
 
