@@ -1,7 +1,10 @@
 extends RefCounted
 ## Terrain permission for enemy sword hits, independent of dash travel and hit shape.
 const Walk = preload("res://scripts/enemies/enemy_walk.gd")
+const BladeTerrain=preload("res://scripts/combat/melee_terrain.gd")
 static func clear(body: CharacterBody3D, at: Vector3) -> bool:
+	if body.active_attack.weapon!=null and body.active_attack.weapon.hit_height_up>=0.0:
+		return BladeTerrain.clear(body,at,body.settings.path,body.active_attack.target_ground_probe_depth)
 	var config: Resource=body.settings.walk
 	var ground:=Walk.floor_hit(body,at,0.05,body.active_attack.target_ground_probe_depth,config.max_slope_degrees)
 	if ground.is_empty(): return false

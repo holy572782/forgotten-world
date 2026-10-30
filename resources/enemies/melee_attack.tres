@@ -8,5 +8,5 @@ weapon = ExtResource("2_weapon")
 travel_settings = ExtResource("3_travel")
 recovery_seconds = 3.0
 
-override_weapon_hit_height = true
-hit_height_tolerance = 1.4
+override_weapon_hit_height = false
+hit_height_tolerance = 1.8

@@ -3,10 +3,14 @@
 [ext_resource type="Script" uid="uid://c77wgr5x0hm8t" path="res://scripts/combat/weapon_data.gd" id="1"]
 [ext_resource type="Resource" uid="uid://dbj0fcd6b4dhk" path="res://resources/weapons/iron_sword_visual.tres" id="2_sword"]
 [ext_resource type="Resource" uid="uid://d3woxb2bhclvg" path="res://resources/weapons/default_attack_motion.tres" id="2_u5xa7"]
+[ext_resource type="Resource" path="res://resources/weapons/sword_elevation_travel.tres" id="3_elevation"]
 
 [resource]
 script = ExtResource("1")
 hit_shape = 1
+elevation_travel = ExtResource("3_elevation")
 melee_reach = 2.5
+hit_height_up = 1.8
+hit_height_down = 1.8
 attack_visual = ExtResource("2_sword")
 combo_input_window = 0.1

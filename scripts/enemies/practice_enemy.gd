@@ -7,6 +7,11 @@ const CastingVisual = preload("res://scripts/effects/mage_cast_visual.gd")
 const Projectile = preload("res://scripts/enemies/practice_projectile.gd")
 const Path = preload("res://scripts/combat/dash_path.gd")
 const Sweep = preload("res://scripts/combat/melee_sweep.gd")
+const Elevation=preload("res://scripts/combat/elevation_path.gd")
+const Flight=preload("res://scripts/combat/combat_flight.gd")
+var _flight:=Flight.new()
+var _air_return_reason:=""
+var _jump_arrived:=false
 # RETURN = home/leash return; DASH_RETURN = attack_anchor.
 enum State { IDLE, CHASE, WINDUP, ATTACK, RECOVERY, RETURN, DEAD, DASH_APPROACH, DASH_RETURN }
 signal attack_started
@@ -86,6 +91,8 @@ func player_alive() -> bool:
 	return is_instance_valid(player) and player.is_inside_tree() and player.get_node("HealthComponent").current_hp > 0.0
 
 func has_sight() -> bool:
+	if player_alive() and active_attack!=null and active_attack.weapon!=null and active_attack.weapon.hit_height_up>=0.0:
+		return Path.sight(self,player.global_position) or StrikeGeometry.clear(self,player.global_position)
 	return player_alive() and Path.sight(self, player.global_position)
 
 func engagement_range() -> float:
@@ -179,6 +186,11 @@ func inside_home(at: Vector3, margin: float = 0.0) -> bool:
 
 func _attack_position_available() -> bool:
 	if active_attack.weapon == null: return true
+	if active_attack.weapon.elevation_travel!=null:
+		var floor_at: Vector3=walker.target_floor(player.global_position,active_attack.target_ground_probe_depth)
+		if not floor_at.is_finite(): return false
+		var plan:=Elevation.attack(self,floor_at,active_attack.weapon,settings.path,active_attack.stop_distance,active_attack.weapon.motion)
+		return not plan.is_empty() and inside_home(plan.destination)
 	var ground: Vector3 = walker.target_floor(player.global_position,active_attack.target_ground_probe_depth)
 	if not ground.is_finite(): return false
 	var toward := _horizontal_direction(player.global_position)
@@ -364,6 +376,17 @@ func _plan_attack() -> bool:
 	facing = _horizontal_direction(aimed_position)
 	_in_place = _forced_in_place or locomotion_held()
 	var route_position := aimed_position
+	if active_attack.weapon!=null and active_attack.weapon.elevation_travel!=null:
+		var floor_at: Vector3=walker.target_floor(aimed_position,active_attack.target_ground_probe_depth)
+		if not floor_at.is_finite(): return false
+		var plan:=Elevation.attack(self,floor_at,active_attack.weapon,settings.path,active_attack.stop_distance,active_attack.weapon.motion)
+		if plan.is_empty() or not inside_home(plan.destination): return false
+		_in_place=_in_place or plan.in_place
+		dash_destination=attack_anchor if _in_place else plan.destination
+		var motion: Resource=active_attack.weapon.motion
+		active_attack.dash_seconds=clampf(attack_anchor.distance_to(dash_destination)/motion.approach_speed,motion.minimum_travel_time,motion.maximum_travel_time)
+		if not plan.out.is_empty() and plan.out.air: active_attack.dash_seconds=plan.out.duration
+		return true
 	if active_attack.weapon != null:
 		route_position = walker.target_floor(aimed_position,active_attack.target_ground_probe_depth)
 		if not route_position.is_finite(): return false
@@ -404,6 +427,13 @@ func _begin_dash() -> void:
 	if active_attack.weapon != null and global_position.distance_to(dash_destination) <= 0.001:
 		_begin_attack()
 		return
+	if active_attack.weapon!=null and active_attack.weapon.elevation_travel!=null:
+		var plan:=Elevation.plan(self,global_position,dash_destination,settings.path,active_attack.weapon.elevation_travel,active_attack.weapon.motion)
+		if not plan.is_empty() and plan.air:
+			_flight.begin(plan)
+			_travel_start=global_position
+			_set_state(State.DASH_APPROACH)
+			return
 	if not Path.clear(self, dash_destination, settings.path, global_position):
 		_begin_attack_return("Unsafe approach: cancelled")
 		return
@@ -417,6 +447,9 @@ func _begin_attack() -> void:
 	if active_attack.hit_delay_seconds <= 0.0: _execute_attack()
 
 func _begin_attack_return(reason: String) -> void:
+	if _flight.active:
+		_air_return_reason=reason if not reason.is_empty() else "Return after landing"
+		return
 	if not reason.is_empty(): last_result = reason
 	if active_attack.kind != AttackData.Kind.DASH_MELEE:
 		_set_state(State.RETURN if _return_after_recovery else State.RECOVERY)
@@ -427,10 +460,32 @@ func _begin_attack_return(reason: String) -> void:
 			_set_state(State.RECOVERY)
 			return
 		var motion: Resource = active_attack.weapon.motion
+		var plan:=Elevation.plan(self,global_position,attack_anchor,settings.path,active_attack.weapon.elevation_travel,motion,true)
+		if not plan.is_empty() and plan.air:
+			_flight.begin(plan)
+			active_attack.return_seconds=plan.duration
+			_set_state(State.DASH_RETURN)
+			return
 		active_attack.return_seconds = clampf(global_position.distance_to(attack_anchor) / motion.return_speed, motion.return_minimum_travel_time, motion.return_maximum_travel_time)
 	_set_state(State.DASH_RETURN)
 
 func _dash_step(delta: float, returning: bool) -> void:
+	if _jump_arrived and not returning:
+		_travel_elapsed+=delta
+		if _travel_elapsed>=active_attack.dash_seconds+active_attack.weapon.motion.approach_attack_delay: _begin_attack()
+		return
+	if _flight.active:
+		var outcome:=_flight.step(self,delta)
+		if outcome==0: return
+		if returning: _set_state(State.RECOVERY)
+		elif outcome<0 or not _air_return_reason.is_empty():
+			_air_return_reason=""
+			_begin_attack_return("Jump interrupted")
+		else:
+			_travel_elapsed=active_attack.dash_seconds
+			_jump_arrived=true
+			if active_attack.weapon.motion.approach_attack_delay<=0.0: _begin_attack()
+		return
 	var destination := attack_anchor if returning else dash_destination
 	# Zero-distance dash is a timed pose; it does not need a movement lease.
 	if locomotion_held() and _travel_start.distance_to(destination) > 0.001:
@@ -517,6 +572,7 @@ func _play_projectile_launch_sound() -> void:
 	audio.play()
 
 func _set_state(next: State) -> void:
+	_jump_arrived=false
 	var previous := state
 	state = next
 	if next == State.RETURN: walker.begin_return()

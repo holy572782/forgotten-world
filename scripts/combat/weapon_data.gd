@@ -2,6 +2,8 @@ class_name WeaponData
 extends Resource
 const MotionSettings = preload("res://scripts/combat/attack_motion_settings.gd")
 const FeedbackSettings = preload("res://scripts/combat/combat_feedback_settings.gd")
+const ElevationSettings=preload("res://scripts/combat/elevation_travel_settings.gd")
+@export var elevation_travel: ElevationSettings
 ## Provisional weapon balance. Runtime combo progress never lives here.
 enum HitShape { SINGLE_TARGET, SWEEP }
 @export var weapon_id: StringName = &"one_handed_sword"
@@ -14,6 +16,9 @@ enum HitShape { SINGLE_TARGET, SWEEP }
 @export_range(0.1, 5.0) var melee_reach: float = 1.4
 @export_range(1.0, 180.0) var sweep_angle_degrees: float = 100.0
 @export_range(0.01, 2.0) var hit_height_tolerance: float = 0.3
+## Negative values preserve older weapons' symmetric tolerance.
+@export_range(-1.0, 5.0, 0.01) var hit_height_up: float = -1.0
+@export_range(-1.0, 5.0, 0.01) var hit_height_down: float = -1.0
 @export var attack_visual: WeaponAttackVisualData
 @export var feedback: FeedbackSettings = preload("res://resources/combat_feedback.tres")
 @export var motion: MotionSettings = preload("res://resources/weapons/default_attack_motion.tres")

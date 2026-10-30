@@ -42,6 +42,7 @@ func snapshot() -> Resource:
 	var result := duplicate(true)
 	if weapon == null: return result
 	result.weapon = weapon.duplicate() # External Resources remain shared by duplicate(true).
+	if weapon.elevation_travel!=null: result.weapon.elevation_travel=weapon.elevation_travel.duplicate()
 	result.kind = Kind.DASH_MELEE
 	var motion := (weapon.motion if weapon.motion != null else Motion.new()).snapshot()
 	result.weapon.motion = motion
@@ -51,6 +52,11 @@ func snapshot() -> Resource:
 	result.hit_yaw_degrees = 0.0
 	result.hit_height_tolerance = Motion.bounded(hit_height_tolerance,0.01,10.0,1.0) if override_weapon_hit_height else weapon.hit_height_tolerance
 	result.weapon.hit_height_tolerance = result.hit_height_tolerance
+	if override_weapon_hit_height:
+		result.weapon.hit_height_up=-1.0
+		result.weapon.hit_height_down=-1.0
+	elif weapon.hit_height_up>=0.0:
+		result.hit_height_tolerance=maxf(weapon.hit_height_up,weapon.hit_height_down)
 	result.dash_max_distance = weapon.attack_range
 	if travel_settings != null: result.stop_distance = minf(travel_settings.stop_distance, weapon.melee_reach)
 	var visual := weapon.attack_visual

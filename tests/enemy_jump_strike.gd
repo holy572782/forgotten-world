@@ -65,7 +65,7 @@ func _run() -> void:
 	await _ticks(5)
 	var sword_hash := FileAccess.get_sha256("res://resources/weapons/one_handed_sword.tres")
 	await _fresh_sword(2.0)
-	_check(is_equal_approx(ai.active_attack.hit_height_tolerance,1.4) and is_equal_approx(ai.active_attack.weapon.hit_height_tolerance,1.4) and is_equal_approx(SharedSword.hit_height_tolerance,0.3), "Soldier 1.4m override is separate from shared 0.3m player weapon")
+	_check(is_equal_approx(ai.active_attack.weapon.hit_height_up,1.8) and is_equal_approx(ai.active_attack.weapon.hit_height_down,1.8) and is_equal_approx(SharedSword.hit_height_tolerance,0.3), "Soldier uses the shared asymmetric 1.8m blade; legacy tolerance remains compatible")
 	cue_count = 0
 	ai.get_node("AttackWarning").warning_sound_presented.connect(_cue)
 	await _windup()
@@ -97,19 +97,20 @@ func _run() -> void:
 		await _finish_strike()
 		_check(received_count == 2 and health.current_hp == 80, "Next grounded attack still works after landing")
 	# Actual hit uses actual height; planning uses the independently detected floor.
-	for height in [0.3,1.2,1.4,1.401,1.8]:
+	for height in [0.3,1.2,1.4,1.8,1.801]:
 		await _fresh_sword(2.0)
 		player.set_physics_process(false)
 		player.global_position.y = height
 		ai._start_windup()
 		_check(ai.state == ai.State.WINDUP and ai._in_place and ai.dash_destination == ai.attack_anchor, "Air height alone never causes movement or unsafe-plan cancellation")
-		_check(ai.melee_hits() == (height <= 1.4), "Actual hit height boundary is respected: "+str(height))
+		_check(ai.melee_hits() == (height <= 1.8), "Actual hit height boundary is respected: "+str(height))
 		player.set_physics_process(true)
 	await _fresh_sword(2.0)
 	var profile: Resource = ai.settings.attack.snapshot()
-	for height in [-1.4,1.4]:
-		_check(Sector.contains(ai.global_position,Vector3.LEFT,origin+Vector3.UP*height,profile.weapon), "Symmetric enemy hit shape accepts +/-1.4m independently of terrain permission")
-	_check(not Sector.contains(ai.global_position,Vector3.LEFT,origin+Vector3.UP*1.2,SharedSword), "Player's existing 0.3m hit shape still rejects a high enemy")
+	for height in [-1.8,1.8]:
+		_check(Sector.contains(ai.global_position,Vector3.LEFT,origin+Vector3.UP*height,profile.weapon), "Symmetric enemy hit shape accepts +/-1.8m independently of terrain permission")
+	_check(Sector.contains(ai.global_position,Vector3.LEFT,origin+Vector3.UP*1.2,SharedSword), "Production player sword shares the new 1.8m strike height")
+	ai.settings.attack.override_weapon_hit_height = true
 	ai.settings.attack.hit_height_tolerance = 0.5
 	ai._start_windup()
 	player.set_physics_process(false)
@@ -160,7 +161,7 @@ func _run() -> void:
 		player.global_position.y=height
 		await _ticks(2)
 		ai._start_windup()
-		_check(ai.state==ai.State.WINDUP and ai._in_place and ai.melee_hits()==(height<=1.4),"ADR-046: reachable step permits in-place planning, actual jump height still limits the hit")
+		_check(ai.state==ai.State.WINDUP and ai._in_place and ai.melee_hits()==(height<=1.8),"ADR-046: reachable step permits in-place planning, actual jump height still limits the hit")
 		platform.free()
 		player.set_physics_process(true)
 	# Keep the user's real WASD dodge regression using the original shared timing.
@@ -175,6 +176,7 @@ func _run() -> void:
 	_check(ai.shots.size() == 1 and ai.shots[0].direction.y > 0.15 and is_equal_approx(ai.shots[0].settings.projectile_speed,5.0), "Mage still releases its original 3D projectile toward actual airborne height")
 	ai.clear_shots()
 	await _fresh_sword(2.0)
+	ai.settings.attack.override_weapon_hit_height = true
 	ai.settings.attack.hit_height_tolerance = 0.8
 	ai.settings.attack.target_ground_probe_depth = 3.0
 	_check(ResourceSaver.save(ai.settings.attack,"res://.godot/enemy_jump_saved.tres") == OK, "Enemy height and ground probe tuning save")

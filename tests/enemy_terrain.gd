@@ -132,6 +132,9 @@ func _run() -> void:
 	var raised_platform:=_block(Vector3(4.5,0.5,0),Vector3(3,1,3))
 	await _terrain_actor(0,Vector3.ZERO,Vector3(5,1,0))
 	ai.settings.attack.weapon.attack_range=5.0
+	# Keep this regression about ordinary pursuit: disable the newly optional combat hop.
+	ai.settings.attack.weapon.elevation_travel=ai.settings.attack.weapon.elevation_travel.duplicate()
+	ai.settings.attack.weapon.elevation_travel.enabled=false
 	ai.active_attack=ai.settings.attack.snapshot()
 	ai.attack_count=1
 	ai.cooldown=0.0

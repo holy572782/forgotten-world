@@ -6,6 +6,27 @@ const Settings = preload("res://scripts/combat/target_dash_settings.gd")
 const Path = preload("res://scripts/combat/dash_path.gd")
 const Target = preload("res://scripts/combat/targetable.gd")
 const Sweep = preload("res://scripts/combat/melee_sweep.gd")
+const BladeTerrain = preload("res://scripts/combat/melee_terrain.gd")
+const Elevation=preload("res://scripts/combat/elevation_path.gd")
+const Flight=preload("res://scripts/combat/combat_flight.gd")
+var _flight:=Flight.new()
+var _travel_unavailable:=false
+var _elevation_cycle:=false
+var _travel_history: Array[Vector3]=[]
+var _return_goals: Array[Vector3]=[]
+var _air_return_reason:=""
+var _plan_cache: Dictionary={}
+var _plan_frame:=-1
+
+func _elevation_plan(candidate: Node3D, weapon: WeaponData) -> Dictionary:
+	var frame:=Engine.get_physics_frames()
+	if _plan_frame!=frame:
+		_plan_frame=frame
+		_plan_cache.clear()
+	var from: Vector3=_flight.data.finish if _flight.active else body.global_position
+	var key:=str(candidate.get_instance_id())+str(from)+str(candidate.global_position)+str(weapon.get_instance_id())
+	if not _plan_cache.has(key): _plan_cache[key]=Elevation.attack(body,candidate.global_position,weapon,settings,settings.stop_distance,weapon.motion,from)
+	return _plan_cache[key]
 const RETURN_POSITION_EPSILON := 0.001 # Metres; ignore numerical drift without snapping.
 enum State { Idle, Approach, Attack, Return, Guard, Recover }
 signal state_changed(next: int)
@@ -229,6 +250,7 @@ func _defense_input() -> bool:
 	if guard_request:
 		if state != State.Guard:
 			if not _defense_grounded(): return _reject("Guard rejected: airborne or unsafe floor")
+			if _flight.active: _resume_return=true
 			_interrupt_attack()
 			_set_state(State.Guard)
 			_show_defense_pose(&"Guard")
@@ -236,10 +258,18 @@ func _defense_input() -> bool:
 	return false
 
 func _defense_grounded() -> bool:
+	if _flight.active: return true # Guard may change pose, never suspend a validated flight.
 	# Combat travel uses move_and_collide, whose floor flag is stale; validate
 	# the actual capsule footprint as well. Airborne FREE input is rejected.
 	if state == State.Idle: return body.is_on_floor() and body.velocity.y <= 0.0
-	return Path.clear(body, body.global_position, settings, body.global_position)
+	return _standing_safe()
+
+func _standing_safe() -> bool:
+	if Path.clear(body,body.global_position,settings,body.global_position): return true
+	var weapon:=_active_weapon if _combat_cycle else equipped_weapon
+	if weapon.hit_height_up<0.0 or not body.is_on_floor() or body.velocity.y>0.0: return false
+	var ground:=BladeTerrain.ground_at(body,body.global_position,0.1)
+	return ground.is_finite() and absf(ground.y-body.global_position.y)<0.05 and Path._sweep_clear(body,body.global_position,body.global_position,5)
 
 func _interrupt_attack() -> void:
 	_resume_return = _resume_return or state == State.Return
@@ -273,6 +303,18 @@ func _face_defense_target() -> void:
 	body.facing_index = body.direction_sector(body.facing_world, body._movement_basis())
 
 func _guard() -> void:
+	if _flight.active:
+		var outcome:=_flight.step(body,get_physics_process_delta_time())
+		_face_defense_target()
+		if outcome==0:
+			if not _guard_pressed():
+				_air_return_reason="Guard released: return after landing"
+				_set_state(State.Approach)
+				sprite.combat_pose=&"Approach"
+			return
+		if outcome<0 and not Elevation.supported(body,body.global_position):
+			_finish(true)
+			return
 	body.velocity = Vector3.ZERO
 	_face_defense_target()
 	if not _guard_pressed(): _after_defense()
@@ -470,7 +512,7 @@ func can_select(candidate: Node3D) -> bool:
 	if body.get_node("HealthComponent").current_hp <= 0.0: return false
 	var difference := candidate.global_position - body.global_position
 	if Vector2(difference.x, difference.z).length() > equipped_weapon.attack_range: return false
-	if absf(difference.y) > settings.floor_tolerance: return false
+	if equipped_weapon.hit_height_up<0.0 and absf(difference.y)>settings.floor_tolerance: return false
 	return _target_path_safe(candidate)
 
 func _candidate_valid(candidate: Node3D) -> bool:
@@ -492,7 +534,16 @@ func _next_target_safe(candidate: Node3D) -> bool:
 	return _target_path_safe(candidate)
 
 func _target_path_safe(candidate: Node3D) -> bool:
+	var weapon:=_active_weapon if _combat_cycle else equipped_weapon
+	if weapon.elevation_travel!=null:
+		var plan:=_elevation_plan(candidate,weapon)
+		return not plan.is_empty() and (not plan.in_place or _flight.active or _standing_safe())
+	if weapon.hit_height_up>=0.0 and _in_place(candidate,weapon): return _blade_clear(candidate.global_position)
 	return Path.clear(body, attack_position(candidate), settings, body.global_position) and Path.strike_clear(body, candidate.global_position, settings)
+
+func _blade_clear(at: Vector3) -> bool:
+	var weapon:=_active_weapon if _combat_cycle else equipped_weapon
+	return BladeTerrain.clear(body,at,settings) if weapon.hit_height_up>=0.0 else Path.strike_clear(body,at,settings)
 
 func _strike_in_range(candidate: Node3D, weapon: WeaponData, facing: Vector3) -> bool:
 	# One geometry predicate for movement decisions and the existing damage path.
@@ -515,6 +566,9 @@ func _framed(candidate: Node3D) -> bool:
 
 func attack_position(candidate: Node3D) -> Vector3:
 	var weapon := _active_weapon if _combat_cycle else equipped_weapon
+	if weapon.elevation_travel!=null:
+		var result:=_elevation_plan(candidate,weapon)
+		if not result.is_empty(): return result.destination
 	if _in_place(candidate, weapon): return body.global_position
 	var direction := candidate.global_position - body.global_position
 	direction.y = 0.0
@@ -526,6 +580,11 @@ func attack_position(candidate: Node3D) -> Vector3:
 func request_attack(candidate: Node3D) -> bool:
 	if is_busy() or not can_select(candidate): return _reject("Invalid target, state or stock")
 	_active_weapon = equipped_weapon.duplicate()
+	if _active_weapon.elevation_travel!=null: _active_weapon.elevation_travel=_active_weapon.elevation_travel.duplicate()
+	_elevation_cycle=false
+	_travel_history.clear()
+	_return_goals.clear()
+	_air_return_reason=""
 	_finishing_reason = ""
 	_active_motion = (_active_weapon.motion if _active_weapon.motion != null else MotionSettings.new()).snapshot()
 	_active_weapon.combo_stance_duration = MotionSettings.bounded(_active_weapon.combo_stance_duration, 0.0, 1.0, 0.12)
@@ -674,6 +733,18 @@ func _face_target() -> void:
 func _begin_travel(next: State, destination: Vector3, speed: float) -> void:
 	_travel_start = body.global_position
 	_destination = destination
+	_travel_unavailable=false
+	if next==State.Approach: _travel_history.append(_travel_start)
+	var air:=Elevation.plan(body,_travel_start,destination,settings,_active_weapon.elevation_travel,_active_motion,next==State.Return)
+	if not air.is_empty() and air.air:
+		_elevation_cycle=true
+		_flight.begin(air)
+		_duration=air.duration
+		_set_state(next)
+		sprite.combat_pose=&"Approach" if next==State.Approach else &"Return"
+		return
+	if absf(destination.y-_travel_start.y)>settings.floor_tolerance:
+		_travel_unavailable=true
 	var resolved := Path.contact_position(body, destination, settings)
 	if resolved.is_finite() and Path.clear(body, destination, settings, _travel_start):
 		# Apply only the bounded native recovery already accepted by Path.clear.
@@ -700,6 +771,17 @@ func _target_valid() -> bool:
 	return _target_alive() and target.global_position.distance_to(_target_anchor) < 0.05
 
 func _approach(delta: float) -> void:
+	if _flight.active:
+		var outcome:=_flight.step(body,delta)
+		if outcome==0: return
+		if outcome<0:
+			_begin_return("Jump obstructed")
+			return
+		if not _air_return_reason.is_empty():
+			var reason:=_air_return_reason
+			_air_return_reason=""
+			_begin_return(reason)
+			return
 	if not _target_alive():
 		_start_empty_slot(maxf(0.0, _duration + _active_motion.approach_attack_delay - _elapsed))
 		return
@@ -721,6 +803,12 @@ func _approach(delta: float) -> void:
 			queued_attack_target = reserved_target
 
 func _move_travel(delta: float) -> bool:
+	if _flight.active:
+		var outcome:=_flight.step(body,delta)
+		if outcome>0: _elapsed=_duration
+		return outcome>=0
+	if _travel_unavailable: return false
+	if _elevation_cycle and _elapsed>=_duration and body.global_position.distance_to(_destination)<0.02: return true
 	var fraction := clampf(_elapsed / _duration, 0.0, 1.0)
 	# Smooth acceleration/deceleration; the capsule follows the visible route.
 	var next := _travel_start.lerp(_destination, smoothstep(0.0, 1.0, fraction))
@@ -748,7 +836,7 @@ func _on_finished() -> void:
 func _strike_targets() -> Array[Node3D]:
 	var recipients: Array[Node3D] = []
 	if _active_weapon.hit_shape == WeaponData.HitShape.SINGLE_TARGET:
-		if _target_alive() and _strike_in_range(target, _active_weapon, strike_facing) and Path.strike_clear(body,target.global_position,settings):
+		if _target_alive() and _strike_in_range(target, _active_weapon, strike_facing) and _blade_clear(target.global_position):
 			recipients.append(target)
 		return recipients
 	for candidate in get_tree().get_nodes_in_group("combat_targets"):
@@ -757,7 +845,7 @@ func _strike_targets() -> Array[Node3D]:
 		var from_anchor: Vector3 = candidate.global_position - return_anchor
 		if Vector2(from_anchor.x,from_anchor.z).length() > _active_weapon.attack_range: continue
 		if not _strike_in_range(candidate, _active_weapon, strike_facing): continue
-		if not Path.strike_clear(body,candidate.global_position,settings): continue
+		if not _blade_clear(candidate.global_position): continue
 		var points: Array[Vector3] = [candidate.global_position+Vector3.UP*0.1,candidate.global_position+Vector3.UP*1.7]
 		if is_instance_valid(camera_rig) and not camera_rig.frames_points(points,settings.screen_margin): continue
 		recipients.append(candidate)
@@ -766,12 +854,12 @@ func _strike_targets() -> Array[Node3D]:
 
 func _attack(delta: float) -> void:
 	body.velocity = Vector3.ZERO
-	if not Path.clear(body, body.global_position, settings, body.global_position):
+	if not _standing_safe():
 		_begin_return("Attack path blocked")
 		return
 	if not _target_alive(): _target_lost = true
 	if not _target_lost:
-		if not _target_valid() or not Path.strike_clear(body, target.global_position, settings):
+		if not _target_valid() or not _blade_clear(target.global_position):
 			_begin_return("Target moved or attack path blocked")
 			return
 		_face_target()
@@ -832,21 +920,35 @@ func _finish_attack_cycle(reason: String, delta: float) -> void:
 
 func _begin_return(reason: String) -> void:
 	if not _combat_cycle or state == State.Return: return
+	if _flight.active:
+		_air_return_reason=reason
+		_interrupt_attack()
+		return
 	_interrupt_attack()
 	last_result = reason
 	if body.global_position.distance_squared_to(return_anchor) <= RETURN_POSITION_EPSILON * RETURN_POSITION_EPSILON:
 		_finish(true)
 		return
-	_begin_travel(State.Return, return_anchor, _active_motion.return_speed)
+	if _elevation_cycle:
+		_return_goals.assign(_travel_history)
+		_return_goals.reverse()
+		while not _return_goals.is_empty() and body.global_position.distance_to(_return_goals[0])<0.02: _return_goals.pop_front()
+		if _return_goals.is_empty(): _return_goals.append(return_anchor)
+		_begin_travel(State.Return,_return_goals.pop_front(),_active_motion.return_speed)
+	else: _begin_travel(State.Return, return_anchor, _active_motion.return_speed)
 
 func _return(delta: float) -> void:
 	if not _move_travel(delta):
 		last_result += "; return blocked, stopped at safe position"
 		_finish(true)
 	elif _elapsed >= _duration:
-		_finish(true)
+		if not _return_goals.is_empty(): _begin_travel(State.Return,_return_goals.pop_front(),_active_motion.return_speed)
+		else: _finish(true)
 
 func _finish(resume_held_movement: bool = false) -> void:
+	_flight.active=false
+	_air_return_reason=""
+	_return_goals.clear()
 	return_error = body.global_position.distance_to(return_anchor) if _combat_cycle else 0.0
 	if _combat_cycle:
 		if resume_held_movement: body.resume_movement_input()
