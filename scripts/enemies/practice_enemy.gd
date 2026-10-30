@@ -1,4 +1,6 @@
 extends CharacterBody3D
+const Walker = preload("res://scripts/enemies/enemy_walk.gd")
+const StrikeGeometry = preload("res://scripts/enemies/enemy_melee_geometry.gd")
 const Settings = preload("res://scripts/enemies/enemy_settings.gd")
 const AttackData = preload("res://scripts/enemies/enemy_attack_data.gd")
 const CastingVisual = preload("res://scripts/effects/mage_cast_visual.gd")
@@ -53,10 +55,15 @@ var _combat_move_goal := Vector3.ZERO
 var _combat_move_blocked := false
 var _combat_move_index := 0
 var _ranged_pursuit_active := false
+var walker: RefCounted
+var last_seen_position := Vector3.ZERO
+var _last_seen_valid := false
 
 func _ready() -> void:
 	process_physics_priority = 1 # Player reserves a stable target before enemy motion.
 	home = global_position
+	walker = Walker.new(self)
+	last_seen_position = home
 	active_attack = settings.attack.snapshot()
 	health.depleted.connect(_die)
 	if active_attack.magic_visual != null:
@@ -90,8 +97,7 @@ func current_weapon_visual() -> Resource:
 
 func _weapon_strike_clear(at: Vector3) -> bool:
 	if not Sweep.contains(global_position, facing, at, active_attack.weapon): return false
-	var floor_point := Path.ground_below(self,at,active_attack.target_ground_probe_depth)
-	return floor_point.is_finite() and Path.strike_clear(self,floor_point,settings.path)
+	return StrikeGeometry.clear(self,at)
 
 func _physics_process(delta: float) -> void:
 	if state == State.DEAD: return
@@ -106,7 +112,11 @@ func _physics_process(delta: float) -> void:
 	var distance := global_position.distance_to(player.global_position) if player_alive() else INF
 	var sight := has_sight()
 	sight_lost = 0.0 if sight else sight_lost + delta
-	var beyond_leash := distance > settings.leash_radius or global_position.distance_to(home) > settings.leash_radius
+	if sight:
+		last_seen_position = player.global_position
+		_last_seen_valid = true
+	var beyond_leash := not inside_home(player.global_position) if player_alive() else true
+	beyond_leash = beyond_leash or not inside_home(global_position)
 	var committed := _projectile_cast_committed()
 	if committed and beyond_leash: _return_after_recovery = true
 	var leashed := (beyond_leash and not committed) or sight_lost >= settings.sight_loss_seconds
@@ -115,13 +125,21 @@ func _physics_process(delta: float) -> void:
 	elif leashed and state in [State.DASH_APPROACH, State.ATTACK, State.DASH_RETURN]:
 		_return_after_recovery = true
 		if state != State.DASH_RETURN: _begin_attack_return("Leash or sight lost")
+	if leashed and state == State.RECOVERY and not _return_after_recovery: _set_state(State.RETURN)
+	if walker.busy() and state in [State.CHASE,State.RECOVERY,State.RETURN]:
+		if locomotion_held(): velocity = Vector3.ZERO
+		else: walker.continue_climb(delta)
+		return
 	match state:
 		State.IDLE:
-			if sight and distance <= settings.detection_radius: _set_state(State.CHASE)
+			if sight and distance <= settings.detection_radius and inside_home(player.global_position,settings.leash_reentry_margin): _set_state(State.CHASE)
 		State.CHASE:
-			if active_attack.kind == AttackData.Kind.PROJECTILE: _ranged_chase_step(delta, distance, sight, true)
-			elif sight and distance <= engagement_range() and cooldown <= 0.0: _start_windup()
-			elif sight and distance > engagement_range():
+			if not sight:
+				velocity = Vector3.ZERO
+				if _last_seen_valid and sight_lost < settings.sight_loss_seconds: _walk_towards(last_seen_position,delta)
+			elif active_attack.kind == AttackData.Kind.PROJECTILE: _ranged_chase_step(delta, distance, sight, true)
+			elif sight and distance <= engagement_range() and cooldown <= 0.0 and _attack_position_available(): _start_windup()
+			elif sight and (distance > engagement_range() or not _attack_position_available()):
 				if _can_pursue() and attack_count > 0: _pursuit_step(delta)
 				else: _walk_towards(player.global_position, delta)
 			elif _can_pursue() and attack_count > 0: _post_attack_step(delta)
@@ -145,13 +163,23 @@ func _physics_process(delta: float) -> void:
 			if elapsed >= active_attack.recovery_seconds: _set_state(State.RETURN if _return_after_recovery else State.CHASE)
 		State.RETURN:
 			if global_position.distance_to(home) <= 0.04: _set_state(State.IDLE)
-			else: _walk_towards(home, delta)
+			else: _walk_towards(walker.home_goal(), delta)
 	_update_telegraph_position()
 
 func _horizontal_direction(at: Vector3) -> Vector3:
 	var direction := at - global_position
 	direction.y = 0.0
 	return direction.normalized() if not direction.is_zero_approx() else facing
+
+func inside_home(at: Vector3, margin: float = 0.0) -> bool:
+	return Walker.horizontal(home,at) <= maxf(0.0,settings.leash_radius-margin)
+
+func _attack_position_available() -> bool:
+	if active_attack.weapon == null: return true
+	var ground: Vector3 = walker.target_floor(player.global_position,active_attack.target_ground_probe_depth)
+	if not ground.is_finite(): return false
+	var toward := _horizontal_direction(player.global_position)
+	return (Sweep.contains(global_position,toward,ground,active_attack.weapon) and StrikeGeometry.clear(self,player.global_position)) or Path.strike_clear(self,ground,settings.path)
 
 func _projectile_cast_committed() -> bool:
 	return active_attack != null and active_attack.kind == AttackData.Kind.PROJECTILE and active_attack.commit_projectile_on_windup and state in [State.WINDUP,State.ATTACK]
@@ -164,15 +192,9 @@ func locomotion_held() -> bool:
 func _walk_towards(at: Vector3, delta: float, speed_override: float = -1.0) -> void:
 	velocity = Vector3.ZERO
 	if locomotion_held(): return # Chase waits but its attack state machine still runs.
-	var direction := _horizontal_direction(at)
 	var speed := settings.chase_speed if speed_override < 0.0 else speed_override
-	var next := global_position + direction * minf(speed * delta, global_position.distance_to(at))
-	if not Path.clear(self, next, settings.path, global_position): return
-	facing = direction
-	velocity = (next - global_position) / maxf(delta, 0.0001)
-	var before := global_position
-	move_and_collide(next - before)
-	if speed_override >= 0.0: velocity = (global_position - before) / maxf(delta, 0.0001)
+	walker.walk(at,delta,speed)
+	if velocity.length_squared()>0.0001: facing = _horizontal_direction(at)
 
 func _ranged_chase_step(delta: float, distance: float, sight: bool, allow_attack: bool) -> void:
 	velocity = Vector3.ZERO
@@ -211,7 +233,7 @@ func _post_attack_step(delta: float) -> void:
 		return
 	var offset := player.global_position - global_position
 	var distance := Vector2(offset.x, offset.z).length()
-	if distance > settings.leash_radius or global_position.distance_to(home) > settings.leash_radius or absf(offset.y) > settings.path.floor_tolerance:
+	if not inside_home(player.global_position) or not inside_home(global_position):
 		_stop_combat_move()
 		return
 	# Outside the local fighting band, reuse the existing safe pursuit rather than orbit away.
@@ -225,10 +247,10 @@ func _post_attack_step(delta: float) -> void:
 		_choose_combat_move()
 	if combat_move_mode == "wait" or _combat_move_blocked: return
 	var speed := clampf(settings.pursuit_speed, 0.1, 10.0)
-	var remaining := global_position.distance_to(_combat_move_goal)
+	var remaining := Walker.horizontal(global_position,_combat_move_goal)
 	if remaining <= 0.001: return # Keep the selected direction until its interval expires.
-	var next := global_position.move_toward(_combat_move_goal, speed * delta)
-	if next.distance_to(player.global_position) < maxf(active_attack.stop_distance, 0.95) or not Path.clear(self, next, settings.path, global_position):
+	var next := global_position + _horizontal_direction(_combat_move_goal) * minf(speed*delta,remaining)
+	if next.distance_to(player.global_position) < maxf(active_attack.stop_distance, 0.95) or not walker.can_reach(next):
 		_combat_move_blocked = true
 		return
 	var before := global_position
@@ -264,7 +286,7 @@ func _choose_combat_move() -> void:
 			direction = -toward
 			step = minf(step, maxf(0.0, minf(engagement_range()+0.5, preferred_distance()+0.9) - distance))
 	_combat_move_goal = global_position + direction * step
-	if _combat_move_goal.distance_to(home) > settings.leash_radius or _combat_move_goal.distance_to(player.global_position) < maxf(active_attack.stop_distance,0.95) or not Path.clear(self, _combat_move_goal, settings.path, global_position):
+	if not inside_home(_combat_move_goal) or _combat_move_goal.distance_to(player.global_position) < maxf(active_attack.stop_distance,0.95) or not walker.can_reach(_combat_move_goal):
 		_combat_move_blocked = true
 
 func _pursuit_step(delta: float) -> void:
@@ -274,12 +296,15 @@ func _pursuit_step(delta: float) -> void:
 		return
 	var offset := player.global_position - global_position
 	var distance := Vector2(offset.x, offset.z).length()
-	if distance > settings.leash_radius or global_position.distance_to(home) > settings.leash_radius or absf(offset.y) > settings.path.floor_tolerance:
+	if not inside_home(player.global_position) or not inside_home(global_position):
 		_stop_pursuit()
 		return
 	# Stop 5mm inside the requested range so float rounding cannot leave the
 	# actor infinitesimally outside its next attack's eligibility boundary.
 	var preferred := maxf(active_attack.stop_distance, preferred_distance() - 0.005)
+	# A level-ground dash may reach from the preferred distance; a riser may not.
+	# Keep walking until an attack is actually possible, rather than parking short.
+	if active_attack.weapon != null and not _attack_position_available(): preferred = maxf(active_attack.stop_distance,0.95)
 	if distance <= preferred:
 		_stop_pursuit()
 		return
@@ -288,18 +313,18 @@ func _pursuit_step(delta: float) -> void:
 	_pursuit_moving = true
 	var direction := _horizontal_direction(player.global_position)
 	var speed := clampf(settings.pursuit_speed, 0.1, 10.0)
-	var to_step := global_position.direction_to(_pursuit_destination)
-	if not _pursuit_step_active or global_position.distance_to(_pursuit_destination) <= 0.001 or direction.dot(to_step) < 0.5:
+	var to_step := _horizontal_direction(_pursuit_destination)
+	if not _pursuit_step_active or Walker.horizontal(global_position,_pursuit_destination) <= 0.001 or direction.dot(to_step) < 0.5:
 		# A step is a retargeting guide, never a cap below one physics tick's travel.
 		var length := minf(maxf(clampf(settings.pursuit_step_distance, 0.1, 3.0), speed * delta), distance - preferred)
 		_pursuit_destination = global_position + direction * length
-		if _pursuit_destination.distance_to(home) > settings.leash_radius or not Path.clear(self, _pursuit_destination, settings.path, global_position):
+		if not inside_home(_pursuit_destination) or not walker.can_reach(_pursuit_destination,false):
 			_stop_pursuit()
 			return
 		_pursuit_step_active = true
-	to_step = global_position.direction_to(_pursuit_destination)
+	to_step = _horizontal_direction(_pursuit_destination)
 	# Clamp the final increment if the player comes toward an already chosen step.
-	var step := minf(speed * delta, minf(distance - preferred, global_position.distance_to(_pursuit_destination)))
+	var step := minf(speed * delta, minf(distance - preferred, Walker.horizontal(global_position,_pursuit_destination)))
 	_walk_towards(global_position + to_step * step, delta, speed)
 
 func _stop_pursuit() -> void:
@@ -330,11 +355,11 @@ func _plan_attack() -> bool:
 	_in_place = _forced_in_place or locomotion_held()
 	var route_position := aimed_position
 	if active_attack.weapon != null:
-		route_position = Path.ground_below(self,aimed_position,active_attack.target_ground_probe_depth)
-		if not route_position.is_finite() or not Path.strike_clear(self,route_position,settings.path):
-			return false
-		# Travel depends on the grounded horizontal reach, not the current jump height.
-		_in_place = _in_place or Sweep.contains(global_position,facing,route_position,active_attack.weapon)
+		route_position = walker.target_floor(aimed_position,active_attack.target_ground_probe_depth)
+		if not route_position.is_finite(): return false
+		var nearby := Sweep.contains(global_position,facing,route_position,active_attack.weapon) and StrikeGeometry.clear(self,aimed_position)
+		if not nearby and not Path.strike_clear(self,route_position,settings.path): return false
+		_in_place = _in_place or nearby
 	var offset := route_position - attack_anchor
 	offset.y = 0.0
 	# Both original capsules plus 0.15m gap, never a reduced collision shape.
@@ -484,6 +509,8 @@ func _play_projectile_launch_sound() -> void:
 func _set_state(next: State) -> void:
 	var previous := state
 	state = next
+	if next == State.RETURN: walker.begin_return()
+	elif next == State.IDLE: walker.reset_home()
 	_ranged_pursuit_active = false
 	attack_executed = false
 	elapsed = 0.0

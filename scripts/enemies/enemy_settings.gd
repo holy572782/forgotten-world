@@ -1,5 +1,7 @@
 extends Resource
 ## All values are provisional M09 practice balance, not final enemy design.
+const WalkSettings = preload("res://scripts/enemies/enemy_walk_settings.gd")
+@export var walk: WalkSettings = WalkSettings.new()
 const AttackData = preload("res://scripts/enemies/enemy_attack_data.gd")
 const PathSettings = preload("res://scripts/combat/dash_path_settings.gd")
 const Defeat = preload("res://scripts/effects/enemy_defeat_settings.gd")
@@ -14,7 +16,8 @@ const Visual = preload("res://scripts/enemies/enemy_visual_data.gd")
 ## Projectile-only hysteresis; does not change the 6m attack eligibility.
 @export_range(0.0, 1.0, 0.01) var ranged_stop_margin := 0.2
 @export var leash_radius := 9.0
-@export var sight_loss_seconds := 0.5
+@export_range(0.5, 5.0, 0.05) var sight_loss_seconds := 1.75
+@export_range(0.1, 2.0, 0.05) var leash_reentry_margin := 0.3
 @export_group("Attack warning presentation")
 @export var attack_warning_flash_enabled := true
 @export var attack_warning_flash_color := Color(1.0, 0.15, 0.1, 1.0)

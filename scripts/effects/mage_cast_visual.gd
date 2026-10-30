@@ -1,7 +1,7 @@
 extends Node3D
 ## Presentation only. Existing AI signals/clock own the warning and release.
 const CircleShader = preload("res://assets/shaders/mage_circle.gdshader")
-const Ground = preload("res://scripts/combat/dash_path.gd")
+const Ground = preload("res://scripts/enemies/enemy_walk.gd")
 var mesh: MeshInstance3D
 var material: ShaderMaterial
 var emitter: EffekseerEmitter3D
@@ -9,6 +9,7 @@ var native_view: SubViewport
 var floor_projection: MeshInstance3D
 var remaining := 0.0
 var releasing := false
+var floor_angle := 0.0
 @onready var actor: CharacterBody3D = get_parent()
 
 func _ready() -> void:
@@ -107,12 +108,13 @@ func _update(delta: float) -> void:
 			clear()
 			return
 		strength = remaining / maxf(0.001,config.release_fade_seconds)
-	var floor_point := Ground.ground_below(actor,actor.global_position,2.0)
-	if not floor_point.is_finite():
+	var floor_hit := Ground.floor_hit(actor,actor.global_position,0.25,2.0,actor.settings.walk.max_slope_degrees)
+	if floor_hit.is_empty():
 		clear()
 		return
-	global_position = floor_point + Vector3.UP*config.ground_offset
-	rotation.y += config.circle_rotation_speed * delta
+	global_position = floor_hit.position + floor_hit.normal*config.ground_offset
+	floor_angle += config.circle_rotation_speed * delta
+	global_basis = Basis(Quaternion(Vector3.UP,floor_hit.normal)) * Basis(Vector3.UP,floor_angle)
 	if config.circle_effect != null:
 		mesh.visible = false
 		emitter.rotation.x = 0.0 if config.circle_effect_is_floor else -PI * 0.5

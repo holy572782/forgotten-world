@@ -131,7 +131,7 @@ func _run() -> void:
 	_press("guard",false)
 	combat.cancel()
 	# Walls, real platforms, low barriers, gaps, no floor and depth bounds stay unsafe.
-	for kind in ["wall","low_wall","platform","jump_platform","gap","no_floor","too_high"]:
+	for kind in ["wall","low_wall","gap","no_floor","too_high"]:
 		await _fresh_sword(2.0)
 		player.set_physics_process(false)
 		var barrier: StaticBody3D
@@ -152,6 +152,16 @@ func _run() -> void:
 		ai._start_windup()
 		_check(ai.state == ai.State.RECOVERY and ai.attack_count == 0 and not ai.melee_hits() and ai.global_position == before, "Unsafe terrain is not bypassed by jump handling: "+kind)
 		if barrier != null: barrier.free()
+		player.set_physics_process(true)
+	for height in [0.8,2.0]:
+		await _fresh_sword(2.0)
+		player.set_physics_process(false)
+		var platform := _block(origin+Vector3(0,0.4,0),Vector3(1.5,0.8,1.5))
+		player.global_position.y=height
+		await _ticks(2)
+		ai._start_windup()
+		_check(ai.state==ai.State.WINDUP and ai._in_place and ai.melee_hits()==(height<=1.4),"ADR-046: reachable step permits in-place planning, actual jump height still limits the hit")
+		platform.free()
 		player.set_physics_process(true)
 	# Keep the user's real WASD dodge regression using the original shared timing.
 	await _dodge(4.5,0.45,0.0,true)

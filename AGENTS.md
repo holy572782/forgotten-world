@@ -1,5 +1,8 @@
 # AGENTS.md — Codex / AI 制作指示
 
+## 最新改善（2026-10-30、ADR-046）
+- 敵の通常歩行／home帰還はEnemyWalkで床・坂・安全な時間制御の段差昇降を使用し、共有DashPathは変更しない。home基準XZの9m／10m、視線猶予1.75秒・最終確認位置、再索敵余裕0.3m。雑兵は1.4mの実高度／共通Sweepと敵専用地形検査で届く段差へその場攻撃、踏み込みは既存の水平安全経路のみ。魔導士ADR-045・主人公は維持。設定・検査・F5は `docs/m09_enemy_terrain_audit.md`。M09基本戦闘完了・追加改善F5待ち・M10別指示待ち。
+
 ## 最新調整（2026-10-30、ADR-045）
 - 魔導士の炎命中倍率は0.3（旧0.06の5倍）、実発射だけFire3を1回。Commit Projectile On Windup=trueで詠唱後は開始射程／leash距離超過だけでは中断せず現在位置へ発射し、壁／死亡／同時弾数と弾の距離・速度は維持。Recovery／Minimum Attack Intervalは10秒、攻撃終了→次の詠唱約10秒。その他の敵は明示フラグ既定false。設定・検査・F5は `docs/m09_mage_cast_commit_audit.md`。M09基本戦闘完了・今回F5待ち・M10別指示待ち。
 
