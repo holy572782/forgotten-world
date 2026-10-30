@@ -9,3 +9,12 @@ extends Resource
 @export_range(0.1, 2.0, 0.05) var blocked_retry_seconds := 0.5
 ## Only bridge tiny map seams with opposing walkable supports; never a cliff.
 @export_range(0.0, 0.2, 0.01) var floor_seam_tolerance := 0.15
+
+@export_group("Automatic terrain jump")
+@export var jump_enabled := true
+@export_range(0.1, 0.4, 0.01) var walking_step_height := 0.3
+@export_range(0.4, 1.5, 0.01) var jump_height := 1.1
+## Height sets the apex; takeoff speed sets the tempo. Gravity is derived.
+@export_range(2.0, 12.0, 0.01) var jump_takeoff_speed := 6.63
+@export_range(0.5, 6.0, 0.1) var jump_horizontal_speed := 3.0
+@export_range(0.1, 3.0, 0.05) var jump_cooldown_seconds := 0.8

@@ -1,5 +1,14 @@
 extends RefCounted
 ## Enemy-only native floor locomotion and swept, time-based stair climbing.
+const Arc = preload("res://scripts/combat/jump_arc.gd")
+enum Motion { WALK, STEP, JUMP, FALL, STRANDED }
+var motion_mode := Motion.WALK
+var jump_data: Dictionary = {}
+var jump_elapsed := 0.0
+var jump_cooldown := 0.0
+var jump_count := 0
+var _fall_elapsed := 0.0
+var _rise_ahead := 0.0
 var actor: CharacterBody3D
 var config: Resource
 var retry := 0.0
@@ -80,7 +89,128 @@ func can_reach(at: Vector3, check_clearance: bool = true) -> bool:
 		current=next
 	return true
 
-func busy() -> bool: return not climb.is_empty()
+func airborne() -> bool: return motion_mode in [Motion.JUMP,Motion.FALL,Motion.STRANDED]
+
+func busy() -> bool: return not climb.is_empty() or airborne()
+
+func advance_cooldown(delta: float) -> void:
+	jump_cooldown=maxf(0.0,jump_cooldown-delta)
+
+func _jump_corridor(landing: Vector3) -> bool:
+	var start:=actor.global_position
+	var count:=maxi(1,ceili(horizontal(start,landing)/0.1))
+	for index in range(count+1):
+		var at:=start.lerp(landing,float(index)/count)
+		if horizontal(at,actor.home)>actor.settings.leash_radius: return false
+		var hit:=_sample(at)
+		if hit.is_empty() or hit.position.y<minf(start.y,landing.y)-0.04 or hit.position.y>maxf(start.y,landing.y)+0.04: return false
+		if not _support(Vector3(at.x,hit.position.y,at.z)): return false
+	return true
+
+func _jump_plan(direction: Vector3) -> Dictionary:
+	_rise_ahead=0.0
+	if not config.jump_enabled or direction.is_zero_approx() or not _can_land(): return {}
+	var height: float=clampf(config.jump_height,0.4,1.5)
+	var takeoff: float=clampf(config.jump_takeoff_speed,2.0,12.0)
+	var speed: float=clampf(config.jump_horizontal_speed,0.5,6.0)
+	var start:=actor.global_position
+	var horizon:=minf(4.0,Arc.flight_time(height,takeoff,0.0)*speed)
+	var seen: Dictionary={}
+	for index in range(4,ceili(horizon/0.1)+1):
+		var distance:=float(index)*0.1
+		var hit:=floor_hit(actor,start+direction*distance,height+0.05,0.05,config.max_slope_degrees)
+		if hit.is_empty() or hit.normal.y<0.99: continue # Ramps use native floor walking.
+		var rise: float=hit.position.y-start.y
+		if rise<=config.walking_step_height+0.01: continue
+		var contact:=KinematicCollision3D.new()
+		if not actor.test_move(actor.global_transform,direction*distance,contact,actor.safe_margin) or contact.get_normal().y>=cos(deg_to_rad(config.max_slope_degrees)): continue
+		_rise_ahead=maxf(_rise_ahead,rise)
+		var key:=roundi(rise*100.0)
+		if seen.has(key): continue
+		seen[key]=true
+		if rise>config.maximum_step_up+0.01 or rise+0.003>height: continue
+		var duration:=Arc.flight_time(height,takeoff,rise+0.003)
+		var landing:=start+direction*speed*duration
+		landing.y=start.y+rise+0.003
+		var floor_at:=floor_hit(actor,landing,0.02,0.08,config.max_slope_degrees)
+		if floor_at.is_empty() or absf(floor_at.position.y-hit.position.y)>0.02: continue
+		if not _support(Vector3(landing.x,floor_at.position.y,landing.z),true) or not _jump_corridor(landing): continue
+		var g:=Arc.gravity(height,takeoff)
+		if not Arc.clear(actor,start,direction,speed,takeoff,g,duration): continue
+		return {"start":start,"direction":direction,"speed":speed,"takeoff":takeoff,"gravity":g,"duration":duration,"landing":landing,"cooldown":config.jump_cooldown_seconds,"height":height}
+	return {}
+
+func _begin_jump(plan: Dictionary) -> void:
+	_record()
+	jump_data=plan
+	jump_elapsed=0.0
+	motion_mode=Motion.JUMP
+	jump_count+=1
+	blocked=false
+	actor.facing=plan.direction
+
+func _settled() -> void:
+	if not returning:
+		_record()
+		return
+	# A hop can pass several return breadcrumbs. Resume at the nearest grounded one.
+	var nearest:=breadcrumbs.size()-1
+	var distance:=INF
+	for index in range(breadcrumbs.size()):
+		var candidate:=actor.global_position.distance_squared_to(breadcrumbs[index])
+		if candidate<distance:
+			distance=candidate
+			nearest=index
+	if nearest>=0: breadcrumbs.resize(nearest+1)
+
+func _can_land() -> bool:
+	var floor_at:=floor_hit(actor,actor.global_position,0.02,0.05,config.max_slope_degrees)
+	return not floor_at.is_empty() and _support(actor.global_position)
+
+func _land_jump() -> void:
+	motion_mode=Motion.WALK
+	vertical_speed=0.0
+	jump_cooldown=maxf(0.1,float(jump_data.get("cooldown",config.jump_cooldown_seconds)))
+	actor.apply_floor_snap()
+	_settled()
+
+func _advance_air(delta: float) -> void:
+	var before:=actor.global_position
+	if motion_mode==Motion.STRANDED:
+		actor.velocity=Vector3.ZERO
+		var restored:=floor_hit(actor,before,0.02,0.05,config.max_slope_degrees)
+		if not restored.is_empty() and _support(before): _land_jump()
+		return
+	if motion_mode==Motion.JUMP:
+		jump_elapsed=minf(jump_elapsed+delta,jump_data.duration)
+		var next:=Arc.position_at(jump_data.start,jump_data.direction,jump_data.speed,jump_data.takeoff,jump_data.gravity,jump_elapsed)
+		var collision:=actor.move_and_collide(next-before)
+		actor.velocity=(actor.global_position-before)/maxf(delta,0.0001)
+		if collision!=null:
+			if collision.get_normal().y>=cos(deg_to_rad(config.max_slope_degrees)) and actor.velocity.y<=0.0 and _can_land():
+				_land_jump()
+			else:
+				motion_mode=Motion.FALL
+				vertical_speed=minf(0.0,actor.velocity.y)
+				_fall_elapsed=0.0
+		elif jump_elapsed>=jump_data.duration:
+			var floor_at:=floor_hit(actor,actor.global_position,0.02,0.05,config.max_slope_degrees)
+			if not floor_at.is_empty() and _support(actor.global_position): _land_jump()
+			else:
+				motion_mode=Motion.FALL
+				vertical_speed=minf(0.0,jump_data.takeoff-jump_data.gravity*jump_elapsed)
+				_fall_elapsed=0.0
+		return
+	_fall_elapsed+=delta
+	vertical_speed=maxf(-10.0,vertical_speed-config.gravity*delta)
+	var collision:=actor.move_and_collide(Vector3.UP*vertical_speed*delta)
+	actor.velocity=(actor.global_position-before)/maxf(delta,0.0001)
+	if collision!=null and collision.get_normal().y>=cos(deg_to_rad(config.max_slope_degrees)) and _can_land():
+		_land_jump()
+	elif _fall_elapsed>=2.0 and collision==null:
+		motion_mode=Motion.STRANDED # No warp or retry-jump into missing terrain.
+		actor.velocity=Vector3.ZERO
+		blocked=true
 
 func _record() -> void:
 	if returning: return
@@ -106,6 +236,9 @@ func reset_home() -> void:
 
 func continue_climb(delta: float) -> void:
 	actor.velocity=Vector3.ZERO
+	if airborne():
+		_advance_air(delta)
+		return
 	if climb.is_empty(): return
 	var goal := climb[0]
 	var speed: float = config.climb_speed if absf(goal.y-actor.global_position.y)>0.001 else climb_speed
@@ -121,8 +254,9 @@ func continue_climb(delta: float) -> void:
 	elif actor.global_position.distance_to(goal)<0.012:
 		climb.pop_front()
 		if climb.is_empty():
+			motion_mode=Motion.WALK
 			vertical_speed=0.0
-			_record()
+			_settled()
 
 func _try_climb(direction: Vector3, speed: float) -> bool:
 	var radius: float=actor.get_node("CollisionShape3D").shape.radius
@@ -131,12 +265,13 @@ func _try_climb(direction: Vector3, speed: float) -> bool:
 	if hit.is_empty(): return false
 	landing.y=hit.position.y
 	var rise:=landing.y-actor.global_position.y
-	if rise<=0.04 or rise>config.maximum_step_up+0.01 or not _support(landing,true): return false
+	if rise<=0.04 or rise>minf(config.maximum_step_up,config.walking_step_height)+0.01 or not _support(landing,true): return false
 	if horizontal(landing,actor.home)>actor.settings.leash_radius: return false
 	var raised:=Vector3(actor.global_position.x,landing.y+0.01,actor.global_position.z)
 	var across:=landing+Vector3.UP*0.01
 	if not _motion_clear(actor.global_position,raised-actor.global_position) or not _motion_clear(raised,across-raised): return false
 	_record()
+	motion_mode=Motion.STEP
 	climb.assign([raised,across,landing+Vector3.UP*0.001])
 	climb_speed=speed
 	blocked=false
@@ -152,6 +287,16 @@ func walk(at: Vector3, delta: float, speed: float) -> void:
 	var offset:=Vector3(at.x-actor.global_position.x,0,at.z-actor.global_position.z)
 	if offset.length()<0.001 and absf(at.y-actor.global_position.y)<0.08: return
 	var direction:=offset.normalized()
+	var plan:=_jump_plan(direction)
+	if not plan.is_empty():
+		if jump_cooldown>0.0:
+			blocked=true
+			retry=minf(config.blocked_retry_seconds,jump_cooldown)
+			return
+		_begin_jump(plan)
+		_advance_air(delta)
+		return
+	if _rise_ahead>config.walking_step_height: speed=minf(speed,1.5)
 	var motion:=direction*minf(speed*delta,offset.length())
 	var next:=actor.global_position+motion
 	if horizontal(next,actor.home)>actor.settings.leash_radius or not _support(next):

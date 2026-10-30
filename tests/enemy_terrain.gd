@@ -38,7 +38,8 @@ func _travel_until(goal: Vector3, limit_seconds: float = 10.0) -> bool:
 		var change: Vector3=ai.global_position-previous
 		max_tick_distance=maxf(max_tick_distance,change.length()/maxf(0.0001,seconds))
 		max_tick_height=maxf(max_tick_height,absf(change.y)/maxf(0.0001,seconds))
-		_check(change.length()<=maxf(4.0,ai.settings.walk.climb_speed)*seconds+0.02,"Walk/climb is time based, no instant warp")
+		var maximum_speed:=maxf(maxf(4.0,ai.settings.walk.climb_speed),Vector2(ai.settings.walk.jump_takeoff_speed,ai.settings.walk.jump_horizontal_speed).length())
+		_check(change.length()<=maximum_speed*seconds+0.02,"Walk/jump is time based, no instant warp")
 		_check(ai.inside_home(ai.global_position),"All ordinary movement stays in horizontal home radius")
 		previous=ai.global_position
 		previous_frame=Engine.get_physics_frames()

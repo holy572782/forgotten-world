@@ -108,6 +108,7 @@ func _physics_process(delta: float) -> void:
 		clear_shots()
 		if state != State.RETURN and state != State.IDLE: _set_state(State.RETURN)
 	elapsed += delta
+	walker.advance_cooldown(delta)
 	cooldown = maxf(0.0, cooldown - delta)
 	var distance := global_position.distance_to(player.global_position) if player_alive() else INF
 	var sight := has_sight()
@@ -127,7 +128,7 @@ func _physics_process(delta: float) -> void:
 		if state != State.DASH_RETURN: _begin_attack_return("Leash or sight lost")
 	if leashed and state == State.RECOVERY and not _return_after_recovery: _set_state(State.RETURN)
 	if walker.busy() and state in [State.CHASE,State.RECOVERY,State.RETURN]:
-		if locomotion_held(): velocity = Vector3.ZERO
+		if locomotion_held() and not walker.airborne(): velocity = Vector3.ZERO
 		else:
 			walker.continue_climb(delta)
 			_face_walk_velocity()
@@ -340,6 +341,7 @@ func _stop_pursuit() -> void:
 	_pursuit_step_active = false
 
 func _start_windup(in_place: bool = false) -> void:
+	if walker.busy(): return # Ordinary jumps/steps finish before combat begins.
 	if not in_place: last_result = ""
 	active_attack = settings.attack.snapshot()
 	attack_anchor = global_position
