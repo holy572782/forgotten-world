@@ -128,7 +128,9 @@ func _physics_process(delta: float) -> void:
 	if leashed and state == State.RECOVERY and not _return_after_recovery: _set_state(State.RETURN)
 	if walker.busy() and state in [State.CHASE,State.RECOVERY,State.RETURN]:
 		if locomotion_held(): velocity = Vector3.ZERO
-		else: walker.continue_climb(delta)
+		else:
+			walker.continue_climb(delta)
+			_face_walk_velocity()
 		return
 	match state:
 		State.IDLE:
@@ -192,9 +194,15 @@ func locomotion_held() -> bool:
 func _walk_towards(at: Vector3, delta: float, speed_override: float = -1.0) -> void:
 	velocity = Vector3.ZERO
 	if locomotion_held(): return # Chase waits but its attack state machine still runs.
+	var direction := _horizontal_direction(at) # Preserve intent before a one-tick goal is consumed.
 	var speed := settings.chase_speed if speed_override < 0.0 else speed_override
 	walker.walk(at,delta,speed)
-	if velocity.length_squared()>0.0001: facing = _horizontal_direction(at)
+	_face_walk_velocity(direction)
+
+func _face_walk_velocity(climb_direction: Vector3 = Vector3.ZERO) -> void:
+	var direction := Vector3(velocity.x,0.0,velocity.z)
+	if direction.length_squared()>0.0001: facing = direction.normalized()
+	elif walker.busy() and absf(velocity.y)>0.01 and not climb_direction.is_zero_approx(): facing = climb_direction
 
 func _ranged_chase_step(delta: float, distance: float, sight: bool, allow_attack: bool) -> void:
 	velocity = Vector3.ZERO
