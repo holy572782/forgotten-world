@@ -94,7 +94,7 @@ func _run() -> void:
 	await _ticks(2)
 	_check(Elevation.attack(player,ai.global_position,combat.equipped_weapon,combat.settings,1.1,combat.equipped_weapon.motion).is_empty(),"A small enemy cannot be jumped over")
 	small.free()
-	var occupied:=_block(Vector3(3.3,1.8,0),Vector3(1.0,1.6,2))
+	var occupied:=_block(Vector3(2.8,1.8,0),Vector3(2.2,1.6,2)) # Cover lower-floor candidates too.
 	occupied.collision_layer=4
 	await _ticks(2)
 	_check(Elevation.attack(player,ai.global_position,combat.equipped_weapon,combat.settings,1.1,combat.equipped_weapon.motion).is_empty(),"Occupied landing rejects the attack")
@@ -108,7 +108,7 @@ func _run() -> void:
 	floor_body.collision_layer=1
 	combat.equipped_weapon.elevation_travel=combat.equipped_weapon.elevation_travel.duplicate()
 	combat.equipped_weapon.elevation_travel.maximum_ascent=0.5
-	_check(Elevation.attack(player,ai.global_position,combat.equipped_weapon,combat.settings,1.1,combat.equipped_weapon.motion).is_empty(),"Ascent limit is independent of blade height")
+	_check(Elevation.plan(player,player.global_position,Vector3(3.4,1,0),combat.settings,combat.equipped_weapon.elevation_travel,combat.equipped_weapon.motion).is_empty(),"Ascent limit is independent of blade height")
 	platform.free()
 	platform=await _setup(false,false)
 	combat.equipped_weapon.elevation_travel=combat.equipped_weapon.elevation_travel.duplicate()

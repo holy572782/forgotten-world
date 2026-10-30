@@ -5,7 +5,7 @@ static func clear(body: CharacterBody3D, at: Vector3, settings: Resource, depth:
 	var ground:=ground_at(body,at,depth)
 	if not ground.is_finite(): return false
 	var start:=from if from.is_finite() else body.global_position
-	if absf(ground.y-start.y)<=settings.floor_tolerance:
+	if absf(ground.y-start.y)<=settings.floor_tolerance and flat_at(body,start) and flat_at(body,ground):
 		if start.distance_to(body.global_position)>0.005:
 			return Path.supported(body,start,ground,settings) and Path._sweep_clear(body,start,ground,1) and _line(body,start+Vector3.UP*0.8,at+Vector3.UP*0.8)
 		return Path.strike_clear(body,ground,settings) and _line(body,start+Vector3.UP*0.8,at+Vector3.UP*0.8)
@@ -35,3 +35,7 @@ static func ground_at(body: CharacterBody3D, at: Vector3, depth: float) -> Vecto
 static func _line(body: CharacterBody3D, a: Vector3, b: Vector3) -> bool:
 	if a.distance_squared_to(b)<0.000001: return true
 	return body.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(a,b,1)).is_empty()
+
+static func flat_at(body: CharacterBody3D, at: Vector3) -> bool:
+	var hit:=body.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(at+Vector3.UP*0.1,at-Vector3.UP*0.3,1))
+	return not hit.is_empty() and hit.normal.y>=0.99

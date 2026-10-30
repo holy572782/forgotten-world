@@ -6,12 +6,23 @@ const Blade=preload("res://scripts/combat/melee_terrain.gd")
 const Sweep=preload("res://scripts/combat/melee_sweep.gd")
 
 static func supported(body: CharacterBody3D, at: Vector3, tolerance: float=0.04) -> bool:
+	var ray:=PhysicsRayQueryParameters3D.create(at+Vector3.UP*0.1,at-Vector3.UP*0.3,1)
+	var center:=body.get_world_3d().direct_space_state.intersect_ray(ray)
+	if center.is_empty() or center.normal.y<cos(body.floor_max_angle) or absf(center.position.y-at.y)>tolerance+0.08: return false
 	var radius: float=body.get_node("CollisionShape3D").shape.radius*0.95
 	for offset in [Vector3.ZERO,Vector3.RIGHT*radius,Vector3.LEFT*radius,Vector3.FORWARD*radius,Vector3.BACK*radius]:
-		var ground:=Path.ground_below(body,at+offset+Vector3.UP*0.02,0.1)
-		if not ground.is_finite() or absf(ground.y-at.y)>tolerance: return false
+		var ground:=Blade.ground_at(body,at+offset+Vector3.UP*0.5,1.0)
+		var expected: float=center.position.y-(center.normal.x*offset.x+center.normal.z*offset.z)/center.normal.y
+		if not ground.is_finite() or absf(ground.y-expected)>tolerance: return false
 	return true
 
+static func landing(body: CharacterBody3D, at: Vector3) -> Vector3:
+	var above:=at+Vector3.UP*0.2
+	var collision:=KinematicCollision3D.new()
+	if not body.test_move(Transform3D(body.global_basis,above),Vector3.DOWN*0.4,collision,body.safe_margin): return Vector3.INF
+	if collision.get_normal().y<cos(body.floor_max_angle): return Vector3.INF
+	var result:=above+collision.get_travel()
+	return result if supported(body,result) else Vector3.INF
 static func corridor(body: CharacterBody3D, start: Vector3, finish: Vector3, spacing: float) -> bool:
 	var low:=minf(start.y,finish.y)
 	var high:=maxf(start.y,finish.y)
@@ -20,13 +31,14 @@ static func corridor(body: CharacterBody3D, start: Vector3, finish: Vector3, spa
 	for index in range(count+1):
 		var at:=start.lerp(finish,float(index)/count)
 		for offset in [Vector3.ZERO,Vector3.RIGHT*radius,Vector3.LEFT*radius,Vector3.FORWARD*radius,Vector3.BACK*radius]:
-			var ground:=Path.ground_below(body,Vector3(at.x+offset.x,high+0.05,at.z+offset.z),high-low+0.15)
-			if not ground.is_finite() or ground.y<low-0.04 or ground.y>high+0.04: return false
+			var ground:=Blade.ground_at(body,Vector3(at.x+offset.x,high+0.5,at.z+offset.z),high-low+1.0)
+			if not ground.is_finite() or ground.y<low-radius-0.04 or ground.y>high+radius+0.04: return false
 	return true
 
 static func plan(body: CharacterBody3D, start: Vector3, finish: Vector3, path: Resource, tuning: Resource, motion: Resource, returning: bool=false) -> Dictionary:
 	if absf(start.y-finish.y)<=path.floor_tolerance:
-		return {"air":false,"start":start,"finish":finish} if Path.clear(body,finish,path,start) else {}
+		if Path.clear(body,finish,path,start): return {"air":false,"start":start,"finish":finish}
+		if Blade.flat_at(body,start) and Blade.flat_at(body,finish): return {}
 	if tuning==null or not tuning.enabled: return {}
 	var rise:=finish.y-start.y
 	var max_height:=clampf(tuning.apex_height,0.1,1.1)
@@ -72,25 +84,41 @@ static func actors_clear(body: CharacterBody3D, start: Vector3, finish: Vector3)
 	query.exclude=[body.get_rid()]
 	return body.get_world_3d().direct_space_state.intersect_shape(query,1).is_empty()
 
-static func attack(body: CharacterBody3D, at: Vector3, weapon: WeaponData, path: Resource, stop: float, motion: Resource, from: Vector3=Vector3.INF) -> Dictionary:
+static func attack(body: CharacterBody3D, at: Vector3, weapon: WeaponData, path: Resource, stop: float, motion: Resource, from: Vector3=Vector3.INF, diagnostics: Dictionary={}) -> Dictionary:
 	var start:=from if from.is_finite() else body.global_position
 	var offset:=Vector3(at.x-start.x,0,at.z-start.z)
-	if offset.length()>weapon.attack_range+0.00001: return {}
+	if diagnostics.get("enabled",false): diagnostics["reason"]="NO_SAFE_LANDING"
+	if offset.length()>weapon.attack_range+0.00001: return reject(diagnostics,"OUT_OF_RANGE")
 	if Sweep.contains(start,offset,at,weapon) and Blade.clear(body,at,path,2.0,start): return {"in_place":true,"destination":start,"out":{},"back":{}}
-	var ground:=Path.ground_below(body,at,2.0)
-	if not ground.is_finite() or not Blade.clear(body,at,path,2.0,start): return {}
+	var ground:=Blade.ground_at(body,at,2.0)
+	if not ground.is_finite(): return {}
 	# Search supported stops before the target, never beyond/through its body.
 	var closest:=maxf(0.9,minf(stop,weapon.melee_reach))
 	for index in range(maxi(1,ceili((weapon.melee_reach-closest)/0.1))+1):
 		var distance:=closest+float(index)*0.1
 		if distance>=offset.length(): continue
 		var destination:=ground-offset.normalized()*distance
-		var floor_at:=Path.ground_below(body,destination+Vector3.UP*0.02,0.1)
-		if not floor_at.is_finite() or absf(floor_at.y-ground.y)>0.04: continue
-		destination.y=floor_at.y
+		var floor_at:=Blade.ground_at(body,destination+Vector3.UP*1.1,2.3)
+		if not floor_at.is_finite(): continue
+		destination=landing(body,floor_at)
+		if not destination.is_finite(): continue
+		if not Sweep.contains(destination,at-destination,at,weapon):
+			reject(diagnostics,"HEIGHT_OUT_OF_RANGE_OR_REACH")
+			continue
+		if not Blade.clear(body,at,path,2.0,destination):
+			reject(diagnostics,"BLADE_BLOCKED")
+			continue
 		var out:=plan(body,start,destination,path,weapon.elevation_travel,motion)
-		if out.is_empty(): continue
+		if out.is_empty():
+			reject(diagnostics,"DASH_PATH_BLOCKED")
+			continue
 		var back:=plan(body,destination,start,path,weapon.elevation_travel,motion,true)
-		if back.is_empty(): continue
+		if back.is_empty():
+			reject(diagnostics,"RETURN_PATH_BLOCKED")
+			continue
 		return {"in_place":false,"destination":destination,"out":out,"back":back}
+	return {}
+
+static func reject(diagnostics: Dictionary, reason: String) -> Dictionary:
+	if diagnostics.get("enabled",false): diagnostics["reason"]=reason
 	return {}

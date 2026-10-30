@@ -20,6 +20,20 @@ signal projectile_released(shot: CharacterBody3D)
 @export var settings: Settings = preload("res://resources/enemies/melee_practice.tres")
 @export var player: CharacterBody3D
 @export var show_debug_state := true
+@export var show_attack_diagnostics := false
+var attack_start_reason:=""
+var attack_abort_reason:=""
+var attack_hit_reason:=""
+
+func _update_attack_debug() -> void:
+	debug_label.visible=true
+	debug_label.text=State.keys()[state]+"\nSTART: "+attack_start_reason+"\nABORT: "+attack_abort_reason+"\nHIT: "+attack_hit_reason
+
+func _terrain_plan(at: Vector3) -> Dictionary:
+	var diagnostic: Dictionary={"enabled":true} if show_attack_diagnostics else {}
+	var result:=Elevation.attack(self,at,active_attack.weapon,settings.path,active_attack.stop_distance,active_attack.weapon.motion,Vector3.INF,diagnostic)
+	if show_attack_diagnostics: attack_start_reason="OK" if not result.is_empty() else diagnostic.get("reason","NO_SAFE_LANDING")
+	return result
 @onready var health: HealthComponent = $HealthComponent
 @onready var targetable: Node3D = $Targetable
 var state := State.IDLE
@@ -92,7 +106,7 @@ func player_alive() -> bool:
 
 func has_sight() -> bool:
 	if player_alive() and active_attack!=null and active_attack.weapon!=null and active_attack.weapon.hit_height_up>=0.0:
-		return Path.sight(self,player.global_position) or StrikeGeometry.clear(self,player.global_position)
+		return Path.sight(self,player.global_position) or StrikeGeometry.clear(self,player.global_position) or Elevation.Blade._line(self,global_position+Vector3.UP*1.6,player.global_position+Vector3.UP*1.6)
 	return player_alive() and Path.sight(self, player.global_position)
 
 func engagement_range() -> float:
@@ -118,7 +132,13 @@ func _physics_process(delta: float) -> void:
 	walker.advance_cooldown(delta)
 	cooldown = maxf(0.0, cooldown - delta)
 	var distance := global_position.distance_to(player.global_position) if player_alive() else INF
+	if player_alive() and active_attack.weapon!=null: distance=Walker.horizontal(global_position,player.global_position)
 	var sight := has_sight()
+	if show_attack_diagnostics:
+		if walker.busy(): attack_start_reason="ACTOR_AIRBORNE"
+		elif not sight: attack_start_reason="TARGET_NOT_VISIBLE"
+		elif distance>engagement_range(): attack_start_reason="OUT_OF_RANGE"
+		_update_attack_debug()
 	sight_lost = 0.0 if sight else sight_lost + delta
 	if sight:
 		last_seen_position = player.global_position
@@ -189,7 +209,7 @@ func _attack_position_available() -> bool:
 	if active_attack.weapon.elevation_travel!=null:
 		var floor_at: Vector3=walker.target_floor(player.global_position,active_attack.target_ground_probe_depth)
 		if not floor_at.is_finite(): return false
-		var plan:=Elevation.attack(self,floor_at,active_attack.weapon,settings.path,active_attack.stop_distance,active_attack.weapon.motion)
+		var plan:=_terrain_plan(floor_at)
 		return not plan.is_empty() and inside_home(plan.destination)
 	var ground: Vector3 = walker.target_floor(player.global_position,active_attack.target_ground_probe_depth)
 	if not ground.is_finite(): return false
@@ -379,7 +399,7 @@ func _plan_attack() -> bool:
 	if active_attack.weapon!=null and active_attack.weapon.elevation_travel!=null:
 		var floor_at: Vector3=walker.target_floor(aimed_position,active_attack.target_ground_probe_depth)
 		if not floor_at.is_finite(): return false
-		var plan:=Elevation.attack(self,floor_at,active_attack.weapon,settings.path,active_attack.stop_distance,active_attack.weapon.motion)
+		var plan:=_terrain_plan(floor_at)
 		if plan.is_empty() or not inside_home(plan.destination): return false
 		_in_place=_in_place or plan.in_place
 		dash_destination=attack_anchor if _in_place else plan.destination
@@ -408,6 +428,7 @@ func _windup_step(delta: float) -> void:
 	if _late_aim:
 		if not aim_locked:
 			if not _plan_attack():
+				if show_attack_diagnostics: attack_abort_reason=attack_start_reason
 				_begin_attack_return("Unsafe tracked strike: cancelled")
 				return
 			if settings.attack_range_indicator_enabled: _refresh_visuals() # Optional debug route follows the preview too.
@@ -447,6 +468,7 @@ func _begin_attack() -> void:
 	if active_attack.hit_delay_seconds <= 0.0: _execute_attack()
 
 func _begin_attack_return(reason: String) -> void:
+	if show_attack_diagnostics and not reason.is_empty() and state in [State.WINDUP,State.DASH_APPROACH,State.ATTACK]: attack_abort_reason=reason
 	if _flight.active:
 		_air_return_reason=reason if not reason.is_empty() else "Return after landing"
 		return
@@ -539,7 +561,16 @@ func _execute_attack() -> void:
 	attack_count += 1
 	cooldown = active_attack.minimum_attack_interval
 	if active_attack.kind != AttackData.Kind.PROJECTILE:
-		if melee_hits(): player.get_node("HealthComponent").damage(active_attack.damage, self, active_attack.damage_kind)
+		var connects:=melee_hits()
+		if show_attack_diagnostics:
+			attack_hit_reason="OK" if connects else "BLADE_BLOCKED_OR_OUT_OF_REACH"
+			if not connects and active_attack.weapon!=null:
+				var delta_y:=player.global_position.y-global_position.y
+				var weapon: WeaponData=active_attack.weapon
+				if delta_y>weapon.hit_height_up or -delta_y>weapon.hit_height_down: attack_hit_reason="HEIGHT_OUT_OF_RANGE"
+				elif not Sweep.contains(global_position,facing,player.global_position,weapon): attack_hit_reason="OUT_OF_RANGE_OR_DIRECTION"
+				else: attack_hit_reason="BLADE_BLOCKED"
+		if connects: player.get_node("HealthComponent").damage(active_attack.damage, self, active_attack.damage_kind)
 	elif has_sight() and (_projectile_cast_committed() or global_position.distance_to(player.global_position) <= settings.attack_start_distance):
 		for index in range(shots.size() - 1, -1, -1):
 			if not is_instance_valid(shots[index]) or shots[index].is_queued_for_deletion(): shots.remove_at(index)
@@ -616,6 +647,9 @@ func _refresh_visuals() -> void:
 	if not is_instance_valid(telegraph): return
 	debug_label.visible = show_debug_state
 	debug_label.text = ("RANGED  " if active_attack.kind == AttackData.Kind.PROJECTILE else "MELEE  ") + State.keys()[state]
+	if show_attack_diagnostics:
+		debug_label.visible=true
+		debug_label.text+="\nSTART: "+attack_start_reason+"\nABORT: "+attack_abort_reason+"\nHIT: "+attack_hit_reason
 	if not last_result.is_empty(): debug_label.text += "\n" + last_result
 	telegraph.visible = settings.attack_range_indicator_enabled and state in [State.WINDUP, State.DASH_APPROACH, State.ATTACK]
 	var mesh := ImmediateMesh.new()
