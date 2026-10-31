@@ -29,6 +29,19 @@ var _diagnostics_shown:=false
 var attack_start_reason:=""
 var attack_abort_reason:=""
 var attack_hit_reason:=""
+var _availability_frame:=-1
+var _availability_until:=0
+var _availability_origin:=Vector3.INF
+var _availability_target:=Vector3.INF
+var _availability_attack: Resource
+var _availability_unlimited:=false
+var _availability_value:=false
+var _availability_reason:=""
+var _preview_due:=0.0
+var _preview_origin:=Vector3.INF
+var _preview_target:=Vector3.INF
+var _preview_valid:=false
+var _preview_reason:=""
 
 func _update_attack_debug() -> void:
 	debug_label.visible=true
@@ -179,13 +192,15 @@ func _physics_process(delta: float) -> void:
 		State.IDLE:
 			if (debug_unlimited_pursuit and player_alive()) or (sight and distance <= settings.detection_radius and inside_home(player.global_position,settings.leash_reentry_margin)): _set_state(State.CHASE)
 		State.CHASE:
+			var melee_available:=false
+			if sight and active_attack.kind!=AttackData.Kind.PROJECTILE and distance<=engagement_range(): melee_available=_attack_position_available()
 			if not sight:
 				velocity = Vector3.ZERO
 				if debug_unlimited_pursuit and player_alive(): _walk_towards(player.global_position,delta)
 				elif _last_seen_valid and sight_lost < settings.sight_loss_seconds: _walk_towards(last_seen_position,delta)
 			elif active_attack.kind == AttackData.Kind.PROJECTILE: _ranged_chase_step(delta, distance, sight, true)
-			elif sight and distance <= engagement_range() and cooldown <= 0.0 and _attack_position_available(): _start_windup()
-			elif sight and (distance > engagement_range() or not _attack_position_available()):
+			elif distance <= engagement_range() and cooldown <= 0.0 and melee_available: _start_windup()
+			elif distance > engagement_range() or not melee_available:
 				if _can_pursue() and attack_count > 0: _pursuit_step(delta)
 				else: _walk_towards(player.global_position, delta)
 			elif _can_pursue() and attack_count > 0: _post_attack_step(delta)
@@ -221,6 +236,25 @@ func inside_home(at: Vector3, margin: float = 0.0) -> bool:
 	return debug_unlimited_pursuit or Walker.horizontal(home,at) <= maxf(0.0,settings.leash_radius-margin)
 
 func _attack_position_available() -> bool:
+	var frame:=Engine.get_physics_frames()
+	var now:=Time.get_ticks_usec()
+	var unchanged:=active_attack==_availability_attack and debug_unlimited_pursuit==_availability_unlimited and global_position.distance_to(_availability_origin)<0.08 and player.global_position.distance_to(_availability_target)<0.08
+	if unchanged and (frame==_availability_frame or now<_availability_until):
+		attack_start_reason=_availability_reason
+		return _availability_value
+	_availability_frame=frame
+	_availability_until=now+150000
+	_availability_origin=global_position
+	_availability_target=player.global_position
+	_availability_attack=active_attack
+	_availability_unlimited=debug_unlimited_pursuit
+	_availability_value=_evaluate_attack_position()
+	_availability_reason=attack_start_reason
+	return _availability_value
+
+func _evaluate_attack_position() -> bool:
+	# Eligibility cache never authorizes a launch: _start_windup/_plan_attack,
+	# the committed dash, actual movement and hit retain fresh safety checks.
 	if active_attack.weapon == null: return true
 	if active_attack.weapon.elevation_travel!=null:
 		var floor_at: Vector3=walker.target_floor(player.global_position,active_attack.target_ground_probe_depth)
@@ -415,6 +449,10 @@ func _start_windup(in_place: bool = false) -> void:
 		last_result = "Unsafe weapon strike path: "+attack_start_reason
 		_set_state(State.RECOVERY)
 		return
+	_preview_due=0.1
+	_preview_origin=global_position
+	_preview_target=player.global_position
+	_preview_valid=true
 	_set_state(State.WINDUP)
 
 func _plan_attack() -> bool:
@@ -459,7 +497,19 @@ func _plan_attack() -> bool:
 func _windup_step(delta: float) -> void:
 	if _late_aim:
 		if not aim_locked:
-			if not _plan_attack():
+			_preview_due-=delta
+			# Follow facing each tick; expensive preview plans run at 10 Hz while
+			# stationary. The exact commitment tick always proves the current plan.
+			aimed_position=player.global_position
+			facing=_horizontal_direction(aimed_position)
+			if elapsed>=active_attack.windup_seconds or _preview_due<=0.0 or global_position.distance_to(_preview_origin)>=0.08 or aimed_position.distance_to(_preview_target)>=0.08:
+				_preview_valid=_plan_attack()
+				_preview_reason=attack_start_reason
+				_preview_origin=global_position
+				_preview_target=aimed_position
+				_preview_due=0.05 if not _preview_valid else 0.1
+			if not _preview_valid:
+				attack_start_reason=_preview_reason
 				_windup_plan_failed_for+=delta
 				velocity=Vector3.ZERO
 				if _windup_plan_failed_for<=clampf(settings.windup_replan_grace_seconds,0.0,0.3): return
@@ -642,8 +692,9 @@ func _set_state(next: State) -> void:
 	var previous := state
 	state = next
 	if next not in [State.CHASE,State.RECOVERY]:
-		_pursuit_route.waypoints.clear()
-		_pursuit_route.reason=""
+		_pursuit_route.reset()
+	_availability_until=0
+	_availability_frame=-1
 	if next == State.RETURN: walker.begin_return()
 	elif next == State.IDLE: walker.reset_home()
 	_ranged_pursuit_active = false
