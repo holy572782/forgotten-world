@@ -47,3 +47,5 @@ camera_rig = NodePath("../CameraRig")
 [node name="PracticeSelector" type="CanvasLayer" parent="." unique_id=770464822]
 script = ExtResource("8_practice")
 initial_mode = 1
+debug_unlimited_pursuit = true
+show_enemy_diagnostics = true

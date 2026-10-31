@@ -2,6 +2,8 @@ extends CanvasLayer
 ## Test-map-only modes. Explicit buttons restart a trial; no in-game respawn system.
 const EnemyScene = preload("res://scenes/enemies/practice_enemy.tscn")
 @export_enum("Static", "Melee", "Ranged") var initial_mode := 0
+@export var debug_unlimited_pursuit := false
+@export var show_enemy_diagnostics := false
 var active_enemy: CharacterBody3D
 var mode := 0
 var status: Label
@@ -61,6 +63,8 @@ func select_mode(next: int) -> void:
 		active_enemy.name = "M09PracticeEnemy"
 		active_enemy.settings = load("res://resources/enemies/melee_practice.tres" if mode == 1 else "res://resources/enemies/ranged_practice.tres")
 		active_enemy.player = player
+		active_enemy.debug_unlimited_pursuit=debug_unlimited_pursuit
+		active_enemy.show_attack_diagnostics=show_enemy_diagnostics
 		active_enemy.position = Vector3(-2, 0, -2)
 		main.add_child(active_enemy)
 	status.text = ["静止敵：左クリック攻撃・連撃の確認用（敵は攻撃しません）", "近接敵：左クリック攻撃・右クリック／I 防御・方向入力で帰還", "遠距離敵：左クリック攻撃・右クリック／I 防御・移動で弾を回避"][mode]

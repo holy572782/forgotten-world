@@ -42,6 +42,8 @@ const Visual = preload("res://scripts/enemies/enemy_visual_data.gd")
 @export var track_windup_target := false
 ## Minimum time from final aim lock to damage; includes fixed-route travel.
 @export_range(0.1, 1.5, 0.01) var aim_commit_minimum_seconds := 0.45
+## Retry a transient windup plan failure while stopped; never launch a stale plan.
+@export_range(0.0, 0.3, 0.01) var windup_replan_grace_seconds := 0.12
 @export_group("Post-return combat movement")
 ## Uses existing pursuit_speed / pursuit_step_distance / preferred_attack_distance.
 @export var combat_movement_enabled := false

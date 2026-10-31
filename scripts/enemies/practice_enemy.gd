@@ -1,5 +1,6 @@
 extends CharacterBody3D
 const Walker = preload("res://scripts/enemies/enemy_walk.gd")
+const PursuitRoute = preload("res://scripts/enemies/enemy_pursuit_route.gd")
 const StrikeGeometry = preload("res://scripts/enemies/enemy_melee_geometry.gd")
 const Settings = preload("res://scripts/enemies/enemy_settings.gd")
 const AttackData = preload("res://scripts/enemies/enemy_attack_data.gd")
@@ -21,18 +22,24 @@ signal projectile_released(shot: CharacterBody3D)
 @export var player: CharacterBody3D
 @export var show_debug_state := true
 @export var show_attack_diagnostics := false
+@export var debug_unlimited_pursuit := false
+var _pursuit_route:=PursuitRoute.new()
+var _windup_plan_failed_for:=0.0
+var _diagnostics_shown:=false
 var attack_start_reason:=""
 var attack_abort_reason:=""
 var attack_hit_reason:=""
 
 func _update_attack_debug() -> void:
 	debug_label.visible=true
-	debug_label.text=State.keys()[state]+"\nSTART: "+attack_start_reason+"\nABORT: "+attack_abort_reason+"\nHIT: "+attack_hit_reason
+	var distance:=Walker.horizontal(global_position,player.global_position) if player_alive() else INF
+	var blocked: String=_pursuit_route.reason if debug_unlimited_pursuit and not _pursuit_route.reason.is_empty() else walker.blocked_reason
+	debug_label.text=State.keys()[state]+"  PURSUIT: "+("UNLIMITED" if debug_unlimited_pursuit else "BOUNDED")+"\nDIST: %.2fm  MOVE: %s" % [distance,blocked]+"\nSTART: "+attack_start_reason+"\nABORT: "+attack_abort_reason+"\nHIT: "+attack_hit_reason
 
 func _terrain_plan(at: Vector3) -> Dictionary:
-	var diagnostic: Dictionary={"enabled":true} if show_attack_diagnostics else {}
+	var diagnostic: Dictionary={"enabled":true}
 	var result:=Elevation.attack(self,at,active_attack.weapon,settings.path,active_attack.stop_distance,active_attack.weapon.motion,Vector3.INF,diagnostic)
-	if show_attack_diagnostics: attack_start_reason="OK" if not result.is_empty() else diagnostic.get("reason","NO_SAFE_LANDING")
+	attack_start_reason="OK" if not result.is_empty() else diagnostic.get("reason","NO_SAFE_LANDING")
 	return result
 @onready var health: HealthComponent = $HealthComponent
 @onready var targetable: Node3D = $Targetable
@@ -134,6 +141,14 @@ func _physics_process(delta: float) -> void:
 	var distance := global_position.distance_to(player.global_position) if player_alive() else INF
 	if player_alive() and active_attack.weapon!=null: distance=Walker.horizontal(global_position,player.global_position)
 	var sight := has_sight()
+	if _diagnostics_shown and not show_attack_diagnostics: _refresh_visuals()
+	_diagnostics_shown=show_attack_diagnostics
+	debug_label.visible=show_debug_state or show_attack_diagnostics
+	if debug_unlimited_pursuit and player_alive(): _return_after_recovery=false
+	if debug_unlimited_pursuit and player_alive() and state==State.RETURN:
+		walker.returning=false
+		_return_after_recovery=false
+		_set_state(State.CHASE)
 	if show_attack_diagnostics:
 		if walker.busy(): attack_start_reason="ACTOR_AIRBORNE"
 		elif not sight: attack_start_reason="TARGET_NOT_VISIBLE"
@@ -147,7 +162,7 @@ func _physics_process(delta: float) -> void:
 	beyond_leash = beyond_leash or not inside_home(global_position)
 	var committed := _projectile_cast_committed()
 	if committed and beyond_leash: _return_after_recovery = true
-	var leashed := (beyond_leash and not committed) or sight_lost >= settings.sight_loss_seconds
+	var leashed := ((beyond_leash and not committed) or sight_lost >= settings.sight_loss_seconds) and not (debug_unlimited_pursuit and player_alive())
 	# Complete an attack return before going home; never replace its anchor.
 	if leashed and state in [State.CHASE, State.WINDUP]: _set_state(State.RETURN)
 	elif leashed and state in [State.DASH_APPROACH, State.ATTACK, State.DASH_RETURN]:
@@ -162,11 +177,12 @@ func _physics_process(delta: float) -> void:
 		return
 	match state:
 		State.IDLE:
-			if sight and distance <= settings.detection_radius and inside_home(player.global_position,settings.leash_reentry_margin): _set_state(State.CHASE)
+			if (debug_unlimited_pursuit and player_alive()) or (sight and distance <= settings.detection_radius and inside_home(player.global_position,settings.leash_reentry_margin)): _set_state(State.CHASE)
 		State.CHASE:
 			if not sight:
 				velocity = Vector3.ZERO
-				if _last_seen_valid and sight_lost < settings.sight_loss_seconds: _walk_towards(last_seen_position,delta)
+				if debug_unlimited_pursuit and player_alive(): _walk_towards(player.global_position,delta)
+				elif _last_seen_valid and sight_lost < settings.sight_loss_seconds: _walk_towards(last_seen_position,delta)
 			elif active_attack.kind == AttackData.Kind.PROJECTILE: _ranged_chase_step(delta, distance, sight, true)
 			elif sight and distance <= engagement_range() and cooldown <= 0.0 and _attack_position_available(): _start_windup()
 			elif sight and (distance > engagement_range() or not _attack_position_available()):
@@ -202,13 +218,15 @@ func _horizontal_direction(at: Vector3) -> Vector3:
 	return direction.normalized() if not direction.is_zero_approx() else facing
 
 func inside_home(at: Vector3, margin: float = 0.0) -> bool:
-	return Walker.horizontal(home,at) <= maxf(0.0,settings.leash_radius-margin)
+	return debug_unlimited_pursuit or Walker.horizontal(home,at) <= maxf(0.0,settings.leash_radius-margin)
 
 func _attack_position_available() -> bool:
 	if active_attack.weapon == null: return true
 	if active_attack.weapon.elevation_travel!=null:
 		var floor_at: Vector3=walker.target_floor(player.global_position,active_attack.target_ground_probe_depth)
-		if not floor_at.is_finite(): return false
+		if not floor_at.is_finite():
+			attack_start_reason="TARGET_FLOOR_MISSING"
+			return false
 		var plan:=_terrain_plan(floor_at)
 		return not plan.is_empty() and inside_home(plan.destination)
 	var ground: Vector3 = walker.target_floor(player.global_position,active_attack.target_ground_probe_depth)
@@ -227,6 +245,9 @@ func locomotion_held() -> bool:
 func _walk_towards(at: Vector3, delta: float, speed_override: float = -1.0) -> void:
 	velocity = Vector3.ZERO
 	if locomotion_held(): return # Chase waits but its attack state machine still runs.
+	if debug_unlimited_pursuit and player_alive() and state in [State.CHASE,State.RECOVERY]:
+		at=_pursuit_route.goal(self,at,delta)
+		if not at.is_finite(): return
 	var direction := _horizontal_direction(at) # Preserve intent before a one-tick goal is consumed.
 	var speed := settings.chase_speed if speed_override < 0.0 else speed_override
 	walker.walk(at,delta,speed)
@@ -239,7 +260,9 @@ func _face_walk_velocity(climb_direction: Vector3 = Vector3.ZERO) -> void:
 
 func _ranged_chase_step(delta: float, distance: float, sight: bool, allow_attack: bool) -> void:
 	velocity = Vector3.ZERO
-	if not sight: return
+	if not sight:
+		if debug_unlimited_pursuit and player_alive(): _walk_towards(player.global_position,delta)
+		return
 	var reach := engagement_range()
 	if allow_attack and distance <= reach and cooldown <= 0.0:
 		_start_windup()
@@ -264,11 +287,14 @@ func _stop_combat_move() -> void:
 	_combat_move_blocked = false
 
 func _post_attack_step(delta: float) -> void:
+	if debug_unlimited_pursuit and player_alive() and not has_sight():
+		_walk_towards(player.global_position,delta)
+		return
 	if not settings.combat_movement_enabled:
 		_pursuit_step(delta)
 		return
 	velocity = Vector3.ZERO
-	if not player_alive() or not has_sight() or locomotion_held():
+	if not player_alive() or (not has_sight() and not debug_unlimited_pursuit) or locomotion_held():
 		_stop_combat_move()
 		_stop_pursuit()
 		return
@@ -332,7 +358,7 @@ func _choose_combat_move() -> void:
 
 func _pursuit_step(delta: float) -> void:
 	velocity = Vector3.ZERO
-	if not player_alive() or not has_sight() or locomotion_held():
+	if not player_alive() or (not has_sight() and not debug_unlimited_pursuit) or locomotion_held():
 		_stop_pursuit()
 		return
 	var offset := player.global_position - global_position
@@ -383,9 +409,10 @@ func _start_windup(in_place: bool = false) -> void:
 	_commit_minimum = clampf(settings.aim_commit_minimum_seconds, 0.1, 1.5)
 	_commit_elapsed = 0.0
 	_commit_wait = 0.0
+	_windup_plan_failed_for=0.0
 	_return_after_recovery = false
 	if not _plan_attack():
-		last_result = "Unsafe weapon strike path"
+		last_result = "Unsafe weapon strike path: "+attack_start_reason
 		_set_state(State.RECOVERY)
 		return
 	_set_state(State.WINDUP)
@@ -398,9 +425,14 @@ func _plan_attack() -> bool:
 	var route_position := aimed_position
 	if active_attack.weapon!=null and active_attack.weapon.elevation_travel!=null:
 		var floor_at: Vector3=walker.target_floor(aimed_position,active_attack.target_ground_probe_depth)
-		if not floor_at.is_finite(): return false
+		if not floor_at.is_finite():
+			attack_start_reason="TARGET_FLOOR_MISSING"
+			return false
 		var plan:=_terrain_plan(floor_at)
-		if plan.is_empty() or not inside_home(plan.destination): return false
+		if plan.is_empty(): return false
+		if not inside_home(plan.destination):
+			attack_start_reason="HOME_BOUNDARY"
+			return false
 		_in_place=_in_place or plan.in_place
 		dash_destination=attack_anchor if _in_place else plan.destination
 		var motion: Resource=active_attack.weapon.motion
@@ -428,9 +460,12 @@ func _windup_step(delta: float) -> void:
 	if _late_aim:
 		if not aim_locked:
 			if not _plan_attack():
-				if show_attack_diagnostics: attack_abort_reason=attack_start_reason
-				_begin_attack_return("Unsafe tracked strike: cancelled")
+				_windup_plan_failed_for+=delta
+				velocity=Vector3.ZERO
+				if _windup_plan_failed_for<=clampf(settings.windup_replan_grace_seconds,0.0,0.3): return
+				_begin_attack_return("Unsafe tracked strike: "+attack_start_reason)
 				return
+			_windup_plan_failed_for=0.0
 			if settings.attack_range_indicator_enabled: _refresh_visuals() # Optional debug route follows the preview too.
 			if elapsed < active_attack.windup_seconds: return
 			aim_locked = true
@@ -606,6 +641,9 @@ func _set_state(next: State) -> void:
 	_jump_arrived=false
 	var previous := state
 	state = next
+	if next not in [State.CHASE,State.RECOVERY]:
+		_pursuit_route.waypoints.clear()
+		_pursuit_route.reason=""
 	if next == State.RETURN: walker.begin_return()
 	elif next == State.IDLE: walker.reset_home()
 	_ranged_pursuit_active = false
@@ -648,8 +686,7 @@ func _refresh_visuals() -> void:
 	debug_label.visible = show_debug_state
 	debug_label.text = ("RANGED  " if active_attack.kind == AttackData.Kind.PROJECTILE else "MELEE  ") + State.keys()[state]
 	if show_attack_diagnostics:
-		debug_label.visible=true
-		debug_label.text+="\nSTART: "+attack_start_reason+"\nABORT: "+attack_abort_reason+"\nHIT: "+attack_hit_reason
+		_update_attack_debug()
 	if not last_result.is_empty(): debug_label.text += "\n" + last_result
 	telegraph.visible = settings.attack_range_indicator_enabled and state in [State.WINDUP, State.DASH_APPROACH, State.ATTACK]
 	var mesh := ImmediateMesh.new()

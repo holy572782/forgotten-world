@@ -14,6 +14,8 @@ static func create() -> Node3D:
 	combat.equipped_weapon.elevation_travel=null
 	combat.equipped_weapon.combo_input_window = 0.5
 	scene.get_node("PracticeSelector").initial_mode = 0 # Legacy combat trials use stationary targets.
+	scene.get_node("PracticeSelector").debug_unlimited_pursuit=false # Historical leash tests use formal rules.
+	scene.get_node("PracticeSelector").show_enemy_diagnostics=false
 	scene.get_node("TrainingEnemy").position = Vector3(-3,0,-2)
 	scene.get_node("TrainingEnemySecond").position = Vector3(-8,0,-2)
 	scene.get_node("TrainingEnemyThird").position = Vector3(-5.5,0,-4)

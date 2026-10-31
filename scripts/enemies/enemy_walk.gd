@@ -1,6 +1,7 @@
 extends RefCounted
 ## Enemy-only native floor locomotion and swept, time-based stair climbing.
 const Arc = preload("res://scripts/combat/jump_arc.gd")
+const Ground = preload("res://scripts/combat/terrain_ground.gd")
 enum Motion { WALK, STEP, JUMP, FALL, STRANDED }
 var motion_mode := Motion.WALK
 var jump_data: Dictionary = {}
@@ -18,6 +19,13 @@ var climb_speed := 0.0
 var breadcrumbs: Array[Vector3] = []
 var returning := false
 var blocked := false
+var blocked_reason := ""
+
+func _within_walk_bounds(at: Vector3) -> bool:
+	if actor.inside_home(at): return true
+	# Turning debugging off outside the leash must still allow the proven home
+	# route to move inward. It does not reopen pursuit/attack eligibility.
+	return returning and horizontal(at,actor.home)<=horizontal(actor.global_position,actor.home)+0.05
 
 func _init(body: CharacterBody3D) -> void:
 	actor = body
@@ -39,20 +47,11 @@ static func floor_hit(body: CharacterBody3D, at: Vector3, up: float, down: float
 	return hit
 
 func target_floor(at: Vector3, depth: float = 2.0) -> Vector3:
-	var hit := floor_hit(actor,at,0.05,depth,config.max_slope_degrees)
+	var hit := Ground.sample(actor,at,0.05,depth,deg_to_rad(config.max_slope_degrees),config.floor_seam_tolerance)
 	return hit.position if not hit.is_empty() else Vector3.INF
 
 func _sample(at: Vector3) -> Dictionary:
-	var hit := floor_hit(actor,at,config.maximum_step_up+0.03,config.maximum_step_down+0.03,config.max_slope_degrees)
-	if not hit.is_empty(): return hit
-	var seam: float = config.floor_seam_tolerance
-	if seam<=0.0: return {}
-	for direction in [Vector3.RIGHT,Vector3.FORWARD]:
-		var a:=floor_hit(actor,at-direction*seam,config.maximum_step_up+0.03,config.maximum_step_down+0.03,config.max_slope_degrees)
-		var b:=floor_hit(actor,at+direction*seam,config.maximum_step_up+0.03,config.maximum_step_down+0.03,config.max_slope_degrees)
-		if not a.is_empty() and not b.is_empty() and absf(a.position.y-b.position.y)<=0.15:
-			return {"position":Vector3(at.x,(a.position.y+b.position.y)*0.5,at.z),"normal":Vector3.UP}
-	return {}
+	return Ground.sample(actor,at,config.maximum_step_up+0.03,config.maximum_step_down+0.03,deg_to_rad(config.max_slope_degrees),config.floor_seam_tolerance)
 
 func _support(at: Vector3, flat: bool = false) -> bool:
 	var radius: float = actor.get_node("CollisionShape3D").shape.radius*0.95
@@ -66,11 +65,30 @@ func _support(at: Vector3, flat: bool = false) -> bool:
 
 func _motion_clear(start: Vector3, motion: Vector3, floor_ok: bool = false) -> bool:
 	var collision := KinematicCollision3D.new()
-	if not actor.test_move(Transform3D(actor.global_basis,start),motion,collision,actor.safe_margin): return true
-	return floor_ok and collision.get_normal().y >= cos(deg_to_rad(config.max_slope_degrees))
+	if not actor.test_move(Transform3D(actor.global_basis,start),motion,collision,actor.safe_margin,false,8): return true
+	if not floor_ok or not _floor_contacts_only(collision): return false
+	# A first floor contact can mask a wall later in the requested motion. Probe
+	# with the capsule just clear of its actual supporting plane, then inspect all
+	# endpoint recovery contacts as well. This is a query, never a body relocation.
+	var floor_at:=_sample(start)
+	if floor_at.is_empty(): return false
+	var radius: float=actor.get_node("CollisionShape3D").shape.radius
+	var lift:=maxf(0.01,floor_at.position.y-start.y+radius*(1.0/floor_at.normal.y-1.0)+0.01)
+	if lift>radius*(1.0/cos(deg_to_rad(config.max_slope_degrees))-1.0)+0.04: return false
+	var raised:=start+Vector3.UP*lift
+	var sweep:=KinematicCollision3D.new()
+	if actor.test_move(Transform3D(actor.global_basis,raised),motion,sweep,actor.safe_margin,false,8) and not _floor_contacts_only(sweep): return false
+	var endpoint:=KinematicCollision3D.new()
+	if actor.test_move(Transform3D(actor.global_basis,raised+motion),Vector3.ZERO,endpoint,actor.safe_margin,true,8) and not _floor_contacts_only(endpoint): return false
+	return true
 
-func can_reach(at: Vector3, check_clearance: bool = true) -> bool:
-	var current := actor.global_position
+func _floor_contacts_only(collision: KinematicCollision3D) -> bool:
+	for index in range(collision.get_collision_count()):
+		if collision.get_normal(index).y<cos(deg_to_rad(config.max_slope_degrees)): return false
+	return true
+
+func can_reach(at: Vector3, check_clearance: bool = true, from: Vector3 = Vector3.INF) -> bool:
+	var current := from if from.is_finite() else actor.global_position
 	var count := maxi(1,ceili(horizontal(current,at)/0.15))
 	for index in range(1,count+1):
 		var next := current.lerp(at,1.0/float(count-index+1))
@@ -101,7 +119,7 @@ func _jump_corridor(landing: Vector3) -> bool:
 	var count:=maxi(1,ceili(horizontal(start,landing)/0.1))
 	for index in range(count+1):
 		var at:=start.lerp(landing,float(index)/count)
-		if horizontal(at,actor.home)>actor.settings.leash_radius: return false
+		if not _within_walk_bounds(at): return false
 		var hit:=_sample(at)
 		if hit.is_empty() or hit.position.y<minf(start.y,landing.y)-0.04 or hit.position.y>maxf(start.y,landing.y)+0.04: return false
 		if not _support(Vector3(at.x,hit.position.y,at.z)): return false
@@ -147,6 +165,7 @@ func _begin_jump(plan: Dictionary) -> void:
 	motion_mode=Motion.JUMP
 	jump_count+=1
 	blocked=false
+	blocked_reason=""
 	actor.facing=plan.direction
 
 func _settled() -> void:
@@ -211,6 +230,7 @@ func _advance_air(delta: float) -> void:
 		motion_mode=Motion.STRANDED # No warp or retry-jump into missing terrain.
 		actor.velocity=Vector3.ZERO
 		blocked=true
+		blocked_reason="GROUND_LOST"
 
 func _record() -> void:
 	if returning: return
@@ -249,6 +269,7 @@ func continue_climb(delta: float) -> void:
 	if collision!=null and actor.global_position.distance_to(goal)>0.015:
 		climb.clear()
 		blocked=true
+		blocked_reason="CLIMB_COLLISION"
 		retry=config.blocked_retry_seconds
 		actor.velocity=Vector3.ZERO
 	elif actor.global_position.distance_to(goal)<0.012:
@@ -266,7 +287,7 @@ func _try_climb(direction: Vector3, speed: float) -> bool:
 	landing.y=hit.position.y
 	var rise:=landing.y-actor.global_position.y
 	if rise<=0.04 or rise>minf(config.maximum_step_up,config.walking_step_height)+0.01 or not _support(landing,true): return false
-	if horizontal(landing,actor.home)>actor.settings.leash_radius: return false
+	if not _within_walk_bounds(landing): return false
 	var raised:=Vector3(actor.global_position.x,landing.y+0.01,actor.global_position.z)
 	var across:=landing+Vector3.UP*0.01
 	if not _motion_clear(actor.global_position,raised-actor.global_position) or not _motion_clear(raised,across-raised): return false
@@ -275,10 +296,12 @@ func _try_climb(direction: Vector3, speed: float) -> bool:
 	climb.assign([raised,across,landing+Vector3.UP*0.001])
 	climb_speed=speed
 	blocked=false
+	blocked_reason=""
 	return true
 
 func walk(at: Vector3, delta: float, speed: float) -> void:
 	actor.velocity=Vector3.ZERO
+	blocked_reason="" if not blocked else blocked_reason
 	if busy():
 		continue_climb(delta)
 		return
@@ -291,6 +314,7 @@ func walk(at: Vector3, delta: float, speed: float) -> void:
 	if not plan.is_empty():
 		if jump_cooldown>0.0:
 			blocked=true
+			blocked_reason="JUMP_COOLDOWN"
 			retry=minf(config.blocked_retry_seconds,jump_cooldown)
 			return
 		_begin_jump(plan)
@@ -299,8 +323,9 @@ func walk(at: Vector3, delta: float, speed: float) -> void:
 	if _rise_ahead>config.walking_step_height: speed=minf(speed,1.5)
 	var motion:=direction*minf(speed*delta,offset.length())
 	var next:=actor.global_position+motion
-	if horizontal(next,actor.home)>actor.settings.leash_radius or not _support(next):
+	if not _within_walk_bounds(next) or not _support(next):
 		blocked=true
+		blocked_reason="HOME_BOUNDARY" if not _within_walk_bounds(next) else "NO_WALKABLE_SUPPORT"
 		retry=config.blocked_retry_seconds
 		return
 	var collision:=KinematicCollision3D.new()
@@ -308,6 +333,7 @@ func walk(at: Vector3, delta: float, speed: float) -> void:
 		if _try_climb(direction,speed): continue_climb(delta)
 		else:
 			blocked=true
+			blocked_reason="STEP_OR_JUMP_UNSAFE"
 			retry=config.blocked_retry_seconds
 		return
 	var before:=actor.global_position
@@ -321,9 +347,11 @@ func walk(at: Vector3, delta: float, speed: float) -> void:
 	actor.velocity=(actor.global_position-before)/maxf(delta,0.0001)
 	blocked=horizontal(before,actor.global_position)<motion.length()*0.2 and motion.length()>0.001
 	if blocked:
+		blocked_reason="BODY_COLLISION"
 		if _try_climb(direction,speed):
 			continue_climb(delta)
 			return
 		retry=config.blocked_retry_seconds
 		actor.velocity=Vector3.ZERO
+	else: blocked_reason=""
 	if actor.is_on_floor(): _record()

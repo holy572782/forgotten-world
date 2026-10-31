@@ -4,16 +4,31 @@ const Path=preload("res://scripts/combat/dash_path.gd")
 const Arc=preload("res://scripts/combat/jump_arc.gd")
 const Blade=preload("res://scripts/combat/melee_terrain.gd")
 const Sweep=preload("res://scripts/combat/melee_sweep.gd")
+const Ground=preload("res://scripts/combat/terrain_ground.gd")
 
 static func supported(body: CharacterBody3D, at: Vector3, tolerance: float=0.04) -> bool:
-	var ray:=PhysicsRayQueryParameters3D.create(at+Vector3.UP*0.1,at-Vector3.UP*0.3,1)
-	var center:=body.get_world_3d().direct_space_state.intersect_ray(ray)
+	var center:=Ground.sample(body,at,0.1,0.3,body.floor_max_angle,Ground.contact_seam(body))
 	if center.is_empty() or center.normal.y<cos(body.floor_max_angle) or absf(center.position.y-at.y)>tolerance+0.08: return false
 	var radius: float=body.get_node("CollisionShape3D").shape.radius*0.95
+	var planar:=true
 	for offset in [Vector3.ZERO,Vector3.RIGHT*radius,Vector3.LEFT*radius,Vector3.FORWARD*radius,Vector3.BACK*radius]:
 		var ground:=Blade.ground_at(body,at+offset+Vector3.UP*0.5,1.0)
 		var expected: float=center.position.y-(center.normal.x*offset.x+center.normal.z*offset.z)/center.normal.y
-		if not ground.is_finite() or absf(ground.y-expected)>tolerance: return false
+		if not ground.is_finite(): return false
+		if absf(ground.y-expected)>tolerance: planar=false
+	if planar: return true
+	# Native capsules can stand across the continuous join of a ramp and flat
+	# ground. Check actual surface continuity; never bridge a riser or missing floor.
+	for direction in [Vector3.RIGHT,Vector3.LEFT,Vector3.FORWARD,Vector3.BACK]:
+		var previous:=center
+		var count:=maxi(1,ceili(radius/0.08))
+		for index in range(1,count+1):
+			var point: Vector3=at+direction*radius*float(index)/count
+			var hit:=Ground.sample(body,point,0.5,0.5,body.floor_max_angle,Ground.contact_seam(body))
+			if hit.is_empty() or hit.normal.y<cos(body.floor_max_angle): return false
+			var slope:=maxf(Vector2(hit.normal.x,hit.normal.z).length()/hit.normal.y,Vector2(previous.normal.x,previous.normal.z).length()/previous.normal.y)
+			if absf(hit.position.y-previous.position.y)>slope*radius/count+0.005: return false
+			previous=hit
 	return true
 
 static func landing(body: CharacterBody3D, at: Vector3) -> Vector3:
@@ -38,7 +53,7 @@ static func corridor(body: CharacterBody3D, start: Vector3, finish: Vector3, spa
 static func plan(body: CharacterBody3D, start: Vector3, finish: Vector3, path: Resource, tuning: Resource, motion: Resource, returning: bool=false) -> Dictionary:
 	if absf(start.y-finish.y)<=path.floor_tolerance:
 		if Path.clear(body,finish,path,start): return {"air":false,"start":start,"finish":finish}
-		if Blade.flat_at(body,start) and Blade.flat_at(body,finish): return {}
+		if Blade.flat_footprint(body,start) and Blade.flat_footprint(body,finish): return {}
 	if tuning==null or not tuning.enabled: return {}
 	var rise:=finish.y-start.y
 	var max_height:=clampf(tuning.apex_height,0.1,1.1)
