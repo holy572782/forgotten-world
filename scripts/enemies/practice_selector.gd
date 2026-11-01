@@ -1,6 +1,8 @@
 extends CanvasLayer
 ## Test-map-only modes. Explicit buttons restart a trial; no in-game respawn system.
 const EnemyScene = preload("res://scenes/enemies/practice_enemy.tscn")
+const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
+@export var performance_diagnostics: Work=Work.new()
 @export_enum("Static", "Melee", "Ranged") var initial_mode := 0
 @export var debug_unlimited_pursuit := false
 @export var show_enemy_diagnostics := false
@@ -10,6 +12,7 @@ var status: Label
 var buttons: Array[Button] = []
 
 func _ready() -> void:
+	get_parent().get_node("Player/TargetDash").performance_diagnostics=performance_diagnostics
 	var panel := VBoxContainer.new()
 	panel.position = Vector2(300, 12)
 	add_child(panel)
@@ -63,8 +66,12 @@ func select_mode(next: int) -> void:
 		active_enemy.name = "M09PracticeEnemy"
 		active_enemy.settings = load("res://resources/enemies/melee_practice.tres" if mode == 1 else "res://resources/enemies/ranged_practice.tres")
 		active_enemy.player = player
+		active_enemy.performance_diagnostics=performance_diagnostics
 		active_enemy.debug_unlimited_pursuit=debug_unlimited_pursuit
 		active_enemy.show_attack_diagnostics=show_enemy_diagnostics
 		active_enemy.position = Vector3(-2, 0, -2)
 		main.add_child(active_enemy)
 	status.text = ["静止敵：左クリック攻撃・連撃の確認用（敵は攻撃しません）", "近接敵：左クリック攻撃・右クリック／I 防御・方向入力で帰還", "遠距離敵：左クリック攻撃・右クリック／I 防御・移動で弾を回避"][mode]
+
+func _process(_delta: float) -> void:
+	if performance_diagnostics!=null: performance_diagnostics.update_report()

@@ -63,7 +63,7 @@ func _run() -> void:
 	ai.position.z+=0.2
 	ai._attack_position_available()
 	_check(ai.evaluations==count+2,"Actor displacement invalidates a failed result")
-	await _seconds(0.2)
+	await _seconds(0.45) # Failed eligibility is now retained for 0.4 seconds.
 	ai._attack_position_available()
 	_check(ai.evaluations==count+3,"Stationary failures expire and can discover geometry changes")
 	wall.free()

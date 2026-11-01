@@ -1,0 +1,450 @@
+diff --git a/scripts/combat/elevation_path.gd b/scripts/combat/elevation_path.gd
+index e75d9a5..c4fa8a9 100644
+--- a/scripts/combat/elevation_path.gd
++++ b/scripts/combat/elevation_path.gd
+@@ -5,6 +5,7 @@ const Arc=preload("res://scripts/combat/jump_arc.gd")
+ const Blade=preload("res://scripts/combat/melee_terrain.gd")
+ const Sweep=preload("res://scripts/combat/melee_sweep.gd")
+ const Ground=preload("res://scripts/combat/terrain_ground.gd")
++const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
+ 
+ static func supported(body: CharacterBody3D, at: Vector3, tolerance: float=0.04) -> bool:
+ 	var center:=Ground.sample(body,at,0.1,0.3,body.floor_max_angle,Ground.contact_seam(body))
+@@ -99,7 +100,9 @@ static func actors_clear(body: CharacterBody3D, start: Vector3, finish: Vector3)
+ 	query.exclude=[body.get_rid()]
+ 	return body.get_world_3d().direct_space_state.intersect_shape(query,1).is_empty()
+ 
+-static func attack(body: CharacterBody3D, at: Vector3, weapon: WeaponData, path: Resource, stop: float, motion: Resource, from: Vector3=Vector3.INF, diagnostics: Dictionary={}) -> Dictionary:
++static func _work_attack(body: CharacterBody3D, at: Vector3, weapon: WeaponData, path: Resource, stop: float, motion: Resource, from: Vector3=Vector3.INF, diagnostics: Dictionary={}) -> Dictionary:
++	var work:=Work.for_body(body)
++	if work!=null and not work.attack_planning_enabled: return reject(diagnostics,"DIAGNOSTIC_ATTACK_DISABLED")
+ 	var start:=from if from.is_finite() else body.global_position
+ 	var offset:=Vector3(at.x-start.x,0,at.z-start.z)
+ 	if diagnostics.get("enabled",false): diagnostics["reason"]="NO_SAFE_LANDING"
+@@ -137,3 +140,9 @@ static func attack(body: CharacterBody3D, at: Vector3, weapon: WeaponData, path:
+ static func reject(diagnostics: Dictionary, reason: String) -> Dictionary:
+ 	if diagnostics.get("enabled",false): diagnostics["reason"]=reason
+ 	return {}
++
++static func attack(body: CharacterBody3D, at: Vector3, weapon: WeaponData, path: Resource, stop: float, motion: Resource, from: Vector3=Vector3.INF, diagnostics: Dictionary={}) -> Dictionary:
++	var started:=Work.start(body)
++	var result: Dictionary=_work_attack(body,at,weapon,path,stop,motion,from,diagnostics)
++	Work.finish(body,"elevation.attack",started)
++	return result
+diff --git a/scripts/combat/melee_terrain.gd b/scripts/combat/melee_terrain.gd
+index 6a9bbf2..94fb961 100644
+--- a/scripts/combat/melee_terrain.gd
++++ b/scripts/combat/melee_terrain.gd
+@@ -1,8 +1,9 @@
+ extends RefCounted
++const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
+ ## Blade clearance only. Does not authorize body movement or create damage.
+ const Path=preload("res://scripts/combat/dash_path.gd")
+ const Ground=preload("res://scripts/combat/terrain_ground.gd")
+-static func clear(body: CharacterBody3D, at: Vector3, settings: Resource, depth: float=2.0, from: Vector3=Vector3.INF) -> bool:
++static func _work_clear(body: CharacterBody3D, at: Vector3, settings: Resource, depth: float=2.0, from: Vector3=Vector3.INF) -> bool:
+ 	var ground:=ground_at(body,at,depth)
+ 	if not ground.is_finite(): return false
+ 	var start:=from if from.is_finite() else body.global_position
+@@ -48,3 +49,9 @@ static func flat_footprint(body: CharacterBody3D, at: Vector3) -> bool:
+ 		var hit:=Ground.sample(body,at+offset,0.1,0.3,body.floor_max_angle,Ground.contact_seam(body))
+ 		if hit.is_empty() or hit.normal.y<0.99 or absf(hit.position.y-at.y)>0.04: return false
+ 	return true
++
++static func clear(body: CharacterBody3D, at: Vector3, settings: Resource, depth: float=2.0, from: Vector3=Vector3.INF) -> bool:
++	var started:=Work.start(body)
++	var result: bool=_work_clear(body,at,settings,depth,from)
++	Work.finish(body,"blade.clear",started)
++	return result
+diff --git a/scripts/enemies/enemy_pursuit_route.gd b/scripts/enemies/enemy_pursuit_route.gd
+index 0f7fb4e..0e4ccf5 100644
+--- a/scripts/enemies/enemy_pursuit_route.gd
++++ b/scripts/enemies/enemy_pursuit_route.gd
+@@ -1,4 +1,5 @@
+ extends RefCounted
++const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
+ ## Debug-only, bounded local A*. Every edge uses the existing safe walk probe;
+ ## actual motion is still owned by EnemyWalk, including its native jump checks.
+ const CELL:=0.75
+@@ -34,7 +35,7 @@ func reset() -> void:
+ 	retry=0.0
+ 	reason=""
+ 
+-func goal(actor: CharacterBody3D, at: Vector3, delta: float) -> Vector3:
++func _work_goal(actor: CharacterBody3D, at: Vector3, delta: float) -> Vector3:
+ 	retry=maxf(0.0,retry-delta)
+ 	var walker=actor.walker
+ 	var now:=Time.get_ticks_usec()
+@@ -89,6 +90,9 @@ func goal(actor: CharacterBody3D, at: Vector3, delta: float) -> Vector3:
+ 		reason=""
+ 		return _remember(at,true)
+ 	if _search.is_empty():
++		if actor.performance_diagnostics!=null and not actor.performance_diagnostics.local_astar_enabled:
++			reason="DIAGNOSTIC_ASTAR_DISABLED"
++			return _remember(Vector3.INF)
+ 		if retry>0.0: return _remember(Vector3.INF)
+ 		_begin_search(actor,safe_goal)
+ 	_advance_search(actor)
+@@ -117,7 +121,11 @@ func _finish_search(end: Vector2i) -> void:
+ 	reason="NO_SAFE_LOCAL_ROUTE" if waypoints.is_empty() else "DETOUR"
+ 	_decision_until=0
+ 
+-func _advance_search(actor: CharacterBody3D) -> void:
++func _work_advance_search(actor: CharacterBody3D) -> void:
++	if actor.performance_diagnostics!=null and not actor.performance_diagnostics.local_astar_enabled:
++		_search.clear()
++		reason="DIAGNOSTIC_ASTAR_DISABLED"
++		return
+ 	# Shared render-frame budget also covers physics catch-up ticks and multiple
+ 	# enemies. An individual native edge query is atomic; time is checked between edges.
+ 	var frame:=Engine.get_process_frames()
+@@ -165,3 +173,14 @@ func _advance_search(actor: CharacterBody3D) -> void:
+ 		_search.previous[key]=current
+ 		if not _search.open.has(key): _search.open.append(key)
+ 	_budget_usec+=Time.get_ticks_usec()-started
++
++func goal(actor: CharacterBody3D, at: Vector3, delta: float) -> Vector3:
++	var started:=Work.start(actor)
++	var result: Vector3=_work_goal(actor,at,delta)
++	Work.finish(actor,"route.goal",started)
++	return result
++
++func _advance_search(actor: CharacterBody3D) -> void:
++	var started:=Work.start(actor)
++	_work_advance_search(actor)
++	Work.finish(actor,"route.astar",started)
+diff --git a/scripts/enemies/enemy_walk.gd b/scripts/enemies/enemy_walk.gd
+index b6d1690..077c13b 100644
+--- a/scripts/enemies/enemy_walk.gd
++++ b/scripts/enemies/enemy_walk.gd
+@@ -2,6 +2,7 @@ extends RefCounted
+ ## Enemy-only native floor locomotion and swept, time-based stair climbing.
+ const Arc = preload("res://scripts/combat/jump_arc.gd")
+ const Ground = preload("res://scripts/combat/terrain_ground.gd")
++const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
+ enum Motion { WALK, STEP, JUMP, FALL, STRANDED }
+ var motion_mode := Motion.WALK
+ var jump_data: Dictionary = {}
+@@ -87,7 +88,7 @@ func _floor_contacts_only(collision: KinematicCollision3D) -> bool:
+ 		if collision.get_normal(index).y<cos(deg_to_rad(config.max_slope_degrees)): return false
+ 	return true
+ 
+-func can_reach(at: Vector3, check_clearance: bool = true, from: Vector3 = Vector3.INF) -> bool:
++func _work_can_reach(at: Vector3, check_clearance: bool = true, from: Vector3 = Vector3.INF) -> bool:
+ 	var current := from if from.is_finite() else actor.global_position
+ 	var count := maxi(1,ceili(horizontal(current,at)/0.15))
+ 	for index in range(1,count+1):
+@@ -125,8 +126,9 @@ func _jump_corridor(landing: Vector3) -> bool:
+ 		if not _support(Vector3(at.x,hit.position.y,at.z)): return false
+ 	return true
+ 
+-func _jump_plan(direction: Vector3) -> Dictionary:
++func _work_jump_plan(direction: Vector3) -> Dictionary:
+ 	_rise_ahead=0.0
++	if actor.performance_diagnostics!=null and not actor.performance_diagnostics.terrain_search_enabled: return {}
+ 	if not config.jump_enabled or direction.is_zero_approx() or not _can_land(): return {}
+ 	var height: float=clampf(config.jump_height,0.4,1.5)
+ 	var takeoff: float=clampf(config.jump_takeoff_speed,2.0,12.0)
+@@ -279,7 +281,8 @@ func continue_climb(delta: float) -> void:
+ 			vertical_speed=0.0
+ 			_settled()
+ 
+-func _try_climb(direction: Vector3, speed: float) -> bool:
++func _work_try_climb(direction: Vector3, speed: float) -> bool:
++	if actor.performance_diagnostics!=null and not actor.performance_diagnostics.terrain_search_enabled: return false
+ 	var radius: float=actor.get_node("CollisionShape3D").shape.radius
+ 	var landing := actor.global_position+direction*(radius*2.0+0.1)
+ 	var hit := floor_hit(actor,landing,config.maximum_step_up+0.03,0.05,config.max_slope_degrees)
+@@ -299,7 +302,7 @@ func _try_climb(direction: Vector3, speed: float) -> bool:
+ 	blocked_reason=""
+ 	return true
+ 
+-func walk(at: Vector3, delta: float, speed: float) -> void:
++func _work_walk(at: Vector3, delta: float, speed: float) -> void:
+ 	actor.velocity=Vector3.ZERO
+ 	blocked_reason="" if not blocked else blocked_reason
+ 	if busy():
+@@ -355,3 +358,26 @@ func walk(at: Vector3, delta: float, speed: float) -> void:
+ 		actor.velocity=Vector3.ZERO
+ 	else: blocked_reason=""
+ 	if actor.is_on_floor(): _record()
++
++func can_reach(at: Vector3, check_clearance: bool = true, from: Vector3 = Vector3.INF) -> bool:
++	var started:=Work.start(actor)
++	var result: bool=_work_can_reach(at,check_clearance,from)
++	Work.finish(actor,"walk.can_reach",started)
++	return result
++
++func _jump_plan(direction: Vector3) -> Dictionary:
++	var started:=Work.start(actor)
++	var result: Dictionary=_work_jump_plan(direction)
++	Work.finish(actor,"walk.jump_plan",started)
++	return result
++
++func _try_climb(direction: Vector3, speed: float) -> bool:
++	var started:=Work.start(actor)
++	var result: bool=_work_try_climb(direction,speed)
++	Work.finish(actor,"walk.step_plan",started)
++	return result
++
++func walk(at: Vector3, delta: float, speed: float) -> void:
++	var started:=Work.start(actor)
++	_work_walk(at,delta,speed)
++	Work.finish(actor,"walk.move",started)
+diff --git a/scripts/enemies/practice_enemy.gd b/scripts/enemies/practice_enemy.gd
+index 3990812..4703a17 100644
+--- a/scripts/enemies/practice_enemy.gd
++++ b/scripts/enemies/practice_enemy.gd
+@@ -10,6 +10,7 @@ const Path = preload("res://scripts/combat/dash_path.gd")
+ const Sweep = preload("res://scripts/combat/melee_sweep.gd")
+ const Elevation=preload("res://scripts/combat/elevation_path.gd")
+ const Flight=preload("res://scripts/combat/combat_flight.gd")
++const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
+ var _flight:=Flight.new()
+ var _air_return_reason:=""
+ var _jump_arrived:=false
+@@ -23,6 +24,7 @@ signal projectile_released(shot: CharacterBody3D)
+ @export var show_debug_state := true
+ @export var show_attack_diagnostics := false
+ @export var debug_unlimited_pursuit := false
++@export var performance_diagnostics: Work
+ var _pursuit_route:=PursuitRoute.new()
+ var _windup_plan_failed_for:=0.0
+ var _diagnostics_shown:=false
+@@ -43,13 +45,16 @@ var _preview_target:=Vector3.INF
+ var _preview_valid:=false
+ var _preview_reason:=""
+ 
+-func _update_attack_debug() -> void:
++func _work_update_attack_debug() -> void:
++	if performance_diagnostics!=null and not performance_diagnostics.details_enabled:
++		debug_label.visible=false
++		return
+ 	debug_label.visible=true
+ 	var distance:=Walker.horizontal(global_position,player.global_position) if player_alive() else INF
+ 	var blocked: String=_pursuit_route.reason if debug_unlimited_pursuit and not _pursuit_route.reason.is_empty() else walker.blocked_reason
+ 	debug_label.text=State.keys()[state]+"  PURSUIT: "+("UNLIMITED" if debug_unlimited_pursuit else "BOUNDED")+"\nDIST: %.2fm  MOVE: %s" % [distance,blocked]+"\nSTART: "+attack_start_reason+"\nABORT: "+attack_abort_reason+"\nHIT: "+attack_hit_reason
+ 
+-func _terrain_plan(at: Vector3) -> Dictionary:
++func _work_terrain_plan(at: Vector3) -> Dictionary:
+ 	var diagnostic: Dictionary={"enabled":true}
+ 	var result:=Elevation.attack(self,at,active_attack.weapon,settings.path,active_attack.stop_distance,active_attack.weapon.motion,Vector3.INF,diagnostic)
+ 	attack_start_reason="OK" if not result.is_empty() else diagnostic.get("reason","NO_SAFE_LANDING")
+@@ -124,7 +129,7 @@ func _ready() -> void:
+ func player_alive() -> bool:
+ 	return is_instance_valid(player) and player.is_inside_tree() and player.get_node("HealthComponent").current_hp > 0.0
+ 
+-func has_sight() -> bool:
++func _work_has_sight() -> bool:
+ 	if player_alive() and active_attack!=null and active_attack.weapon!=null and active_attack.weapon.hit_height_up>=0.0:
+ 		return Path.sight(self,player.global_position) or StrikeGeometry.clear(self,player.global_position) or Elevation.Blade._line(self,global_position+Vector3.UP*1.6,player.global_position+Vector3.UP*1.6)
+ 	return player_alive() and Path.sight(self, player.global_position)
+@@ -140,7 +145,7 @@ func _weapon_strike_clear(at: Vector3) -> bool:
+ 	if not Sweep.contains(global_position, facing, at, active_attack.weapon): return false
+ 	return StrikeGeometry.clear(self,at)
+ 
+-func _physics_process(delta: float) -> void:
++func _work_physics_process(delta: float) -> void:
+ 	if state == State.DEAD: return
+ 	if health.current_hp <= 0.0:
+ 		_die(null)
+@@ -156,7 +161,7 @@ func _physics_process(delta: float) -> void:
+ 	var sight := has_sight()
+ 	if _diagnostics_shown and not show_attack_diagnostics: _refresh_visuals()
+ 	_diagnostics_shown=show_attack_diagnostics
+-	debug_label.visible=show_debug_state or show_attack_diagnostics
++	debug_label.visible=(show_debug_state or show_attack_diagnostics) and (performance_diagnostics==null or performance_diagnostics.details_enabled)
+ 	if debug_unlimited_pursuit and player_alive(): _return_after_recovery=false
+ 	if debug_unlimited_pursuit and player_alive() and state==State.RETURN:
+ 		walker.returning=false
+@@ -236,6 +241,9 @@ func inside_home(at: Vector3, margin: float = 0.0) -> bool:
+ 	return debug_unlimited_pursuit or Walker.horizontal(home,at) <= maxf(0.0,settings.leash_radius-margin)
+ 
+ func _attack_position_available() -> bool:
++	if performance_diagnostics!=null and not performance_diagnostics.attack_planning_enabled:
++		attack_start_reason="DIAGNOSTIC_ATTACK_DISABLED"
++		return false
+ 	var frame:=Engine.get_physics_frames()
+ 	var now:=Time.get_ticks_usec()
+ 	var unchanged:=active_attack==_availability_attack and debug_unlimited_pursuit==_availability_unlimited and global_position.distance_to(_availability_origin)<0.08 and player.global_position.distance_to(_availability_target)<0.08
+@@ -320,7 +328,7 @@ func _stop_combat_move() -> void:
+ 	_combat_move_elapsed = 0.0
+ 	_combat_move_blocked = false
+ 
+-func _post_attack_step(delta: float) -> void:
++func _work_post_attack_step(delta: float) -> void:
+ 	if debug_unlimited_pursuit and player_alive() and not has_sight():
+ 		_walk_towards(player.global_position,delta)
+ 		return
+@@ -390,7 +398,7 @@ func _choose_combat_move() -> void:
+ 	if not inside_home(_combat_move_goal) or _combat_move_goal.distance_to(player.global_position) < maxf(active_attack.stop_distance,0.95) or not walker.can_reach(_combat_move_goal):
+ 		_combat_move_blocked = true
+ 
+-func _pursuit_step(delta: float) -> void:
++func _work_pursuit_step(delta: float) -> void:
+ 	velocity = Vector3.ZERO
+ 	if not player_alive() or (not has_sight() and not debug_unlimited_pursuit) or locomotion_held():
+ 		_stop_pursuit()
+@@ -456,6 +464,9 @@ func _start_windup(in_place: bool = false) -> void:
+ 	_set_state(State.WINDUP)
+ 
+ func _plan_attack() -> bool:
++	if active_attack.weapon!=null and performance_diagnostics!=null and not performance_diagnostics.attack_planning_enabled:
++		attack_start_reason="DIAGNOSTIC_ATTACK_DISABLED"
++		return false
+ 	# Preview follows the player only during WINDUP. Once committed this is never called.
+ 	aimed_position = player.global_position
+ 	facing = _horizontal_direction(aimed_position)
+@@ -734,7 +745,7 @@ func _update_telegraph_position() -> void:
+ 
+ func _refresh_visuals() -> void:
+ 	if not is_instance_valid(telegraph): return
+-	debug_label.visible = show_debug_state
++	debug_label.visible = show_debug_state and (performance_diagnostics==null or performance_diagnostics.details_enabled)
+ 	debug_label.text = ("RANGED  " if active_attack.kind == AttackData.Kind.PROJECTILE else "MELEE  ") + State.keys()[state]
+ 	if show_attack_diagnostics:
+ 		_update_attack_debug()
+@@ -775,3 +786,35 @@ func _refresh_visuals() -> void:
+ 	$Body.scale = Vector3(1.12, 0.8, 1.12) if state == State.WINDUP else (Vector3(0.9, 1.12, 0.9) if state == State.ATTACK else Vector3.ONE)
+ 	if state in [State.DASH_APPROACH, State.DASH_RETURN]: $Body.scale = Vector3(0.85, 0.9, 1.15)
+ 	if state == State.DEAD: $Body.scale.y = 0.35
++
++func has_sight() -> bool:
++	var started:=Work.start(self)
++	var result: bool=_work_has_sight()
++	Work.finish(self,"enemy.sight",started)
++	return result
++
++func _terrain_plan(at: Vector3) -> Dictionary:
++	var started:=Work.start(self)
++	var result: Dictionary=_work_terrain_plan(at)
++	Work.finish(self,"enemy.attack_plan",started)
++	return result
++
++func _update_attack_debug() -> void:
++	var started:=Work.start(self)
++	_work_update_attack_debug()
++	Work.finish(self,"enemy.debug",started)
++
++func _physics_process(delta: float) -> void:
++	var started:=Work.start(self)
++	_work_physics_process(delta)
++	Work.finish(self,"enemy.physics",started)
++
++func _post_attack_step(delta: float) -> void:
++	var started:=Work.start(self)
++	_work_post_attack_step(delta)
++	Work.finish(self,"enemy.recovery_motion",started)
++
++func _pursuit_step(delta: float) -> void:
++	var started:=Work.start(self)
++	_work_pursuit_step(delta)
++	Work.finish(self,"enemy.pursuit",started)
+diff --git a/scripts/enemies/practice_selector.gd b/scripts/enemies/practice_selector.gd
+index 209a4b7..d0f3190 100644
+--- a/scripts/enemies/practice_selector.gd
++++ b/scripts/enemies/practice_selector.gd
+@@ -1,6 +1,8 @@
+ extends CanvasLayer
+ ## Test-map-only modes. Explicit buttons restart a trial; no in-game respawn system.
+ const EnemyScene = preload("res://scenes/enemies/practice_enemy.tscn")
++const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
++@export var performance_diagnostics: Work=Work.new()
+ @export_enum("Static", "Melee", "Ranged") var initial_mode := 0
+ @export var debug_unlimited_pursuit := false
+ @export var show_enemy_diagnostics := false
+@@ -10,6 +12,7 @@ var status: Label
+ var buttons: Array[Button] = []
+ 
+ func _ready() -> void:
++	get_parent().get_node("Player/TargetDash").performance_diagnostics=performance_diagnostics
+ 	var panel := VBoxContainer.new()
+ 	panel.position = Vector2(300, 12)
+ 	add_child(panel)
+@@ -63,8 +66,12 @@ func select_mode(next: int) -> void:
+ 		active_enemy.name = "M09PracticeEnemy"
+ 		active_enemy.settings = load("res://resources/enemies/melee_practice.tres" if mode == 1 else "res://resources/enemies/ranged_practice.tres")
+ 		active_enemy.player = player
++		active_enemy.performance_diagnostics=performance_diagnostics
+ 		active_enemy.debug_unlimited_pursuit=debug_unlimited_pursuit
+ 		active_enemy.show_attack_diagnostics=show_enemy_diagnostics
+ 		active_enemy.position = Vector3(-2, 0, -2)
+ 		main.add_child(active_enemy)
+ 	status.text = ["静止敵：左クリック攻撃・連撃の確認用（敵は攻撃しません）", "近接敵：左クリック攻撃・右クリック／I 防御・方向入力で帰還", "遠距離敵：左クリック攻撃・右クリック／I 防御・移動で弾を回避"][mode]
++
++func _process(_delta: float) -> void:
++	if performance_diagnostics!=null: performance_diagnostics.update_report()
+diff --git a/scripts/player/target_dash.gd b/scripts/player/target_dash.gd
+index 043e7eb..286a275 100644
+--- a/scripts/player/target_dash.gd
++++ b/scripts/player/target_dash.gd
+@@ -9,6 +9,8 @@ const Sweep = preload("res://scripts/combat/melee_sweep.gd")
+ const BladeTerrain = preload("res://scripts/combat/melee_terrain.gd")
+ const Elevation=preload("res://scripts/combat/elevation_path.gd")
+ const Flight=preload("res://scripts/combat/combat_flight.gd")
++const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
++@export var performance_diagnostics: Work
+ var _flight:=Flight.new()
+ var _travel_unavailable:=false
+ var _elevation_cycle:=false
+@@ -18,7 +20,7 @@ var _air_return_reason:=""
+ var _plan_cache: Dictionary={}
+ var _plan_frame:=-1
+ 
+-func _elevation_plan(candidate: Node3D, weapon: WeaponData) -> Dictionary:
++func _work_elevation_plan(candidate: Node3D, weapon: WeaponData) -> Dictionary:
+ 	var frame:=Engine.get_physics_frames()
+ 	if _plan_frame!=frame:
+ 		_plan_frame=frame
+@@ -167,7 +169,7 @@ func _unhandled_input(event: InputEvent) -> void:
+ 			_pending_selected_attack = true
+ 		get_viewport().set_input_as_handled()
+ 
+-func physics_step(delta: float) -> void:
++func _work_physics_step(delta: float) -> void:
+ 	var was_busy := is_busy()
+ 	motion_owned_tick = was_busy
+ 	if body.get_node("HealthComponent").current_hp <= 0.0:
+@@ -352,7 +354,7 @@ func filter_damage(amount: float, source: Node) -> float:
+ 		return amount * defense.guard_damage_multiplier
+ 	return amount
+ 
+-func _update_markers() -> void:
++func _work_update_markers() -> void:
+ 	var near_enemy := false
+ 	var facing := Vector3(body.facing_world.x, 0.0, body.facing_world.z).normalized()
+ 	for candidate in get_tree().get_nodes_in_group("combat_targets"):
+@@ -374,7 +376,7 @@ func valid_candidates() -> Array[Node3D]:
+ 	candidates.sort_custom(func(a: Node3D, b: Node3D): return String(a.get_path()) < String(b.get_path()))
+ 	return candidates
+ 
+-func _refresh_selection(delta: float = 0.0) -> void:
++func _work_refresh_selection(delta: float = 0.0) -> void:
+ 	if is_busy(): return
+ 	var current_valid := is_instance_valid(selected_target) and can_select(selected_target)
+ 	var facing := Vector3(body.facing_world.x, 0.0, body.facing_world.z).normalized()
+@@ -990,3 +992,24 @@ func _exit_tree() -> void:
+ 	if is_instance_valid(camera_rig): camera_rig.release_follow()
+ 	_pending_click = false
+ 	_pending_selected_attack = false
++
++func _elevation_plan(candidate: Node3D, weapon: WeaponData) -> Dictionary:
++	var started:=Work.start(body)
++	var result: Dictionary=_work_elevation_plan(candidate,weapon)
++	Work.finish(body,"player.preview_plan",started)
++	return result
++
++func physics_step(delta: float) -> void:
++	var started:=Work.start(body)
++	_work_physics_step(delta)
++	Work.finish(body,"player.physics",started)
++
++func _update_markers() -> void:
++	var started:=Work.start(body)
++	_work_update_markers()
++	Work.finish(body,"player.markers",started)
++
++func _refresh_selection(delta: float = 0.0) -> void:
++	var started:=Work.start(body)
++	_work_refresh_selection(delta)
++	Work.finish(body,"player.selection",started)

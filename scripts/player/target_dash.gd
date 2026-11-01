@@ -9,6 +9,9 @@ const Sweep = preload("res://scripts/combat/melee_sweep.gd")
 const BladeTerrain = preload("res://scripts/combat/melee_terrain.gd")
 const Elevation=preload("res://scripts/combat/elevation_path.gd")
 const Flight=preload("res://scripts/combat/combat_flight.gd")
+const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
+const PlanningBudget=preload("res://scripts/combat/planning_budget.gd")
+@export var performance_diagnostics: Work
 var _flight:=Flight.new()
 var _travel_unavailable:=false
 var _elevation_cycle:=false
@@ -17,8 +20,44 @@ var _return_goals: Array[Vector3]=[]
 var _air_return_reason:=""
 var _plan_cache: Dictionary={}
 var _plan_frame:=-1
+var _preview_only:=false
+var _preview_cache: Dictionary={}
+var _preview_jobs: Dictionary={}
 
-func _elevation_plan(candidate: Node3D, weapon: WeaponData) -> Dictionary:
+func _work_elevation_plan(candidate: Node3D, weapon: WeaponData) -> Dictionary:
+	if performance_diagnostics!=null and not performance_diagnostics.attack_planning_enabled: return {}
+	if _preview_only:
+		var id: int=candidate.get_instance_id()
+		var origin: Vector3=_flight.data.finish if _flight.active else body.global_position
+		var now:=Time.get_ticks_usec()
+		var cached: Dictionary=_preview_cache.get(id,{})
+		if not cached.is_empty() and cached.weapon==weapon and now<cached.until and origin.distance_to(cached.origin)<0.1 and candidate.global_position.distance_to(cached.target)<0.1:
+			return cached.plan
+		var hint: Dictionary={}
+		if not cached.is_empty() and cached.weapon==weapon and now<cached.until+120000 and origin.distance_to(cached.origin)<0.3 and candidate.global_position.distance_to(cached.target)<0.3: hint=cached.plan
+		var job: Dictionary=_preview_jobs.get(id,{})
+		if job.is_empty() or job.weapon!=weapon or origin.distance_to(job.origin)>0.5 or candidate.global_position.distance_to(job.target)>0.5:
+			job=Elevation.new_attack_job()
+			job.merge({"weapon":weapon,"origin":origin,"target":candidate.global_position,"frame":-1})
+			if not hint.is_empty() and hint.has("candidate_index"):
+				job.index=hint.candidate_index
+				job["preferred"]=true
+		if job.frame==Engine.get_process_frames() or not PlanningBudget.take(): return hint
+		job.frame=Engine.get_process_frames()
+		PlanningBudget.begin()
+		Elevation.attack_step(body,candidate.global_position,weapon,settings,settings.stop_distance,weapon.motion,origin,job)
+		PlanningBudget.end()
+		if job.has("preferred") and not job.done:
+			job.erase("preferred")
+			job.index=-1
+		if _preview_jobs.size()>64: _preview_jobs.clear()
+		_preview_jobs[id]=job
+		if not job.done: return hint
+		_preview_jobs.erase(id)
+		var plan: Dictionary=job.result
+		if _preview_cache.size()>64: _preview_cache.clear()
+		_preview_cache[id]={"weapon":weapon,"origin":origin,"target":candidate.global_position,"until":Time.get_ticks_usec()+(120000 if not plan.is_empty() else 400000),"plan":plan}
+		return plan
 	var frame:=Engine.get_physics_frames()
 	if _plan_frame!=frame:
 		_plan_frame=frame
@@ -167,7 +206,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_pending_selected_attack = true
 		get_viewport().set_input_as_handled()
 
-func physics_step(delta: float) -> void:
+func _work_physics_step(delta: float) -> void:
 	var was_busy := is_busy()
 	motion_owned_tick = was_busy
 	if body.get_node("HealthComponent").current_hp <= 0.0:
@@ -194,7 +233,11 @@ func physics_step(delta: float) -> void:
 		if selected != null:
 			request_attack(selected)
 	elif _pending_selected_attack and not is_busy():
-		request_attack(selected_target)
+		var requested:=selected_target
+		if not is_instance_valid(requested):
+			# Keyboard input must not depend on the advisory display job finishing.
+			requested=_best_auto_target(valid_candidates(),Vector3(body.facing_world.x,0,body.facing_world.z).normalized())
+		request_attack(requested)
 	_pending_selected_attack = false
 	if is_busy():
 		if state == State.Approach or state == State.Attack:
@@ -352,7 +395,7 @@ func filter_damage(amount: float, source: Node) -> float:
 		return amount * defense.guard_damage_multiplier
 	return amount
 
-func _update_markers() -> void:
+func _work_update_markers() -> void:
 	var near_enemy := false
 	var facing := Vector3(body.facing_world.x, 0.0, body.facing_world.z).normalized()
 	for candidate in get_tree().get_nodes_in_group("combat_targets"):
@@ -374,7 +417,7 @@ func valid_candidates() -> Array[Node3D]:
 	candidates.sort_custom(func(a: Node3D, b: Node3D): return String(a.get_path()) < String(b.get_path()))
 	return candidates
 
-func _refresh_selection(delta: float = 0.0) -> void:
+func _work_refresh_selection(delta: float = 0.0) -> void:
 	if is_busy(): return
 	var current_valid := is_instance_valid(selected_target) and can_select(selected_target)
 	var facing := Vector3(body.facing_world.x, 0.0, body.facing_world.z).normalized()
@@ -579,6 +622,9 @@ func attack_position(candidate: Node3D) -> Vector3:
 	return candidate.global_position - direction.normalized() * stopping
 
 func request_attack(candidate: Node3D) -> bool:
+	# Display hints never authorize actions, even in the same physics frame.
+	_plan_cache.clear()
+	_plan_frame=-1
 	if is_busy() or not can_select(candidate): return _reject("Invalid target, state or stock")
 	_active_weapon = equipped_weapon.duplicate()
 	if _active_weapon.elevation_travel!=null: _active_weapon.elevation_travel=_active_weapon.elevation_travel.duplicate()
@@ -990,3 +1036,30 @@ func _exit_tree() -> void:
 	if is_instance_valid(camera_rig): camera_rig.release_follow()
 	_pending_click = false
 	_pending_selected_attack = false
+
+func _elevation_plan(candidate: Node3D, weapon: WeaponData) -> Dictionary:
+	var started:=Work.start(body)
+	var result: Dictionary=_work_elevation_plan(candidate,weapon)
+	Work.finish(body,"player.preview_plan",started)
+	return result
+
+func physics_step(delta: float) -> void:
+	var started:=Work.start(body)
+	_work_physics_step(delta)
+	Work.finish(body,"player.physics",started)
+
+func _update_markers() -> void:
+	var started:=Work.start(body)
+	var previous:=_preview_only
+	_preview_only=true
+	_work_update_markers()
+	_preview_only=previous
+	Work.finish(body,"player.markers",started)
+
+func _refresh_selection(delta: float = 0.0) -> void:
+	var started:=Work.start(body)
+	var previous:=_preview_only
+	_preview_only=true
+	_work_refresh_selection(delta)
+	_preview_only=previous
+	Work.finish(body,"player.selection",started)

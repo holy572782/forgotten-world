@@ -2,6 +2,7 @@ extends RefCounted
 ## Enemy-only native floor locomotion and swept, time-based stair climbing.
 const Arc = preload("res://scripts/combat/jump_arc.gd")
 const Ground = preload("res://scripts/combat/terrain_ground.gd")
+const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
 enum Motion { WALK, STEP, JUMP, FALL, STRANDED }
 var motion_mode := Motion.WALK
 var jump_data: Dictionary = {}
@@ -87,7 +88,7 @@ func _floor_contacts_only(collision: KinematicCollision3D) -> bool:
 		if collision.get_normal(index).y<cos(deg_to_rad(config.max_slope_degrees)): return false
 	return true
 
-func can_reach(at: Vector3, check_clearance: bool = true, from: Vector3 = Vector3.INF) -> bool:
+func _work_can_reach(at: Vector3, check_clearance: bool = true, from: Vector3 = Vector3.INF) -> bool:
 	var current := from if from.is_finite() else actor.global_position
 	var count := maxi(1,ceili(horizontal(current,at)/0.15))
 	for index in range(1,count+1):
@@ -125,8 +126,9 @@ func _jump_corridor(landing: Vector3) -> bool:
 		if not _support(Vector3(at.x,hit.position.y,at.z)): return false
 	return true
 
-func _jump_plan(direction: Vector3) -> Dictionary:
+func _work_jump_plan(direction: Vector3) -> Dictionary:
 	_rise_ahead=0.0
+	if actor.performance_diagnostics!=null and not actor.performance_diagnostics.terrain_search_enabled: return {}
 	if not config.jump_enabled or direction.is_zero_approx() or not _can_land(): return {}
 	var height: float=clampf(config.jump_height,0.4,1.5)
 	var takeoff: float=clampf(config.jump_takeoff_speed,2.0,12.0)
@@ -279,7 +281,8 @@ func continue_climb(delta: float) -> void:
 			vertical_speed=0.0
 			_settled()
 
-func _try_climb(direction: Vector3, speed: float) -> bool:
+func _work_try_climb(direction: Vector3, speed: float) -> bool:
+	if actor.performance_diagnostics!=null and not actor.performance_diagnostics.terrain_search_enabled: return false
 	var radius: float=actor.get_node("CollisionShape3D").shape.radius
 	var landing := actor.global_position+direction*(radius*2.0+0.1)
 	var hit := floor_hit(actor,landing,config.maximum_step_up+0.03,0.05,config.max_slope_degrees)
@@ -299,7 +302,7 @@ func _try_climb(direction: Vector3, speed: float) -> bool:
 	blocked_reason=""
 	return true
 
-func walk(at: Vector3, delta: float, speed: float) -> void:
+func _work_walk(at: Vector3, delta: float, speed: float) -> void:
 	actor.velocity=Vector3.ZERO
 	blocked_reason="" if not blocked else blocked_reason
 	if busy():
@@ -355,3 +358,26 @@ func walk(at: Vector3, delta: float, speed: float) -> void:
 		actor.velocity=Vector3.ZERO
 	else: blocked_reason=""
 	if actor.is_on_floor(): _record()
+
+func can_reach(at: Vector3, check_clearance: bool = true, from: Vector3 = Vector3.INF) -> bool:
+	var started:=Work.start(actor)
+	var result: bool=_work_can_reach(at,check_clearance,from)
+	Work.finish(actor,"walk.can_reach",started)
+	return result
+
+func _jump_plan(direction: Vector3) -> Dictionary:
+	var started:=Work.start(actor)
+	var result: Dictionary=_work_jump_plan(direction)
+	Work.finish(actor,"walk.jump_plan",started)
+	return result
+
+func _try_climb(direction: Vector3, speed: float) -> bool:
+	var started:=Work.start(actor)
+	var result: bool=_work_try_climb(direction,speed)
+	Work.finish(actor,"walk.step_plan",started)
+	return result
+
+func walk(at: Vector3, delta: float, speed: float) -> void:
+	var started:=Work.start(actor)
+	_work_walk(at,delta,speed)
+	Work.finish(actor,"walk.move",started)

@@ -5,6 +5,7 @@ const Arc=preload("res://scripts/combat/jump_arc.gd")
 const Blade=preload("res://scripts/combat/melee_terrain.gd")
 const Sweep=preload("res://scripts/combat/melee_sweep.gd")
 const Ground=preload("res://scripts/combat/terrain_ground.gd")
+const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
 
 static func supported(body: CharacterBody3D, at: Vector3, tolerance: float=0.04) -> bool:
 	var center:=Ground.sample(body,at,0.1,0.3,body.floor_max_angle,Ground.contact_seam(body))
@@ -46,8 +47,8 @@ static func corridor(body: CharacterBody3D, start: Vector3, finish: Vector3, spa
 	for index in range(count+1):
 		var at:=start.lerp(finish,float(index)/count)
 		for offset in [Vector3.ZERO,Vector3.RIGHT*radius,Vector3.LEFT*radius,Vector3.FORWARD*radius,Vector3.BACK*radius]:
-			var ground:=Blade.ground_at(body,Vector3(at.x+offset.x,high+0.5,at.z+offset.z),high-low+1.0)
-			if not ground.is_finite() or ground.y<low-radius-0.04 or ground.y>high+radius+0.04: return false
+			var ground:=Ground.surface(body,Vector3(at.x+offset.x,high+0.5,at.z+offset.z),0.05,high-low+1.0,body.floor_max_angle,Ground.contact_seam(body))
+			if ground.is_empty() or ground.position.y<low-radius-0.04 or ground.position.y>high+radius+0.04: return false
 	return true
 
 static func plan(body: CharacterBody3D, start: Vector3, finish: Vector3, path: Resource, tuning: Resource, motion: Resource, returning: bool=false) -> Dictionary:
@@ -99,41 +100,85 @@ static func actors_clear(body: CharacterBody3D, start: Vector3, finish: Vector3)
 	query.exclude=[body.get_rid()]
 	return body.get_world_3d().direct_space_state.intersect_shape(query,1).is_empty()
 
-static func attack(body: CharacterBody3D, at: Vector3, weapon: WeaponData, path: Resource, stop: float, motion: Resource, from: Vector3=Vector3.INF, diagnostics: Dictionary={}) -> Dictionary:
+static func new_attack_job() -> Dictionary:
+	return {"index":-1,"done":false,"result":{},"reason":"NO_SAFE_LANDING"}
+
+static func _work_attack(body: CharacterBody3D, at: Vector3, weapon: WeaponData, path: Resource, stop: float, motion: Resource, from: Vector3=Vector3.INF, diagnostics: Dictionary={}) -> Dictionary:
+	var job:=new_attack_job()
+	while not job.done: attack_step(body,at,weapon,path,stop,motion,from,job,diagnostics)
+	return job.result
+
+static func attack_step(body: CharacterBody3D, at: Vector3, weapon: WeaponData, path: Resource, stop: float, motion: Resource, from: Vector3, job: Dictionary, diagnostics: Dictionary={}) -> void:
+	var started:=Work.start(body)
+	_attack_step_now(body,at,weapon,path,stop,motion,from,job,diagnostics)
+	job.reason=diagnostics.get("reason",job.reason)
+	Work.finish(body,"elevation.step",started)
+
+static func _attack_step_now(body: CharacterBody3D, at: Vector3, weapon: WeaponData, path: Resource, stop: float, motion: Resource, from: Vector3, job: Dictionary, diagnostics: Dictionary) -> void:
+	var work:=Work.for_body(body)
+	if work!=null and not work.attack_planning_enabled:
+		reject(diagnostics,"DIAGNOSTIC_ATTACK_DISABLED")
+		job.done=true
+		return
 	var start:=from if from.is_finite() else body.global_position
 	var offset:=Vector3(at.x-start.x,0,at.z-start.z)
-	if diagnostics.get("enabled",false): diagnostics["reason"]="NO_SAFE_LANDING"
-	if offset.length()>weapon.attack_range+0.00001: return reject(diagnostics,"OUT_OF_RANGE")
-	if Sweep.contains(start,offset,at,weapon) and Blade.clear(body,at,path,2.0,start): return {"in_place":true,"destination":start,"out":{},"back":{}}
+	if offset.length()>weapon.attack_range+0.00001:
+		reject(diagnostics,"OUT_OF_RANGE")
+		job.done=true
+		return
+	if job.index<0:
+		if diagnostics.get("enabled",false): diagnostics["reason"]="NO_SAFE_LANDING"
+		job.index=0
+		if Sweep.contains(start,offset,at,weapon) and Blade.clear(body,at,path,2.0,start):
+			job.result={"in_place":true,"destination":start,"out":{},"back":{}}
+			job.done=true
+		elif not supported(body,start) and not Path.clear(body,start,path,start):
+			# No candidate can repair an unsafe takeoff footprint. Keep the
+			# in-place blade check first, and preserve the existing level-path proof.
+			reject(diagnostics,"NO_SAFE_TAKEOFF")
+			job.done=true
+		return
 	var ground:=Blade.ground_at(body,at,2.0)
-	if not ground.is_finite(): return {}
-	# Search supported stops before the target, never beyond/through its body.
+	if not ground.is_finite():
+		job.done=true
+		return
 	var closest:=maxf(0.9,minf(stop,weapon.melee_reach))
-	for index in range(maxi(1,ceili((weapon.melee_reach-closest)/0.1))+1):
-		var distance:=closest+float(index)*0.1
-		if distance>=offset.length(): continue
-		var destination:=ground-offset.normalized()*distance
-		var floor_at:=Blade.ground_at(body,destination+Vector3.UP*1.1,2.3)
-		if not floor_at.is_finite(): continue
-		destination=landing(body,floor_at)
-		if not destination.is_finite(): continue
-		if not Sweep.contains(destination,at-destination,at,weapon):
-			reject(diagnostics,"HEIGHT_OUT_OF_RANGE_OR_REACH")
-			continue
-		if not Blade.clear(body,at,path,2.0,destination):
-			reject(diagnostics,"BLADE_BLOCKED")
-			continue
-		var out:=plan(body,start,destination,path,weapon.elevation_travel,motion)
-		if out.is_empty():
-			reject(diagnostics,"DASH_PATH_BLOCKED")
-			continue
-		var back:=plan(body,destination,start,path,weapon.elevation_travel,motion,true)
-		if back.is_empty():
-			reject(diagnostics,"RETURN_PATH_BLOCKED")
-			continue
-		return {"in_place":false,"destination":destination,"out":out,"back":back}
-	return {}
+	var count:=maxi(1,ceili((weapon.melee_reach-closest)/0.1))+1
+	if job.index>=count:
+		job.done=true
+		return
+	var distance:=closest+float(job.index)*0.1
+	job.index+=1
+	if distance>=offset.length(): return
+	var destination:=ground-offset.normalized()*distance
+	var floor_at:=Blade.ground_at(body,destination+Vector3.UP*1.1,2.3)
+	if not floor_at.is_finite(): return
+	destination=landing(body,floor_at)
+	if not destination.is_finite(): return
+	if not Sweep.contains(destination,at-destination,at,weapon):
+		reject(diagnostics,"HEIGHT_OUT_OF_RANGE_OR_REACH")
+		return
+	if not Blade.clear(body,at,path,2.0,destination):
+		reject(diagnostics,"BLADE_BLOCKED")
+		return
+	var out:=plan(body,start,destination,path,weapon.elevation_travel,motion)
+	if out.is_empty():
+		reject(diagnostics,"DASH_PATH_BLOCKED")
+		return
+	var back:=plan(body,destination,start,path,weapon.elevation_travel,motion,true)
+	if back.is_empty():
+		reject(diagnostics,"RETURN_PATH_BLOCKED")
+		return
+	job.result={"in_place":false,"destination":destination,"out":out,"back":back}
+	job.result["candidate_index"]=job.index-1
+	job.done=true
 
 static func reject(diagnostics: Dictionary, reason: String) -> Dictionary:
 	if diagnostics.get("enabled",false): diagnostics["reason"]=reason
 	return {}
+
+static func attack(body: CharacterBody3D, at: Vector3, weapon: WeaponData, path: Resource, stop: float, motion: Resource, from: Vector3=Vector3.INF, diagnostics: Dictionary={}) -> Dictionary:
+	var started:=Work.start(body)
+	var result: Dictionary=_work_attack(body,at,weapon,path,stop,motion,from,diagnostics)
+	Work.finish(body,"elevation.attack",started)
+	return result

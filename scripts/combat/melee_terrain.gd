@@ -1,8 +1,9 @@
 extends RefCounted
+const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
 ## Blade clearance only. Does not authorize body movement or create damage.
 const Path=preload("res://scripts/combat/dash_path.gd")
 const Ground=preload("res://scripts/combat/terrain_ground.gd")
-static func clear(body: CharacterBody3D, at: Vector3, settings: Resource, depth: float=2.0, from: Vector3=Vector3.INF) -> bool:
+static func _work_clear(body: CharacterBody3D, at: Vector3, settings: Resource, depth: float=2.0, from: Vector3=Vector3.INF) -> bool:
 	var ground:=ground_at(body,at,depth)
 	if not ground.is_finite(): return false
 	var start:=from if from.is_finite() else body.global_position
@@ -23,7 +24,7 @@ static func clear(body: CharacterBody3D, at: Vector3, settings: Resource, depth:
 	for index in range(count+1):
 		var point:=start.lerp(ground,float(index)/count)
 		for offset in [Vector3.ZERO,Vector3.LEFT*radius,Vector3.RIGHT*radius,Vector3.FORWARD*radius,Vector3.BACK*radius]:
-			var hit:=Ground.sample(body,Vector3(point.x+offset.x,high,point.z+offset.z),1.5,high-low+radius+0.1,body.floor_max_angle,Ground.contact_seam(body))
+			var hit:=Ground.surface(body,Vector3(point.x+offset.x,high,point.z+offset.z),1.5,high-low+radius+0.1,body.floor_max_angle,Ground.contact_seam(body))
 			if hit.is_empty(): return false
 			var allowance:=0.04+radius*tan(acos(clampf(hit.normal.y,0.01,1.0)))
 			if hit.normal.y<0.7 or hit.position.y<low-allowance or hit.position.y>high+allowance: return false
@@ -48,3 +49,9 @@ static func flat_footprint(body: CharacterBody3D, at: Vector3) -> bool:
 		var hit:=Ground.sample(body,at+offset,0.1,0.3,body.floor_max_angle,Ground.contact_seam(body))
 		if hit.is_empty() or hit.normal.y<0.99 or absf(hit.position.y-at.y)>0.04: return false
 	return true
+
+static func clear(body: CharacterBody3D, at: Vector3, settings: Resource, depth: float=2.0, from: Vector3=Vector3.INF) -> bool:
+	var started:=Work.start(body)
+	var result: bool=_work_clear(body,at,settings,depth,from)
+	Work.finish(body,"blade.clear",started)
+	return result

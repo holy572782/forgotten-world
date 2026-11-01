@@ -1,4 +1,10 @@
 extends RefCounted
+## Corridor verification needs the actual walkable centre surface. Endpoint
+## capsule support retains sample()'s contact/seam proof unchanged.
+static func surface(body: CharacterBody3D, at: Vector3, up: float, down: float, angle: float, seam: float) -> Dictionary:
+	var hit:=_ray(body,at,up,down)
+	if not hit.is_empty() and hit.normal.y>=cos(angle): return hit
+	return sample(body,at,up,down,angle,seam)
 ## Real walkable surfaces, with a bounded two-sided proof for tiny map seams.
 static func sample(body: CharacterBody3D, at: Vector3, up: float, down: float, angle: float, seam: float=0.0, seam_height: float=0.15) -> Dictionary:
 	var center:=_ray(body,at,up,down)
@@ -21,7 +27,8 @@ static func sample(body: CharacterBody3D, at: Vector3, up: float, down: float, a
 static func _ray(body: CharacterBody3D, at: Vector3, up: float, down: float) -> Dictionary:
 	var ray:=PhysicsRayQueryParameters3D.create(at+Vector3.UP*up,at-Vector3.UP*down,1)
 	ray.exclude=[body.get_rid()]
-	return body.get_world_3d().direct_space_state.intersect_ray(ray)
+	var result:=body.get_world_3d().direct_space_state.intersect_ray(ray)
+	return result
 
 static func contact_seam(body: CharacterBody3D) -> float:
 	return minf(0.15,body.get_node("CollisionShape3D").shape.radius*0.45)

@@ -10,6 +10,8 @@ const Path = preload("res://scripts/combat/dash_path.gd")
 const Sweep = preload("res://scripts/combat/melee_sweep.gd")
 const Elevation=preload("res://scripts/combat/elevation_path.gd")
 const Flight=preload("res://scripts/combat/combat_flight.gd")
+const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
+const PlanningBudget=preload("res://scripts/combat/planning_budget.gd")
 var _flight:=Flight.new()
 var _air_return_reason:=""
 var _jump_arrived:=false
@@ -23,6 +25,7 @@ signal projectile_released(shot: CharacterBody3D)
 @export var show_debug_state := true
 @export var show_attack_diagnostics := false
 @export var debug_unlimited_pursuit := false
+@export var performance_diagnostics: Work
 var _pursuit_route:=PursuitRoute.new()
 var _windup_plan_failed_for:=0.0
 var _diagnostics_shown:=false
@@ -42,14 +45,19 @@ var _preview_origin:=Vector3.INF
 var _preview_target:=Vector3.INF
 var _preview_valid:=false
 var _preview_reason:=""
+var _eligibility_job: Dictionary={}
+var _planning_async:=false
 
-func _update_attack_debug() -> void:
+func _work_update_attack_debug() -> void:
+	if performance_diagnostics!=null and not performance_diagnostics.details_enabled:
+		debug_label.visible=false
+		return
 	debug_label.visible=true
 	var distance:=Walker.horizontal(global_position,player.global_position) if player_alive() else INF
 	var blocked: String=_pursuit_route.reason if debug_unlimited_pursuit and not _pursuit_route.reason.is_empty() else walker.blocked_reason
 	debug_label.text=State.keys()[state]+"  PURSUIT: "+("UNLIMITED" if debug_unlimited_pursuit else "BOUNDED")+"\nDIST: %.2fm  MOVE: %s" % [distance,blocked]+"\nSTART: "+attack_start_reason+"\nABORT: "+attack_abort_reason+"\nHIT: "+attack_hit_reason
 
-func _terrain_plan(at: Vector3) -> Dictionary:
+func _work_terrain_plan(at: Vector3) -> Dictionary:
 	var diagnostic: Dictionary={"enabled":true}
 	var result:=Elevation.attack(self,at,active_attack.weapon,settings.path,active_attack.stop_distance,active_attack.weapon.motion,Vector3.INF,diagnostic)
 	attack_start_reason="OK" if not result.is_empty() else diagnostic.get("reason","NO_SAFE_LANDING")
@@ -124,7 +132,7 @@ func _ready() -> void:
 func player_alive() -> bool:
 	return is_instance_valid(player) and player.is_inside_tree() and player.get_node("HealthComponent").current_hp > 0.0
 
-func has_sight() -> bool:
+func _work_has_sight() -> bool:
 	if player_alive() and active_attack!=null and active_attack.weapon!=null and active_attack.weapon.hit_height_up>=0.0:
 		return Path.sight(self,player.global_position) or StrikeGeometry.clear(self,player.global_position) or Elevation.Blade._line(self,global_position+Vector3.UP*1.6,player.global_position+Vector3.UP*1.6)
 	return player_alive() and Path.sight(self, player.global_position)
@@ -140,7 +148,7 @@ func _weapon_strike_clear(at: Vector3) -> bool:
 	if not Sweep.contains(global_position, facing, at, active_attack.weapon): return false
 	return StrikeGeometry.clear(self,at)
 
-func _physics_process(delta: float) -> void:
+func _work_physics_process(delta: float) -> void:
 	if state == State.DEAD: return
 	if health.current_hp <= 0.0:
 		_die(null)
@@ -156,7 +164,7 @@ func _physics_process(delta: float) -> void:
 	var sight := has_sight()
 	if _diagnostics_shown and not show_attack_diagnostics: _refresh_visuals()
 	_diagnostics_shown=show_attack_diagnostics
-	debug_label.visible=show_debug_state or show_attack_diagnostics
+	debug_label.visible=(show_debug_state or show_attack_diagnostics) and (performance_diagnostics==null or performance_diagnostics.details_enabled)
 	if debug_unlimited_pursuit and player_alive(): _return_after_recovery=false
 	if debug_unlimited_pursuit and player_alive() and state==State.RETURN:
 		walker.returning=false
@@ -199,6 +207,7 @@ func _physics_process(delta: float) -> void:
 				if debug_unlimited_pursuit and player_alive(): _walk_towards(player.global_position,delta)
 				elif _last_seen_valid and sight_lost < settings.sight_loss_seconds: _walk_towards(last_seen_position,delta)
 			elif active_attack.kind == AttackData.Kind.PROJECTILE: _ranged_chase_step(delta, distance, sight, true)
+			elif distance<=engagement_range() and not melee_available and attack_start_reason=="PLANNING_PENDING": velocity=Vector3.ZERO
 			elif distance <= engagement_range() and cooldown <= 0.0 and melee_available: _start_windup()
 			elif distance > engagement_range() or not melee_available:
 				if _can_pursue() and attack_count > 0: _pursuit_step(delta)
@@ -236,19 +245,22 @@ func inside_home(at: Vector3, margin: float = 0.0) -> bool:
 	return debug_unlimited_pursuit or Walker.horizontal(home,at) <= maxf(0.0,settings.leash_radius-margin)
 
 func _attack_position_available() -> bool:
+	if performance_diagnostics!=null and not performance_diagnostics.attack_planning_enabled:
+		attack_start_reason="DIAGNOSTIC_ATTACK_DISABLED"
+		return false
 	var frame:=Engine.get_physics_frames()
 	var now:=Time.get_ticks_usec()
 	var unchanged:=active_attack==_availability_attack and debug_unlimited_pursuit==_availability_unlimited and global_position.distance_to(_availability_origin)<0.08 and player.global_position.distance_to(_availability_target)<0.08
-	if unchanged and (frame==_availability_frame or now<_availability_until):
+	if unchanged and (_planning_async or _availability_reason!="PLANNING_PENDING") and (frame==_availability_frame or now<_availability_until):
 		attack_start_reason=_availability_reason
 		return _availability_value
 	_availability_frame=frame
-	_availability_until=now+150000
 	_availability_origin=global_position
 	_availability_target=player.global_position
 	_availability_attack=active_attack
 	_availability_unlimited=debug_unlimited_pursuit
 	_availability_value=_evaluate_attack_position()
+	_availability_until=0 if attack_start_reason=="PLANNING_PENDING" else Time.get_ticks_usec()+(150000 if _availability_value else 400000)
 	_availability_reason=attack_start_reason
 	return _availability_value
 
@@ -261,7 +273,26 @@ func _evaluate_attack_position() -> bool:
 		if not floor_at.is_finite():
 			attack_start_reason="TARGET_FLOOR_MISSING"
 			return false
-		var plan:=_terrain_plan(floor_at)
+		if not _planning_async:
+			var immediate:=_terrain_plan(floor_at)
+			return not immediate.is_empty() and inside_home(immediate.destination)
+		if _eligibility_job.is_empty() or _eligibility_job.weapon!=active_attack.weapon or global_position.distance_to(_eligibility_job.origin)>0.5 or floor_at.distance_to(_eligibility_job.target)>0.5:
+			_eligibility_job=Elevation.new_attack_job()
+			_eligibility_job.merge({"weapon":active_attack.weapon,"origin":global_position,"target":floor_at,"frame":-1})
+		if _eligibility_job.frame==Engine.get_process_frames() or not PlanningBudget.take():
+			attack_start_reason="PLANNING_PENDING"
+			return false
+		_eligibility_job.frame=Engine.get_process_frames()
+		PlanningBudget.begin()
+		var diagnostic: Dictionary={"enabled":true,"reason":_eligibility_job.reason}
+		Elevation.attack_step(self,floor_at,active_attack.weapon,settings.path,active_attack.stop_distance,active_attack.weapon.motion,Vector3.INF,_eligibility_job,diagnostic)
+		PlanningBudget.end()
+		if not _eligibility_job.done:
+			attack_start_reason="PLANNING_PENDING"
+			return false
+		attack_start_reason="OK" if not _eligibility_job.result.is_empty() else _eligibility_job.reason
+		var plan: Dictionary=_eligibility_job.result
+		_eligibility_job={}
 		return not plan.is_empty() and inside_home(plan.destination)
 	var ground: Vector3 = walker.target_floor(player.global_position,active_attack.target_ground_probe_depth)
 	if not ground.is_finite(): return false
@@ -279,6 +310,9 @@ func locomotion_held() -> bool:
 func _walk_towards(at: Vector3, delta: float, speed_override: float = -1.0) -> void:
 	velocity = Vector3.ZERO
 	if locomotion_held(): return # Chase waits but its attack state machine still runs.
+	if walker.retry>0.0 and not walker.busy():
+		walker.retry=maxf(0.0,walker.retry-delta)
+		return # Do not run route/jump preflights while the mover is waiting.
 	if debug_unlimited_pursuit and player_alive() and state in [State.CHASE,State.RECOVERY]:
 		at=_pursuit_route.goal(self,at,delta)
 		if not at.is_finite(): return
@@ -320,7 +354,7 @@ func _stop_combat_move() -> void:
 	_combat_move_elapsed = 0.0
 	_combat_move_blocked = false
 
-func _post_attack_step(delta: float) -> void:
+func _work_post_attack_step(delta: float) -> void:
 	if debug_unlimited_pursuit and player_alive() and not has_sight():
 		_walk_towards(player.global_position,delta)
 		return
@@ -390,7 +424,7 @@ func _choose_combat_move() -> void:
 	if not inside_home(_combat_move_goal) or _combat_move_goal.distance_to(player.global_position) < maxf(active_attack.stop_distance,0.95) or not walker.can_reach(_combat_move_goal):
 		_combat_move_blocked = true
 
-func _pursuit_step(delta: float) -> void:
+func _work_pursuit_step(delta: float) -> void:
 	velocity = Vector3.ZERO
 	if not player_alive() or (not has_sight() and not debug_unlimited_pursuit) or locomotion_held():
 		_stop_pursuit()
@@ -405,7 +439,7 @@ func _pursuit_step(delta: float) -> void:
 	var preferred := maxf(active_attack.stop_distance, preferred_distance() - 0.005)
 	# A level-ground dash may reach from the preferred distance; a riser may not.
 	# Keep walking until an attack is actually possible, rather than parking short.
-	if active_attack.weapon != null and not _attack_position_available(): preferred = maxf(active_attack.stop_distance,0.95)
+	if active_attack.weapon != null and not _attack_position_available() and attack_start_reason!="PLANNING_PENDING": preferred = maxf(active_attack.stop_distance,0.95)
 	if distance <= preferred:
 		_stop_pursuit()
 		return
@@ -456,6 +490,9 @@ func _start_windup(in_place: bool = false) -> void:
 	_set_state(State.WINDUP)
 
 func _plan_attack() -> bool:
+	if active_attack.weapon!=null and performance_diagnostics!=null and not performance_diagnostics.attack_planning_enabled:
+		attack_start_reason="DIAGNOSTIC_ATTACK_DISABLED"
+		return false
 	# Preview follows the player only during WINDUP. Once committed this is never called.
 	aimed_position = player.global_position
 	facing = _horizontal_direction(aimed_position)
@@ -641,6 +678,9 @@ func melee_hits() -> bool:
 	return offset.length() <= active_attack.hit_radius and (offset.is_zero_approx() or hit_direction.dot(offset.normalized()) >= cos(deg_to_rad(active_attack.hit_half_angle_degrees)))
 
 func _execute_attack() -> void:
+	if active_attack.weapon!=null and performance_diagnostics!=null and not performance_diagnostics.attack_planning_enabled:
+		attack_executed=true
+		return
 	if attack_executed or state != State.ATTACK or health.current_hp <= 0.0 or not player_alive(): return
 	attack_executed = true
 	attack_count += 1
@@ -734,7 +774,7 @@ func _update_telegraph_position() -> void:
 
 func _refresh_visuals() -> void:
 	if not is_instance_valid(telegraph): return
-	debug_label.visible = show_debug_state
+	debug_label.visible = show_debug_state and (performance_diagnostics==null or performance_diagnostics.details_enabled)
 	debug_label.text = ("RANGED  " if active_attack.kind == AttackData.Kind.PROJECTILE else "MELEE  ") + State.keys()[state]
 	if show_attack_diagnostics:
 		_update_attack_debug()
@@ -775,3 +815,39 @@ func _refresh_visuals() -> void:
 	$Body.scale = Vector3(1.12, 0.8, 1.12) if state == State.WINDUP else (Vector3(0.9, 1.12, 0.9) if state == State.ATTACK else Vector3.ONE)
 	if state in [State.DASH_APPROACH, State.DASH_RETURN]: $Body.scale = Vector3(0.85, 0.9, 1.15)
 	if state == State.DEAD: $Body.scale.y = 0.35
+
+func has_sight() -> bool:
+	var started:=Work.start(self)
+	var result: bool=_work_has_sight()
+	Work.finish(self,"enemy.sight",started)
+	return result
+
+func _terrain_plan(at: Vector3) -> Dictionary:
+	var started:=Work.start(self)
+	var result: Dictionary=_work_terrain_plan(at)
+	Work.finish(self,"enemy.attack_plan",started)
+	return result
+
+func _update_attack_debug() -> void:
+	var started:=Work.start(self)
+	_work_update_attack_debug()
+	Work.finish(self,"enemy.debug",started)
+
+func _physics_process(delta: float) -> void:
+	var started:=Work.start(self)
+	_planning_async=true
+	_work_physics_process(delta)
+	_planning_async=false
+	if performance_diagnostics!=null and performance_diagnostics.capture_timings:
+		performance_diagnostics.context={"enemy_position":global_position,"player_position":player.global_position if player_alive() else Vector3.INF,"state":State.keys()[state],"move":walker.blocked_reason,"route":_pursuit_route.reason,"start":attack_start_reason,"abort":attack_abort_reason,"unlimited":debug_unlimited_pursuit}
+	Work.finish(self,"enemy.physics",started)
+
+func _post_attack_step(delta: float) -> void:
+	var started:=Work.start(self)
+	_work_post_attack_step(delta)
+	Work.finish(self,"enemy.recovery_motion",started)
+
+func _pursuit_step(delta: float) -> void:
+	var started:=Work.start(self)
+	_work_pursuit_step(delta)
+	Work.finish(self,"enemy.pursuit",started)

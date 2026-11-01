@@ -1,4 +1,6 @@
 extends RefCounted
+const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
+const PlanningBudget=preload("res://scripts/combat/planning_budget.gd")
 ## Debug-only, bounded local A*. Every edge uses the existing safe walk probe;
 ## actual motion is still owned by EnemyWalk, including its native jump checks.
 const CELL:=0.75
@@ -21,9 +23,7 @@ var _decision_direct:=false
 var _search: Dictionary={}
 var _failed_origin:=Vector3.INF
 var _failed_target:=Vector3.INF
-static var _budget_frame:=-1
-static var _budget_edges:=0
-static var _budget_usec:=0
+var _probe_stage:=-1
 
 func reset() -> void:
 	waypoints.clear()
@@ -33,25 +33,27 @@ func reset() -> void:
 	target=Vector3.INF
 	retry=0.0
 	reason=""
+	_probe_stage=-1
 
-func goal(actor: CharacterBody3D, at: Vector3, delta: float) -> Vector3:
+func _work_goal(actor: CharacterBody3D, at: Vector3, delta: float) -> Vector3:
 	retry=maxf(0.0,retry-delta)
 	var walker=actor.walker
-	var now:=Time.get_ticks_usec()
+	var moved:=actor.global_position.distance_to(_decision_origin)>=0.2 or at.distance_to(_decision_target)>=0.35
+	if moved:
+		_probe_stage=-1
+		_decision_until=0
 	if not _search.is_empty() and (actor.global_position.distance_to(_search.anchor)>0.35 or at.distance_to(target)>0.5):
 		_search.clear()
-		_decision_until=0
 		retry=0.0
-	# Cache intent only. EnemyWalk still checks the actual body/support before
-	# every movement and proves a fresh jump before takeoff.
-	if now<_decision_until and actor.global_position.distance_to(_decision_origin)<0.2 and at.distance_to(_decision_target)<0.35:
+	if _probe_stage<0 and not moved and Time.get_ticks_usec()<_decision_until:
 		if not _search.is_empty():
 			_advance_search(actor)
 			if not waypoints.is_empty(): return waypoints[0]
 		return at if _decision_direct else _decision
-	_decision_origin=actor.global_position
-	_decision_target=at
-	_decision_until=now+int(DECISION_SECONDS*1000000.0)
+	if _probe_stage<0:
+		_decision_origin=actor.global_position
+		_decision_target=at
+		_probe_stage=0
 	if target.is_finite() and target.distance_to(at)>1.0:
 		waypoints.clear()
 		_search.clear()
@@ -59,42 +61,45 @@ func goal(actor: CharacterBody3D, at: Vector3, delta: float) -> Vector3:
 	if _failed_origin.is_finite() and (actor.global_position.distance_to(_failed_origin)>0.35 or at.distance_to(_failed_target)>0.5): retry=0.0
 	target=at
 	while not waypoints.is_empty() and walker.horizontal(actor.global_position,waypoints[0])<0.18: waypoints.pop_front()
+	var offset:=Vector3(at.x-actor.global_position.x,0,at.z-actor.global_position.z)
 	var safe_goal:=at
 	if walker.horizontal(at,actor.player.global_position)<0.1:
-		var toward:=Vector3(at.x-actor.global_position.x,0,at.z-actor.global_position.z)
 		var gap: float=actor.get_node("CollisionShape3D").shape.radius+actor.player.get_node("CollisionShape3D").shape.radius+0.15
-		safe_goal=actor.global_position+toward.normalized()*maxf(0.0,toward.length()-gap)
-	var offset:=Vector3(safe_goal.x-actor.global_position.x,0,safe_goal.z-actor.global_position.z)
-	var direct:=actor.global_position+offset.normalized()*minf(3.0,offset.length())
-	# Prefer a newly clear full-body corridor over stale corner waypoints.
-	if walker.can_reach(direct):
-		waypoints.clear()
-		_search.clear()
-		reason=""
-		return _remember(at,true)
-	# A safe ballistic step need not be a valid grounded walk edge. Let the
-	# existing jump owner execute its own full-body/landing proof.
-	if not walker._jump_plan(offset.normalized()).is_empty():
-		waypoints.clear()
-		_search.clear()
-		reason=""
-		return _remember(at,true)
-	if not waypoints.is_empty():
-		if walker.can_reach(waypoints[0]): return _remember(waypoints[0])
-		waypoints.clear()
-	# Do not stop metres before a riser merely because a long grounded probe
-	# cannot climb it. Approach safely until EnemyWalk can prove its jump/step.
-	var near:=actor.global_position+offset.normalized()*minf(actor.settings.chase_speed*delta,offset.length())
-	if walker.can_reach(near):
-		reason=""
-		return _remember(at,true)
+		safe_goal=actor.global_position+offset.normalized()*maxf(0.0,offset.length()-gap)
+	var safe_offset:=Vector3(safe_goal.x-actor.global_position.x,0,safe_goal.z-actor.global_position.z)
+	while _probe_stage<4:
+		if not PlanningBudget.take():
+			reason="PLANNING_BUDGET (PREFLIGHT)"
+			return Vector3.INF
+		var stage:=_probe_stage
+		_probe_stage+=1
+		var clear:=false
+		match stage:
+			0: clear=walker.can_reach(actor.global_position+safe_offset.normalized()*minf(CELL,safe_offset.length()))
+			1: clear=not walker._jump_plan(safe_offset.normalized()).is_empty()
+			2:
+				if not waypoints.is_empty():
+					if walker.can_reach(waypoints[0]): return _remember(waypoints[0])
+					waypoints.clear()
+			3: clear=walker.can_reach(actor.global_position+safe_offset.normalized()*minf(actor.settings.chase_speed*delta,safe_offset.length()))
+		if clear:
+			waypoints.clear()
+			_search.clear()
+			reason=""
+			return _remember(at,true)
 	if _search.is_empty():
+		var diagnostic:=Work.for_body(actor)
+		if diagnostic!=null and not diagnostic.local_astar_enabled:
+			reason="DIAGNOSTIC_ASTAR_DISABLED"
+			return _remember(Vector3.INF)
 		if retry>0.0: return _remember(Vector3.INF)
 		_begin_search(actor,safe_goal)
 	_advance_search(actor)
 	return _remember(waypoints[0] if not waypoints.is_empty() else Vector3.INF)
 
 func _remember(at: Vector3, direct: bool=false) -> Vector3:
+	_probe_stage=-1
+	_decision_until=Time.get_ticks_usec()+int(DECISION_SECONDS*1000000.0)
 	_decision=at
 	_decision_direct=direct
 	return at
@@ -117,16 +122,15 @@ func _finish_search(end: Vector2i) -> void:
 	reason="NO_SAFE_LOCAL_ROUTE" if waypoints.is_empty() else "DETOUR"
 	_decision_until=0
 
-func _advance_search(actor: CharacterBody3D) -> void:
+func _work_advance_search(actor: CharacterBody3D) -> void:
+	var diagnostic:=Work.for_body(actor)
+	if diagnostic!=null and not diagnostic.local_astar_enabled:
+		_search.clear()
+		reason="DIAGNOSTIC_ASTAR_DISABLED"
+		return
 	# Shared render-frame budget also covers physics catch-up ticks and multiple
 	# enemies. An individual native edge query is atomic; time is checked between edges.
-	var frame:=Engine.get_process_frames()
-	if frame!=_budget_frame:
-		_budget_frame=frame
-		_budget_edges=0
-		_budget_usec=0
-	var started:=Time.get_ticks_usec()
-	while not _search.is_empty() and _budget_edges<EDGES_PER_FRAME and _budget_usec+Time.get_ticks_usec()-started<SEARCH_USEC:
+	while not _search.is_empty() and PlanningBudget.allowed():
 		if _search.edge>=8:
 			if _search.open.is_empty() or _search.expanded>=BUDGET:
 				_finish_search(Vector2i.ZERO)
@@ -149,8 +153,8 @@ func _advance_search(actor: CharacterBody3D) -> void:
 			_search.expanded+=1
 		var current: Vector2i=_search.current
 		var key: Vector2i=current+DIRECTIONS[_search.edge]
+		if not PlanningBudget.take(): break
 		_search.edge+=1
-		_budget_edges+=1
 		if _search.closed.has(key) or Vector2(key).length()*CELL>RADIUS: continue
 		var anchor: Vector3=_search.anchor
 		var at:=Vector3(anchor.x+key.x*CELL,_search.points[current].y,anchor.z+key.y*CELL)
@@ -164,4 +168,18 @@ func _advance_search(actor: CharacterBody3D) -> void:
 		_search.costs[key]=cost
 		_search.previous[key]=current
 		if not _search.open.has(key): _search.open.append(key)
-	_budget_usec+=Time.get_ticks_usec()-started
+
+func goal(actor: CharacterBody3D, at: Vector3, delta: float) -> Vector3:
+	var started:=Work.start(actor)
+	PlanningBudget.begin()
+	var result: Vector3=_work_goal(actor,at,delta)
+	PlanningBudget.end()
+	Work.finish(actor,"route.goal",started)
+	return result
+
+func _advance_search(actor: CharacterBody3D) -> void:
+	var started:=Work.start(actor)
+	PlanningBudget.begin()
+	_work_advance_search(actor)
+	PlanningBudget.end()
+	Work.finish(actor,"route.astar",started)
