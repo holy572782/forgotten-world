@@ -2,6 +2,8 @@
 
 2026-11-01。M09基本戦闘完了を維持。追加改善のユーザーF5確認待ち、M10は別指示待ち。commit／push未実行。
 
+> 2026-11-02追記：ユーザーから、ADR-053／054後のFPS低下はF5確認で解消したとの報告を受領。本書の計測・当時の未確認事項は履歴として残す。次の位置確定型AIとそのF5確認は[m09_aim_lock_audit.md](m09_aim_lock_audit.md)で区別する。
+
 ## 調査の範囲と前回の不足
 
 受領した症状はRECOVERY／UNLIMITED・約4.19m・STEP_OR_JUMP_UNSAFE／BLADE_BLOCKEDで約1FPSになるもの。開始時はgit clean、基準は `2a60c59f15e4ec8c807b0a3bf224319163c896ec`。現在のScene・Resourceの武器リーチ2.5m、攻撃候補範囲5m・上下1.8mとユーザーの設定を保持した。

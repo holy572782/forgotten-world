@@ -28,6 +28,16 @@ func _reload_magic() -> void:
 	print("MAGE MAGIC RELOAD ","PASS" if failures.is_empty() else "FAIL")
 	quit(0 if failures.is_empty() else 1)
 
+func _cliff_trial() -> void:
+	await _fresh(1,Vector3(7,0,0))
+	ai.global_position=Vector3(0,0,13.1)
+	ai.home=ai.global_position
+	player.global_position=Vector3(0,0,20)
+	ai.set_physics_process(true)
+	await _ticks(50)
+	print("MAGE CLIFF position=",ai.global_position," support=",ai.walker._support(ai.global_position)," move=",ai.walker.blocked_reason)
+	_check(ai.global_position.z<13.7 and absf(ai.global_position.y)<0.003 and ai.walker._support(ai.global_position),"Mage stops on actual supported floor, allowing bounded native contact recovery")
+
 func _run() -> void:
 	if "--reload" in OS.get_cmdline_user_args():
 		_reload_magic()
@@ -44,6 +54,12 @@ func _run() -> void:
 	for child in main.get_children():
 		if child is StaticBody3D and child.has_node("Targetable"): child.position=Vector3(12,0,10)
 	await _ticks(5)
+	if "--cliff-only" in OS.get_cmdline_user_args():
+		await _cliff_trial()
+		main.free()
+		print("MAGE CLIFF ","PASS" if failures.is_empty() else "FAIL")
+		quit(0 if failures.is_empty() else 1)
+		return
 	await _fresh(1,Vector3(5,0,0))
 	_check(ai.settings.attack_start_distance==6.0 and ai.active_attack.damage_kind==Types.Kind.MAGIC, "Mage starts at the original 6m with explicit magic damage")
 	_check(ai.active_attack.projectile_speed==5.0 and is_equal_approx(ai.active_attack.projectile_range,13.2) and ai.active_attack.projectile_lifetime>13.2/5.0, "5m/s and 13.2m are compatible with the 6s safety lifetime")
@@ -235,13 +251,7 @@ func _run() -> void:
 	await _ticks(20)
 	_check(ai.global_position.distance_to(anchor)<0.001 and ai.attack_count==0,"Mage does not chase through a wall")
 	wall.free()
-	await _fresh(1,Vector3(7,0,0))
-	ai.global_position=Vector3(0,0,13.1)
-	ai.home=ai.global_position
-	player.global_position=Vector3(0,0,20)
-	ai.set_physics_process(true)
-	await _ticks(50)
-	_check(ai.global_position.z<13.7 and ai.global_position.y==0.0,"Mage stops at the supported floor edge instead of walking over a cliff")
+	await _cliff_trial()
 	await _fresh(1,Vector3(5,0,0))
 	var saved: Resource=ai.settings.duplicate(true)
 	saved.attack=saved.attack.duplicate(true)

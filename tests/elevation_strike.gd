@@ -28,6 +28,7 @@ func _run() -> void:
 			combat.cancel()
 			health.heal(100)
 			ai._start_windup()
+			await _planned_warning()
 			_check(ai.state==ai.State.WINDUP and ai._in_place and ai.melee_hits(),"Soldier can attack opposite elevation in place")
 			ai.set_physics_process(true)
 			await _finish_strike()

@@ -51,7 +51,7 @@ func _run() -> void:
 	await _ticks(2)
 	_check(ai._attack_position_available(),"Eligibility may briefly retain positive intent")
 	ai._start_windup()
-	_check(ai.plans==1 and ai.state!=ai.State.WINDUP,"Fresh start proof rejects a wall inserted after cached eligibility")
+	_check(ai.plans==0 and ai.state!=ai.State.WINDUP,"Fresh recognition rejects a new wall without a synchronous landing search")
 	_check(ai.attack_count==0 and health.current_hp==100,"A stale positive cannot launch or damage")
 	_check(not ai._attack_position_available(),"Changed attack snapshot invalidates eligibility")
 	var count: int=ai.evaluations

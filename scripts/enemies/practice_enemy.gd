@@ -19,6 +19,7 @@ var _jump_arrived:=false
 enum State { IDLE, CHASE, WINDUP, ATTACK, RECOVERY, RETURN, DEAD, DASH_APPROACH, DASH_RETURN }
 signal attack_started
 signal attack_warning_started
+signal aim_committed
 signal projectile_released(shot: CharacterBody3D)
 @export var settings: Settings = preload("res://resources/enemies/melee_practice.tres")
 @export var player: CharacterBody3D
@@ -27,7 +28,6 @@ signal projectile_released(shot: CharacterBody3D)
 @export var debug_unlimited_pursuit := false
 @export var performance_diagnostics: Work
 var _pursuit_route:=PursuitRoute.new()
-var _windup_plan_failed_for:=0.0
 var _diagnostics_shown:=false
 var attack_start_reason:=""
 var attack_abort_reason:=""
@@ -40,11 +40,6 @@ var _availability_attack: Resource
 var _availability_unlimited:=false
 var _availability_value:=false
 var _availability_reason:=""
-var _preview_due:=0.0
-var _preview_origin:=Vector3.INF
-var _preview_target:=Vector3.INF
-var _preview_valid:=false
-var _preview_reason:=""
 var _eligibility_job: Dictionary={}
 var _planning_async:=false
 
@@ -90,11 +85,14 @@ var _pursuit_moving := false
 var _pursuit_step_active := false
 var _pursuit_destination := Vector3.ZERO
 var aim_locked := false
-var _late_aim := false
 var _forced_in_place := false
 var _commit_minimum := 0.0
-var _commit_elapsed := 0.0
-var _commit_wait := 0.0
+var aim_lock_elapsed := -1.0
+var _locked_floor := Vector3.INF
+var _locked_plan: Dictionary = {}
+var _aim_job: Dictionary = {}
+var _aim_plan_ready := false
+var _aim_plan_frame := -1
 var combat_move_mode := ""
 var _combat_move_elapsed := 0.0
 var _combat_move_duration := 0.0
@@ -181,9 +179,9 @@ func _work_physics_process(delta: float) -> void:
 		_last_seen_valid = true
 	var beyond_leash := not inside_home(player.global_position) if player_alive() else true
 	beyond_leash = beyond_leash or not inside_home(global_position)
-	var committed := _projectile_cast_committed()
+	var committed := _projectile_cast_committed() or (aim_locked and state in [State.WINDUP,State.DASH_APPROACH,State.ATTACK,State.DASH_RETURN])
 	if committed and beyond_leash: _return_after_recovery = true
-	var leashed := ((beyond_leash and not committed) or sight_lost >= settings.sight_loss_seconds) and not (debug_unlimited_pursuit and player_alive())
+	var leashed := (beyond_leash or sight_lost >= settings.sight_loss_seconds) and not committed and not (debug_unlimited_pursuit and player_alive())
 	# Complete an attack return before going home; never replace its anchor.
 	if leashed and state in [State.CHASE, State.WINDUP]: _set_state(State.RETURN)
 	elif leashed and state in [State.DASH_APPROACH, State.ATTACK, State.DASH_RETURN]:
@@ -471,31 +469,94 @@ func _start_windup(in_place: bool = false) -> void:
 	if not in_place: last_result = ""
 	active_attack = settings.attack.snapshot()
 	attack_anchor = global_position
-	_late_aim = settings.track_windup_target and active_attack.weapon != null and active_attack.kind == AttackData.Kind.DASH_MELEE
-	aim_locked = not _late_aim
+	aim_locked = false
+	aim_lock_elapsed = -1.0
+	_locked_floor = Vector3.INF
+	_locked_plan = {}
+	_aim_job = {}
+	_aim_plan_ready = false
+	_aim_plan_frame = -1
 	_forced_in_place = in_place
+	_in_place = in_place or locomotion_held()
+	dash_destination = attack_anchor
 	_commit_minimum = clampf(settings.aim_commit_minimum_seconds, 0.1, 1.5)
-	_commit_elapsed = 0.0
-	_commit_wait = 0.0
-	_windup_plan_failed_for=0.0
 	_return_after_recovery = false
-	if not _plan_attack():
-		last_result = "Unsafe weapon strike path: "+attack_start_reason
+	if active_attack.weapon != null and performance_diagnostics != null and not performance_diagnostics.attack_planning_enabled:
+		attack_start_reason = "DIAGNOSTIC_ATTACK_DISABLED"
 		_set_state(State.RECOVERY)
 		return
-	_preview_due=0.1
-	_preview_origin=global_position
-	_preview_target=player.global_position
-	_preview_valid=true
+	# Eligibility is cached, so check live recognition again without repeating a
+	# full landing search. The actual fixed-target proof is made only at aim lock.
+	if not player_alive() or not has_sight():
+		attack_start_reason = "TARGET_NOT_VISIBLE"
+		last_result = "Unsafe warning start: "+attack_start_reason
+		_set_state(State.RECOVERY)
+		return
+	aimed_position = player.global_position
+	facing = _horizontal_direction(aimed_position)
 	_set_state(State.WINDUP)
+	if active_attack.aim_lock_ratio <= 0.0: _lock_aim()
+
+func _lock_aim() -> void:
+	if aim_locked or state != State.WINDUP or not player_alive(): return
+	# This is the only target capture in this attack. Planning never re-samples it.
+	aimed_position = player.global_position
+	facing = _horizontal_direction(aimed_position)
+	aim_locked = true
+	aim_lock_elapsed = elapsed
+	attack_anchor = global_position # WINDUP is stationary; capture the actual launch origin too.
+	dash_destination = attack_anchor
+	if active_attack.weapon != null and active_attack.weapon.elevation_travel != null:
+		_locked_floor = walker.target_floor(aimed_position,active_attack.target_ground_probe_depth)
+		_aim_job = Elevation.new_attack_job()
+	aim_committed.emit()
+
+func _advance_locked_plan() -> void:
+	if _aim_plan_ready: return
+	if active_attack.weapon != null and performance_diagnostics != null and not performance_diagnostics.attack_planning_enabled:
+		_begin_attack_return("DIAGNOSTIC_ATTACK_DISABLED")
+		return
+	if active_attack.weapon == null or active_attack.weapon.elevation_travel == null:
+		_aim_plan_ready = _plan_attack()
+		if not _aim_plan_ready: _begin_attack_return("Unsafe locked strike: "+attack_start_reason)
+		return
+	if not _locked_floor.is_finite():
+		_begin_attack_return("Unsafe locked strike: TARGET_FLOOR_MISSING")
+		return
+	if _aim_plan_frame == Engine.get_process_frames() or not PlanningBudget.take(): return
+	_aim_plan_frame = Engine.get_process_frames()
+	var diagnostic: Dictionary = {"enabled":true,"reason":_aim_job.reason}
+	PlanningBudget.begin()
+	Elevation.attack_step(self,_locked_floor,active_attack.weapon,settings.path,active_attack.stop_distance,active_attack.weapon.motion,attack_anchor,_aim_job,diagnostic)
+	PlanningBudget.end()
+	if not _aim_job.done: return
+	_locked_plan = _aim_job.result
+	attack_start_reason = "OK" if not _locked_plan.is_empty() else _aim_job.reason
+	if _locked_plan.is_empty() or not inside_home(_locked_plan.destination):
+		if not _locked_plan.is_empty(): attack_start_reason = "HOME_BOUNDARY"
+		_begin_attack_return("Unsafe locked strike: "+attack_start_reason)
+		return
+	_apply_locked_plan(_locked_plan)
+	_aim_plan_ready = true
+	if settings.attack_range_indicator_enabled: _refresh_visuals()
+
+func _apply_locked_plan(plan: Dictionary) -> void:
+	_in_place = _forced_in_place or locomotion_held() or plan.in_place
+	dash_destination = attack_anchor if _in_place else plan.destination
+	var motion: Resource = active_attack.weapon.motion
+	active_attack.dash_seconds = clampf(attack_anchor.distance_to(dash_destination)/motion.approach_speed,motion.minimum_travel_time,motion.maximum_travel_time)
+	if not _in_place and not plan.out.is_empty() and plan.out.air: active_attack.dash_seconds = plan.out.duration
 
 func _plan_attack() -> bool:
 	if active_attack.weapon!=null and performance_diagnostics!=null and not performance_diagnostics.attack_planning_enabled:
 		attack_start_reason="DIAGNOSTIC_ATTACK_DISABLED"
 		return false
-	# Preview follows the player only during WINDUP. Once committed this is never called.
-	aimed_position = player.global_position
-	facing = _horizontal_direction(aimed_position)
+	# Synchronous compatibility API; the production elevation warning uses the
+	# budgeted job above. Never capture a new target from this planning function.
+	if active_attack.kind == AttackData.Kind.PROJECTILE:
+		var clear := _projectile_release_clear()
+		attack_start_reason = "OK" if clear else "PROJECTILE_PATH_BLOCKED"
+		return clear
 	_in_place = _forced_in_place or locomotion_held()
 	var route_position := aimed_position
 	if active_attack.weapon!=null and active_attack.weapon.elevation_travel!=null:
@@ -508,11 +569,7 @@ func _plan_attack() -> bool:
 		if not inside_home(plan.destination):
 			attack_start_reason="HOME_BOUNDARY"
 			return false
-		_in_place=_in_place or plan.in_place
-		dash_destination=attack_anchor if _in_place else plan.destination
-		var motion: Resource=active_attack.weapon.motion
-		active_attack.dash_seconds=clampf(attack_anchor.distance_to(dash_destination)/motion.approach_speed,motion.minimum_travel_time,motion.maximum_travel_time)
-		if not plan.out.is_empty() and plan.out.air: active_attack.dash_seconds=plan.out.duration
+		_apply_locked_plan(plan)
 		return true
 	if active_attack.weapon != null:
 		route_position = walker.target_floor(aimed_position,active_attack.target_ground_probe_depth)
@@ -531,40 +588,46 @@ func _plan_attack() -> bool:
 		active_attack.dash_seconds = clampf(attack_anchor.distance_to(dash_destination) / motion.approach_speed, motion.minimum_travel_time, motion.maximum_travel_time)
 	return true
 
-func _windup_step(delta: float) -> void:
-	if _late_aim:
-		if not aim_locked:
-			_preview_due-=delta
-			# Follow facing each tick; expensive preview plans run at 10 Hz while
-			# stationary. The exact commitment tick always proves the current plan.
-			aimed_position=player.global_position
-			facing=_horizontal_direction(aimed_position)
-			if elapsed>=active_attack.windup_seconds or _preview_due<=0.0 or global_position.distance_to(_preview_origin)>=0.08 or aimed_position.distance_to(_preview_target)>=0.08:
-				_preview_valid=_plan_attack()
-				_preview_reason=attack_start_reason
-				_preview_origin=global_position
-				_preview_target=aimed_position
-				_preview_due=0.05 if not _preview_valid else 0.1
-			if not _preview_valid:
-				attack_start_reason=_preview_reason
-				_windup_plan_failed_for+=delta
-				velocity=Vector3.ZERO
-				if _windup_plan_failed_for<=clampf(settings.windup_replan_grace_seconds,0.0,0.3): return
-				_begin_attack_return("Unsafe tracked strike: "+attack_start_reason)
-				return
-			_windup_plan_failed_for=0.0
-			if settings.attack_range_indicator_enabled: _refresh_visuals() # Optional debug route follows the preview too.
-			if elapsed < active_attack.windup_seconds: return
-			aim_locked = true
-			var travel := active_attack.dash_seconds if global_position.distance_to(dash_destination) > 0.001 else 0.0
-			var arrival_wait: float = active_attack.weapon.motion.approach_attack_delay
-			_commit_wait = maxf(0.0, _commit_minimum - travel - arrival_wait - active_attack.hit_delay_seconds)
-			_commit_elapsed = 0.0
-		else: _commit_elapsed += delta
-		if _commit_elapsed + 0.000001 < _commit_wait: return
-	elif elapsed < active_attack.windup_seconds: return
+func _windup_step(_delta: float) -> void:
+	velocity = Vector3.ZERO
+	if not player_alive():
+		_begin_attack_return("Target unavailable")
+		return
+	if not aim_locked:
+		aimed_position = player.global_position
+		facing = _horizontal_direction(aimed_position)
+		if elapsed + 0.000001 < active_attack.windup_seconds * active_attack.aim_lock_ratio: return
+		_lock_aim()
+	_advance_locked_plan()
+	if state != State.WINDUP: return
+	if not _aim_plan_ready:
+		if elapsed > active_attack.windup_seconds + 2.0: _begin_attack_return("Locked plan budget timeout")
+		return
+	var travel := active_attack.dash_seconds if global_position.distance_to(dash_destination) > 0.001 else 0.0
+	var arrival_wait: float = active_attack.weapon.motion.approach_attack_delay if active_attack.weapon != null else 0.0
+	var minimum_release := aim_lock_elapsed + _commit_minimum - travel - arrival_wait - active_attack.hit_delay_seconds
+	var scheduled_release := active_attack.windup_seconds
+	if active_attack.weapon != null:
+		# Keep M09's post-warning melee cadence. Earlier aim capture changes what
+		# the attack can follow, not how soon the existing sword can deal damage.
+		scheduled_release += maxf(0.0,_commit_minimum-travel-arrival_wait-active_attack.hit_delay_seconds)
+	if elapsed + 0.000001 < maxf(scheduled_release,minimum_release): return
 	if active_attack.kind == AttackData.Kind.DASH_MELEE: _begin_dash()
 	else: _begin_attack()
+
+func _projectile_release_clear() -> bool:
+	# Validate the fixed target, never the player's post-lock position. A wall at
+	# the muzzle must reject spawning, not merely consume the bolt a tick later.
+	var muzzle := global_position + Vector3.UP * 0.9
+	var goal := aimed_position + Vector3.UP * 0.9
+	if not Elevation.Blade._line(self,muzzle,goal): return false
+	var query := PhysicsShapeQueryParameters3D.new()
+	var shape := SphereShape3D.new()
+	shape.radius = active_attack.projectile_radius
+	query.shape = shape
+	query.transform = Transform3D(Basis.IDENTITY,muzzle)
+	query.collision_mask = 1
+	return get_world_3d().direct_space_state.intersect_shape(query,1).is_empty()
 
 func _begin_dash() -> void:
 	if active_attack.weapon != null and global_position.distance_to(dash_destination) <= 0.001:
@@ -572,6 +635,10 @@ func _begin_dash() -> void:
 		return
 	if active_attack.weapon!=null and active_attack.weapon.elevation_travel!=null:
 		var plan:=Elevation.plan(self,global_position,dash_destination,settings.path,active_attack.weapon.elevation_travel,active_attack.weapon.motion)
+		var back:=Elevation.plan(self,dash_destination,attack_anchor,settings.path,active_attack.weapon.elevation_travel,active_attack.weapon.motion,true)
+		if plan.is_empty() or back.is_empty():
+			_begin_attack_return("Locked route changed: cancelled")
+			return
 		if not plan.is_empty() and plan.air:
 			_flight.begin(plan)
 			_travel_start=global_position
@@ -696,7 +763,7 @@ func _execute_attack() -> void:
 				elif not Sweep.contains(global_position,facing,player.global_position,weapon): attack_hit_reason="OUT_OF_RANGE_OR_DIRECTION"
 				else: attack_hit_reason="BLADE_BLOCKED"
 		if connects: player.get_node("HealthComponent").damage(active_attack.damage, self, active_attack.damage_kind)
-	elif has_sight() and (_projectile_cast_committed() or global_position.distance_to(player.global_position) <= settings.attack_start_distance):
+	elif aim_locked and _projectile_release_clear():
 		for index in range(shots.size() - 1, -1, -1):
 			if not is_instance_valid(shots[index]) or shots[index].is_queued_for_deletion(): shots.remove_at(index)
 		if shots.size() >= active_attack.maximum_projectiles: return
@@ -706,11 +773,10 @@ func _execute_attack() -> void:
 		shot.source = self
 		add_child(shot)
 		shot.global_position = global_position + Vector3.UP * 0.9
-		shot.direction = (player.global_position + Vector3.UP * 0.9 - shot.global_position).normalized()
+		shot.direction = (aimed_position + Vector3.UP * 0.9 - shot.global_position).normalized()
 		shots.append(shot)
 		_play_projectile_launch_sound()
 		projectile_released.emit(shot)
-		facing = _horizontal_direction(player.global_position)
 		_refresh_visuals()
 
 func _play_projectile_launch_sound() -> void:
@@ -731,6 +797,11 @@ func _set_state(next: State) -> void:
 	_jump_arrived=false
 	var previous := state
 	state = next
+	if next not in [State.WINDUP,State.DASH_APPROACH,State.ATTACK,State.DASH_RETURN]:
+		aim_locked = false
+		_aim_job = {}
+		_locked_plan = {}
+		_aim_plan_ready = false
 	if next not in [State.CHASE,State.RECOVERY]:
 		_pursuit_route.reset()
 	_availability_until=0
@@ -839,7 +910,7 @@ func _physics_process(delta: float) -> void:
 	_work_physics_process(delta)
 	_planning_async=false
 	if performance_diagnostics!=null and performance_diagnostics.capture_timings:
-		performance_diagnostics.context={"enemy_position":global_position,"player_position":player.global_position if player_alive() else Vector3.INF,"state":State.keys()[state],"move":walker.blocked_reason,"route":_pursuit_route.reason,"start":attack_start_reason,"abort":attack_abort_reason,"unlimited":debug_unlimited_pursuit}
+		performance_diagnostics.context={"enemy_position":global_position,"player_position":player.global_position if player_alive() else Vector3.INF,"state":State.keys()[state],"move":walker.blocked_reason,"route":_pursuit_route.reason,"start":attack_start_reason,"abort":attack_abort_reason,"unlimited":debug_unlimited_pursuit,"aim_locked":aim_locked,"aim_lock_elapsed":aim_lock_elapsed,"aim_target":aimed_position,"aim_plan_ready":_aim_plan_ready}
 	Work.finish(self,"enemy.physics",started)
 
 func _post_attack_step(delta: float) -> void:

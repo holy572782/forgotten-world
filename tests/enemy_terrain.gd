@@ -3,6 +3,27 @@ var terrain_metrics: Array[Dictionary] = []
 var max_tick_distance := 0.0
 var max_tick_height := 0.0
 
+func _pursuit_trial() -> void:
+	# The old platform permits a safe level dash below its lip in ADR-054 too.
+	# A continuous ramp has no level landing at sword reach when hops are off.
+	var arena: Node3D=main.get_node("TestArena")
+	var walk = load("res://scripts/enemies/enemy_walk.gd")
+	var start: Dictionary=walk.floor_hit(player,arena.to_global(Vector3(-6,0,-1.5)),3.0,4.0)
+	var goal: Dictionary=walk.floor_hit(player,arena.to_global(Vector3(-6,0,-5.0)),3.0,4.0)
+	await _terrain_actor(0,start.position+Vector3.UP*0.001,goal.position+Vector3.UP*0.001)
+	var initial: Vector3=ai.global_position
+	ai.settings.attack.weapon.attack_range=5.0
+	# Isolate ordinary pursuit from the optional combat hop.
+	ai.settings.attack.weapon.elevation_travel=ai.settings.attack.weapon.elevation_travel.duplicate()
+	ai.settings.attack.weapon.elevation_travel.enabled=false
+	ai.active_attack=ai.settings.attack.snapshot()
+	ai.attack_count=1
+	ai.cooldown=0.0
+	await _state(ai.State.WINDUP,600) # Includes bounded, budgeted negative candidates.
+	await _planned_warning()
+	print("TERRAIN PURSUIT at=",ai.global_position," in_place=",ai._in_place," landing=",ai.dash_destination," reason=",ai.attack_start_reason)
+	_check(ai.walker.horizontal(initial,ai.global_position)>0.8 and ai._in_place,"After an earlier attack, soldier closes past preferred distance if terrain prevents a dash")
+
 func _terrain_actor(kind: int, at: Vector3, goal: Vector3) -> void:
 	if kind==0: await _fresh_sword(4.0)
 	else: await _fresh(1,Vector3(4,0,0))
@@ -82,6 +103,12 @@ func _run() -> void:
 	for child in main.get_children():
 		if child is StaticBody3D and child.has_node("Targetable"): child.position=Vector3(12,0,10)
 	await _ticks(5)
+	if "--pursuit-only" in OS.get_cmdline_user_args():
+		await _pursuit_trial()
+		main.free()
+		print("TERRAIN PURSUIT ","PASS" if failures.is_empty() else "FAIL")
+		quit(0 if failures.is_empty() else 1)
+		return
 	for kind in [0,1]:
 		# Real F5 test map: 18.4 degree ramp and 2m landing, then home by the same terrain.
 		await _terrain_actor(kind,main.get_node("TestArena").to_global(Vector3(-6,0,0.6)),main.get_node("TestArena").to_global(Vector3(-6,2,-7.0)))
@@ -118,29 +145,20 @@ func _run() -> void:
 	ai.home=ai.global_position
 	player.global_position=goal_floor.position+Vector3.UP*0.001
 	ai._start_windup()
+	await _planned_warning()
 	_check(ai.state==ai.State.WINDUP and ai._in_place and ai.melee_hits(),"Sword can reach a target on a slope without relaxing DashPath")
 	player.set_physics_process(true)
 	await _terrain_actor(1,start_floor.position+Vector3.UP*0.001,goal_floor.position+Vector3.UP*0.001)
 	ai.set_physics_process(false)
 	ai._start_windup()
+	await _planned_warning()
 	await _ticks(3)
 	var circle: Node3D=ai.get_node("CastingCircle")
 	_check(circle.is_presenting() and circle.global_basis.y.dot(start_floor.normal)>0.999,"Mage's existing native circle follows the actual slope floor, without disappearing or burial")
 	if "--capture" in OS.get_cmdline_user_args():
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://.godot/terrain_mage_slope_circle.png")
-	var raised_platform:=_block(Vector3(4.5,0.5,0),Vector3(3,1,3))
-	await _terrain_actor(0,Vector3.ZERO,Vector3(5,1,0))
-	ai.settings.attack.weapon.attack_range=5.0
-	# Keep this regression about ordinary pursuit: disable the newly optional combat hop.
-	ai.settings.attack.weapon.elevation_travel=ai.settings.attack.weapon.elevation_travel.duplicate()
-	ai.settings.attack.weapon.elevation_travel.enabled=false
-	ai.active_attack=ai.settings.attack.snapshot()
-	ai.attack_count=1
-	ai.cooldown=0.0
-	await _state(ai.State.WINDUP,300)
-	_check(ai.global_position.x>0.8 and ai._in_place,"After an earlier attack, soldier closes past preferred distance if terrain prevents a dash")
-	raised_platform.free()
+	await _pursuit_trial()
 	# A reachable 1m step is a sword hit, not permission to dash through the riser.
 	await _fresh_sword(2.0)
 	player.set_physics_process(false)
@@ -148,6 +166,7 @@ func _run() -> void:
 	player.global_position.y=1.0
 	await _ticks(3)
 	ai._start_windup()
+	await _planned_warning()
 	_check(ai.state==ai.State.WINDUP and ai._in_place and ai.dash_destination==ai.attack_anchor,"Sword reaches 1m step target in place without an unsafe dash")
 	ai.set_physics_process(true)
 	await _finish_strike()

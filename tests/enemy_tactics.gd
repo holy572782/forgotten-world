@@ -28,10 +28,8 @@ func _seconds(duration: float) -> void:
 	while float(Engine.get_physics_frames()-start)/60.0 < duration: await _ticks(1)
 
 func _locked() -> void:
-	for tick in range(150):
-		if ai.aim_locked: return
-		await _ticks(1)
-	_check(false, "Late aim eventually commits")
+	await _planned_warning()
+	_check(ai.aim_locked and ai._aim_plan_ready,"Fixed aim and its safe plan become ready")
 
 func _dodge(distance: float, window: float, yaw: float, lateral: bool) -> Dictionary:
 	await _fresh_sword(distance)
@@ -40,7 +38,7 @@ func _dodge(distance: float, window: float, yaw: float, lateral: bool) -> Dictio
 	ai.settings.aim_commit_minimum_seconds = window
 	await _windup()
 	await _locked()
-	var locked_tick := Engine.get_physics_frames()
+	var locked_tick := Engine.get_physics_frames()-roundi((ai.elapsed-ai.aim_lock_elapsed)*60.0)
 	var locked_position: Vector3 = ai.aimed_position
 	var destination: Vector3 = ai.dash_destination
 	var direction: Vector3 = ai.facing
@@ -110,13 +108,13 @@ func _run() -> void:
 	_check(not ai.aim_locked, "Warning entry does not lock attack position")
 	var anchor: Vector3 = ai.attack_anchor
 	var first_target: Vector3 = ai.aimed_position
-	await _seconds(0.35)
+	await _seconds(0.15)
 	player.reset_motion(origin+Vector3(0,0,0.7))
 	await _ticks(2)
 	_check(not ai.aim_locked and ai.aimed_position.distance_to(player.global_position) < 0.001 and ai.aimed_position != first_target and ai.global_position == anchor, "Warning tracks current player without moving enemy")
 	_check(String(ai.get_node("AnimatedSprite3D").animation).begins_with("warning_") and ai.get_node("AnimatedSprite3D").frame == 0, "Tracking retains fixed warning pose")
 	await _locked()
-	_check(ai.elapsed >= ai.active_attack.windup_seconds and cue_count == 1, "Aim locks at warning end; Fire1 remains one cue")
+	_check(absf(ai.aim_lock_elapsed-ai.active_attack.windup_seconds*ai.active_attack.aim_lock_ratio)<0.035 and cue_count == 1, "Aim locks at configured warning ratio; Fire1 remains one cue")
 	await _finish_strike()
 	_check(ai.attack_count == 1 and health.current_hp == 90 and ai.get_node("ReturnTrace").last_recovery_position.distance_to(anchor) < 0.001, "Tracked target is hit once if player does not evade and enemy returns")
 	# Measure the user's initial 0.25s suggestion before choosing a reach-aware default.
@@ -227,7 +225,10 @@ func _run() -> void:
 	player.reset_motion(origin-Vector3(0.2,0,0))
 	ai.elapsed = 0.3
 	ai._windup_step(1.0/60.0)
-	_check(ai.aim_locked and ai.aimed_position == ranged_aim and not ai._can_pursue(), "Melee options never change ranged aiming or movement")
+	_check(not ai.aim_locked and ai.aimed_position != ranged_aim and not ai._can_pursue(), "Melee options do not change the ranged attack's ratio-driven preview")
+	ai.elapsed = 0.5
+	ai._windup_step(1.0/60.0)
+	_check(ai.aim_locked and ai.aimed_position == player.global_position,"Ranged aim commits at its own configured ratio")
 	for node in get_nodes_in_group("combat_targets"):
 		_check(node.get_node("Marker/Mesh").cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Each target marker casts no shadow")
 	await _fresh_sword(3.5)

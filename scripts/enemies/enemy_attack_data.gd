@@ -9,6 +9,8 @@ enum Kind { DASH_MELEE, STATIONARY_MELEE, PROJECTILE }
 @export var travel_settings: Resource
 @export var kind: Kind = Kind.DASH_MELEE
 @export var windup_seconds := 0.9
+## One target snapshot per warning; legacy attacks keep their entry-time lock.
+@export_range(0.0, 1.0, 0.01) var aim_lock_ratio := 0.0
 @export var dash_max_distance := 1.5
 @export var dash_seconds := 0.25
 @export var stop_distance := 0.9
@@ -40,6 +42,7 @@ enum Kind { DASH_MELEE, STATIONARY_MELEE, PROJECTILE }
 
 func snapshot() -> Resource:
 	var result := duplicate(true)
+	result.aim_lock_ratio = Motion.bounded(aim_lock_ratio,0.0,1.0,0.0)
 	if weapon == null: return result
 	result.weapon = weapon.duplicate() # External Resources remain shared by duplicate(true).
 	if weapon.elevation_travel!=null: result.weapon.elevation_travel=weapon.elevation_travel.duplicate()

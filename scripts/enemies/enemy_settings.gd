@@ -38,11 +38,12 @@ const Visual = preload("res://scripts/enemies/enemy_visual_data.gd")
 ## Also the maximum goal distance of each local combat movement interval.
 @export_range(0.1, 3.0, 0.1) var pursuit_step_distance := 1.0
 
-@export_group("Melee aim commitment")
+@export_group("Aim commitment")
+## Kept for old saved Resources; EnemyAttackData.aim_lock_ratio owns aim timing.
 @export var track_windup_target := false
-## Minimum time from final aim lock to damage; includes fixed-route travel.
+## Melee: lock to damage including travel; projectile: lock to release.
 @export_range(0.1, 1.5, 0.01) var aim_commit_minimum_seconds := 0.45
-## Retry a transient windup plan failure while stopped; never launch a stale plan.
+## Legacy saved setting; fixed-target jobs now finish or cancel without re-aiming.
 @export_range(0.0, 0.3, 0.01) var windup_replan_grace_seconds := 0.12
 @export_group("Post-return combat movement")
 ## Uses existing pursuit_speed / pursuit_step_distance / preferred_attack_distance.

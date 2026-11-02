@@ -64,7 +64,7 @@ func _run() -> void:
 	ai.show_attack_diagnostics=true
 	await _windup()
 	wall=_block((ai.global_position+player.global_position)*0.5+Vector3.UP,Vector3(0.3,2,4))
-	await _ticks(20)
+	await _planned_warning()
 	_check(ai.attack_count==0 and health.current_hp==100 and ai.state!=ai.State.WINDUP,"Persistent obstruction cancels without a hit")
 	_check(ai.attack_abort_reason.contains("BLADE") or ai.attack_abort_reason.contains("PATH"),"Cancellation names the actual failed safety check")
 	wall.free()

@@ -78,13 +78,17 @@ func _run() -> void:
 	await _finish_strike()
 	var trace: Node = ai.get_node("JumpTrace")
 	_check(not trace.aborted and trace.peak > 1.1 and cue_count == 1 and received_count == 1, "A real jump during red warning never aborts or retriggers Fire1")
-	_check(absf(trace.lock_elapsed-ai.active_attack.windup_seconds) < 0.035 and ai.get_node("ReturnTrace").last_recovery_position.distance_to(ai.attack_anchor) < 0.001, "Original lock time and return anchor remain unchanged")
+	_check(absf(trace.lock_elapsed-ai.active_attack.windup_seconds*ai.active_attack.aim_lock_ratio) < 0.035 and ai.get_node("ReturnTrace").last_recovery_position.distance_to(ai.attack_anchor) < 0.001, "Configured lock ratio and original return anchor remain intact")
 	# Normal Space jump timed so the actual enemy hit occurs at its real apex.
 	for distance in [2.0,4.5]:
 		await _fresh_sword(distance)
 		await _windup()
 		await _locked()
-		await _seconds(0.1)
+		var travel: float = 0.0 if ai._in_place else ai.active_attack.dash_seconds
+		var arrival: float = ai.active_attack.weapon.motion.approach_attack_delay
+		var release: float = ai.active_attack.windup_seconds+maxf(0.0,ai.settings.aim_commit_minimum_seconds-travel-arrival-ai.active_attack.hit_delay_seconds)
+		var apex_after: float = player.movement.jump_speed/player.movement.gravity
+		await _seconds(maxf(0.0,release+travel+arrival+ai.active_attack.hit_delay_seconds-ai.elapsed-apex_after))
 		await _jump()
 		await _finish_strike()
 		trace = ai.get_node("JumpTrace")
@@ -102,6 +106,7 @@ func _run() -> void:
 		player.set_physics_process(false)
 		player.global_position.y = height
 		ai._start_windup()
+		await _planned_warning()
 		_check(ai.state == ai.State.WINDUP and ai._in_place and ai.dash_destination == ai.attack_anchor, "Air height alone never causes movement or unsafe-plan cancellation")
 		_check(ai.melee_hits() == (height <= 1.8), "Actual hit height boundary is respected: "+str(height))
 		player.set_physics_process(true)
@@ -113,6 +118,7 @@ func _run() -> void:
 	ai.settings.attack.override_weapon_hit_height = true
 	ai.settings.attack.hit_height_tolerance = 0.5
 	ai._start_windup()
+	await _planned_warning()
 	player.set_physics_process(false)
 	player.global_position.y = 1.2
 	ai._plan_attack()
@@ -151,6 +157,7 @@ func _run() -> void:
 		await _ticks(2)
 		var before: Vector3 = ai.global_position
 		ai._start_windup()
+		await _planned_warning()
 		_check(ai.state == ai.State.RECOVERY and ai.attack_count == 0 and not ai.melee_hits() and ai.global_position == before, "Unsafe terrain is not bypassed by jump handling: "+kind)
 		if barrier != null: barrier.free()
 		player.set_physics_process(true)
@@ -161,6 +168,7 @@ func _run() -> void:
 		player.global_position.y=height
 		await _ticks(2)
 		ai._start_windup()
+		await _planned_warning()
 		_check(ai.state==ai.State.WINDUP and ai._in_place and ai.melee_hits()==(height<=1.8),"ADR-046: reachable step permits in-place planning, actual jump height still limits the hit")
 		platform.free()
 		player.set_physics_process(true)
@@ -170,10 +178,10 @@ func _run() -> void:
 	var original_ranged: Resource = ai.settings.attack.snapshot()
 	_check(original_ranged.weapon == null and is_equal_approx(original_ranged.hit_height_tolerance,ai.settings.attack.hit_height_tolerance), "Projectile profile does not use the melee override")
 	await _windup()
-	await _seconds(0.7)
+	await _seconds(0.2) # Jump before the new 50% lock, rather than before release.
 	await _jump()
 	await _state(ai.State.ATTACK)
-	_check(ai.shots.size() == 1 and ai.shots[0].direction.y > 0.15 and is_equal_approx(ai.shots[0].settings.projectile_speed,5.0), "Mage still releases its original 3D projectile toward actual airborne height")
+	_check(ai.shots.size() == 1 and ai.shots[0].direction.y > 0.15 and is_equal_approx(ai.shots[0].settings.projectile_speed,5.0), "Mage releases its original 3D projectile toward the airborne height captured at lock")
 	ai.clear_shots()
 	await _fresh_sword(2.0)
 	ai.settings.attack.override_weapon_hit_height = true

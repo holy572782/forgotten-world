@@ -6,6 +6,7 @@
 script = ExtResource("1")
 weapon = ExtResource("2_weapon")
 travel_settings = ExtResource("3_travel")
+aim_lock_ratio = 0.4
 recovery_seconds = 3.0
 
 override_weapon_hit_height = false

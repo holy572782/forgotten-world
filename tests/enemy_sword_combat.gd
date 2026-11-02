@@ -4,6 +4,19 @@ const SharedSword = preload("res://resources/weapons/one_handed_sword.tres")
 var observed: Dictionary = {}
 var rendered: Dictionary = {}
 
+func _planned_warning() -> void:
+	# Aim capture and its budgeted landing proof are now separate events.
+	if not ("_aim_plan_ready" in ai): return # Allows isolated pre-ADR-055 comparisons.
+	var processing: bool = ai.is_physics_processing()
+	ai.set_physics_process(true)
+	for tick in range(180):
+		if ai.state != ai.State.WINDUP or ai._aim_plan_ready:
+			ai.set_physics_process(processing)
+			return
+		await _ticks(1)
+	ai.set_physics_process(processing)
+	_check(false,"Fixed-target plan finishes without unbounded warning work")
+
 func _fresh_sword(distance: float) -> void:
 	for action in ["guard", "attack", "move_left", "move_right", "move_up", "move_down"]: _press(action, false)
 	combat.cancel()
@@ -96,6 +109,7 @@ func _run() -> void:
 
 	await _fresh_sword(4.5)
 	await _windup()
+	await _planned_warning()
 	anchor = ai.attack_anchor
 	_check(is_equal_approx(ai.global_position.distance_to(ai.dash_destination), 3.4), "Same 1.1m stopping position as player")
 	_check(is_equal_approx(ai.active_attack.dash_seconds, 3.4/12.0), "Approach duration uses shared distance/speed limits")
@@ -116,6 +130,7 @@ func _run() -> void:
 	for distance in [2.499, 2.5, 2.501]:
 		await _fresh_sword(distance)
 		ai._start_windup()
+		await _planned_warning()
 		_check(ai._in_place == (distance <= 2.5) and ai.melee_hits() == (distance <= 2.5), "Shared hit/reach predicate at boundary " + str(distance))
 	await _fresh_sword(5.2)
 	ai.set_physics_process(true)
@@ -132,6 +147,7 @@ func _run() -> void:
 	await _ticks(3)
 	_check(ai.has_sight() and not ai.melee_hits(), "Low wall blocks damage even when eye ray is clear")
 	ai._start_windup()
+	await _planned_warning()
 	_check(ai.state == ai.State.RECOVERY and ai.attack_count == 0, "Unsafe strike never approaches or attacks")
 	wall.free()
 	await _fresh_sword(2.0)
@@ -140,6 +156,7 @@ func _run() -> void:
 	ai.home = ai.global_position
 	player.global_position = Vector3(0, 0, 15)
 	ai._start_windup()
+	await _planned_warning()
 	_check(ai.state == ai.State.RECOVERY and ai.attack_count == 0 and ai.global_position == ai.home, "Shared-reach strike cannot cross an unsupported cliff")
 	player.set_physics_process(true)
 	await _fresh_sword(4.5)

@@ -5,6 +5,7 @@
 script = ExtResource("1")
 kind = 2
 windup_seconds = 1.0
+aim_lock_ratio = 0.5
 attack_seconds = 0.12
 hit_delay_seconds = 0.0
 recovery_seconds = 10.0
