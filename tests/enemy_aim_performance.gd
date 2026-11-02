@@ -39,6 +39,13 @@ func _case(terrain: String, kinds: Array, unlimited: bool) -> void:
 	elif terrain == "stairs":
 		victim = arena.to_global(Vector3(5,1,-3))
 		attacker = arena.to_global(Vector3(5,0.25,1))
+	if "--descent" in OS.get_cmdline_user_args():
+		if terrain == "ramp":
+			victim = arena.to_global(Vector3(-6,0,0.5))
+			attacker = arena.to_global(Vector3(-6,2,-7))
+		elif terrain == "stairs":
+			victim = arena.to_global(Vector3(5,0,5.5))
+			attacker = arena.to_global(Vector3(5,1,-3.3))
 	player.reset_motion(_floor(player,victim))
 	actors.clear()
 	for index in range(kinds.size()):
@@ -53,6 +60,10 @@ func _case(terrain: String, kinds: Array, unlimited: bool) -> void:
 		main.add_child(actor)
 		actor.global_position = _floor(actor,actor.global_position)
 		actor.home = actor.global_position
+		if "--descent" in OS.get_cmdline_user_args():
+			# Model an already engaged enemy after the player retreats downstairs.
+			# The far stair endpoint is outside initial detection, within home leash.
+			actor._set_state(actor.State.CHASE)
 		actors.append(actor)
 	main.get_node("CameraRig").snap_to_target()
 	await _ticks(4)

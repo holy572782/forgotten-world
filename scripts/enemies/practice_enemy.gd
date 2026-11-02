@@ -265,7 +265,11 @@ func _attack_position_available() -> bool:
 func _evaluate_attack_position() -> bool:
 	# Eligibility cache never authorizes a launch: _start_windup/_plan_attack,
 	# the committed dash, actual movement and hit retain fresh safety checks.
-	if active_attack.weapon == null: return true
+	if active_attack.weapon == null:
+		if active_attack.kind != AttackData.Kind.PROJECTILE: return true
+		var clear := _projectile_path_clear(player.global_position)
+		attack_start_reason = "OK" if clear else "PROJECTILE_PATH_BLOCKED"
+		return clear
 	if active_attack.weapon.elevation_travel!=null:
 		var floor_at: Vector3=walker.target_floor(player.global_position,active_attack.target_ground_probe_depth)
 		if not floor_at.is_finite():
@@ -330,14 +334,21 @@ func _ranged_chase_step(delta: float, distance: float, sight: bool, allow_attack
 		if debug_unlimited_pursuit and player_alive(): _walk_towards(player.global_position,delta)
 		return
 	var reach := engagement_range()
-	if allow_attack and distance <= reach and cooldown <= 0.0:
+	# Screen/range eligibility is not a safe firing position. Reuse the cached
+	# muzzle/terrain proof, with a fresh proof at warning entry and actual release.
+	var firing_clear := distance <= reach and _attack_position_available()
+	if allow_attack and distance <= reach and cooldown <= 0.0 and firing_clear:
 		_start_windup()
 		return
 	var margin := clampf(settings.ranged_stop_margin, 0.0, minf(1.0, reach*0.5))
-	if distance > reach: _ranged_pursuit_active = true
+	if distance > reach or not firing_clear: _ranged_pursuit_active = true
 	elif distance <= reach - margin: _ranged_pursuit_active = false
 	if not _ranged_pursuit_active: return
-	var step := minf(settings.chase_speed * delta, maxf(0.0, distance - (reach-margin)))
+	var remaining := maxf(0.0, distance - (reach-margin))
+	if not firing_clear and distance <= reach:
+		var gap: float = $CollisionShape3D.shape.radius + player.get_node("CollisionShape3D").shape.radius + 0.15
+		remaining = maxf(0.0,Walker.horizontal(global_position,player.global_position)-gap)
+	var step := minf(settings.chase_speed * delta,remaining)
 	_walk_towards(global_position + _horizontal_direction(player.global_position)*step, delta)
 
 func _can_pursue() -> bool:
@@ -492,6 +503,9 @@ func _start_windup(in_place: bool = false) -> void:
 		last_result = "Unsafe warning start: "+attack_start_reason
 		_set_state(State.RECOVERY)
 		return
+	if active_attack.kind == AttackData.Kind.PROJECTILE and not _projectile_path_clear(player.global_position):
+		attack_start_reason = "PROJECTILE_PATH_BLOCKED"
+		return # Keep pursuing; a cached firing hint cannot authorize this warning.
 	aimed_position = player.global_position
 	facing = _horizontal_direction(aimed_position)
 	_set_state(State.WINDUP)
@@ -618,8 +632,11 @@ func _windup_step(_delta: float) -> void:
 func _projectile_release_clear() -> bool:
 	# Validate the fixed target, never the player's post-lock position. A wall at
 	# the muzzle must reject spawning, not merely consume the bolt a tick later.
+	return _projectile_path_clear(aimed_position)
+
+func _projectile_path_clear(at: Vector3) -> bool:
 	var muzzle := global_position + Vector3.UP * 0.9
-	var goal := aimed_position + Vector3.UP * 0.9
+	var goal := at + Vector3.UP * 0.9
 	if not Elevation.Blade._line(self,muzzle,goal): return false
 	var query := PhysicsShapeQueryParameters3D.new()
 	var shape := SphereShape3D.new()

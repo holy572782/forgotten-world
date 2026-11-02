@@ -3,7 +3,7 @@ extends RefCounted
 const Arc = preload("res://scripts/combat/jump_arc.gd")
 const Ground = preload("res://scripts/combat/terrain_ground.gd")
 const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
-enum Motion { WALK, STEP, JUMP, FALL, STRANDED }
+enum Motion { WALK, STEP, JUMP, FALL, STRANDED, DESCEND }
 var motion_mode := Motion.WALK
 var jump_data: Dictionary = {}
 var jump_elapsed := 0.0
@@ -11,6 +11,8 @@ var jump_cooldown := 0.0
 var jump_count := 0
 var _fall_elapsed := 0.0
 var _rise_ahead := 0.0
+var _descent_direction := Vector3.ZERO
+var _descent_speed := 0.0
 var actor: CharacterBody3D
 var config: Resource
 var retry := 0.0
@@ -96,7 +98,24 @@ func _work_can_reach(at: Vector3, check_clearance: bool = true, from: Vector3 = 
 		var hit := _sample(next)
 		if hit.is_empty(): return false
 		next.y=hit.position.y
-		if absf(next.y-current.y)>maxf(config.maximum_step_up,config.maximum_step_down)+0.01 or not _support(next): return false
+		var rise:=next.y-current.y
+		if rise>config.maximum_step_up+0.01 or -rise>config.maximum_step_down+0.01: return false
+		# At a lip the rear footprint is still on the upper tread. Sample from
+		# that height, not from inside the upper tread's solid riser.
+		var support_at:=next
+		if rise < -0.04: support_at.y=current.y
+		if not _support(support_at): return false
+		if next.y < current.y-0.04:
+			# A downward diagonal cuts through the convex stair lip while the
+			# capsule is still supported by the upper tread. Walk off at the
+			# current height, then sweep down only as far as real contact permits.
+			# The next sample resumes from that contact, never from inside a riser.
+			if check_clearance:
+				var settled := _downward_contact(current,next)
+				if not settled.is_finite(): return false
+				current=settled
+			else: current=next
+			continue
 		if check_clearance and not _motion_clear(current,next-current,true):
 			if next.y-current.y<=0.04:
 				var ahead := current+(next-current).normalized()*0.9
@@ -108,7 +127,21 @@ func _work_can_reach(at: Vector3, check_clearance: bool = true, from: Vector3 = 
 		current=next
 	return true
 
-func airborne() -> bool: return motion_mode in [Motion.JUMP,Motion.FALL,Motion.STRANDED]
+func _downward_contact(start: Vector3, floor_at: Vector3) -> Vector3:
+	if start.y-floor_at.y>config.maximum_step_down+0.01: return Vector3.INF
+	var across:=Vector3(floor_at.x,start.y,floor_at.z)
+	if not _motion_clear(start,across-start,true): return Vector3.INF
+	var drop:=Vector3.DOWN*maxf(0.0,start.y-floor_at.y)
+	var contact:=KinematicCollision3D.new()
+	if actor.test_move(Transform3D(actor.global_basis,across),drop,contact,actor.safe_margin,false,8):
+		# Rounded capsule contact with the upper lip can be steeper than a
+		# walkable floor. It stops the query; it never authorizes penetrating it.
+		for index in range(contact.get_collision_count()):
+			if contact.get_normal(index).y<=0.01: return Vector3.INF
+		return across+contact.get_travel()
+	return floor_at
+
+func airborne() -> bool: return motion_mode in [Motion.JUMP,Motion.FALL,Motion.STRANDED,Motion.DESCEND]
 
 func busy() -> bool: return not climb.is_empty() or airborne()
 
@@ -197,6 +230,9 @@ func _land_jump() -> void:
 
 func _advance_air(delta: float) -> void:
 	var before:=actor.global_position
+	if motion_mode==Motion.DESCEND:
+		_advance_descent(delta)
+		return
 	if motion_mode==Motion.STRANDED:
 		actor.velocity=Vector3.ZERO
 		var restored:=floor_hit(actor,before,0.02,0.05,config.max_slope_degrees)
@@ -230,6 +266,32 @@ func _advance_air(delta: float) -> void:
 		_land_jump()
 	elif _fall_elapsed>=2.0 and collision==null:
 		motion_mode=Motion.STRANDED # No warp or retry-jump into missing terrain.
+		actor.velocity=Vector3.ZERO
+		blocked=true
+		blocked_reason="GROUND_LOST"
+
+func _advance_descent(delta: float) -> void:
+	# Ordinary step-downs retain native gravity AND horizontal motion until real
+	# floor contact. Range/eligibility changes cannot park the body in midair.
+	var before:=actor.global_position
+	var next:=before+_descent_direction*_descent_speed*delta
+	var horizontal_motion:=_descent_direction*_descent_speed
+	if not _within_walk_bounds(next) or not _support(next): horizontal_motion=Vector3.ZERO
+	vertical_speed=maxf(-config.climb_speed,vertical_speed-config.gravity*delta)
+	actor.velocity=horizontal_motion+Vector3.UP*vertical_speed
+	actor.move_and_slide()
+	vertical_speed=actor.velocity.y
+	actor.velocity=(actor.global_position-before)/maxf(delta,0.0001)
+	if actor.is_on_floor():
+		motion_mode=Motion.WALK
+		vertical_speed=0.0
+		blocked=false
+		blocked_reason=""
+		_settled() # No upward jump, jump counter or landing cooldown change.
+		return
+	_fall_elapsed+=delta
+	if _fall_elapsed>=2.0:
+		motion_mode=Motion.STRANDED
 		actor.velocity=Vector3.ZERO
 		blocked=true
 		blocked_reason="GROUND_LOST"
@@ -348,6 +410,14 @@ func _work_walk(at: Vector3, delta: float, speed: float) -> void:
 	actor.move_and_slide()
 	vertical_speed=actor.velocity.y
 	actor.velocity=(actor.global_position-before)/maxf(delta,0.0001)
+	if not actor.is_on_floor():
+		motion_mode=Motion.DESCEND
+		_descent_direction=direction
+		_descent_speed=speed
+		_fall_elapsed=0.0
+		blocked=false
+		blocked_reason=""
+		return
 	blocked=horizontal(before,actor.global_position)<motion.length()*0.2 and motion.length()>0.001
 	if blocked:
 		blocked_reason="BODY_COLLISION"
