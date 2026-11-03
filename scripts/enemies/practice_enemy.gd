@@ -12,6 +12,8 @@ const Elevation=preload("res://scripts/combat/elevation_path.gd")
 const Flight=preload("res://scripts/combat/combat_flight.gd")
 const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
 const PlanningBudget=preload("res://scripts/combat/planning_budget.gd")
+const SearchBehavior=preload("res://scripts/enemies/enemy_search.gd")
+var _search_behavior:=SearchBehavior.new()
 var _flight:=Flight.new()
 var _air_return_reason:=""
 var _jump_arrived:=false
@@ -54,13 +56,18 @@ func _work_update_attack_debug() -> void:
 		debug_label.visible=false
 		return
 	debug_label.visible=true
-	var distance:=Walker.horizontal(global_position,player.global_position) if player_alive() else INF
+	var visible_goal: Vector3=last_seen_position if not _search_behavior.phase.is_empty() else (player.global_position if player_alive() else global_position)
+	var distance:=Walker.horizontal(global_position,visible_goal) if player_alive() else INF
 	var blocked: String=_pursuit_route.reason if debug_unlimited_pursuit and not _pursuit_route.reason.is_empty() else walker.blocked_reason
 	debug_label.text=State.keys()[state]+"  PURSUIT: "+("UNLIMITED" if debug_unlimited_pursuit else "BOUNDED")+"\nDIST: %.2fm  MOVE: %s" % [distance,blocked]+"\nSTART(now): "+_current_readiness()+"\nPOSITION: "+_pursuit_route.position_reason+"\nBLOCKER: "+attack_blocker+"\nABORT(last): "+attack_abort_reason+"\nHIT(last): "+attack_hit_reason+" "+last_hit_blocker
+	debug_label.text+="\nACTION: "+(_search_behavior.phase if not _search_behavior.phase.is_empty() else ("DETOUR" if not _pursuit_route.waypoints.is_empty() or not _pursuit_route._search.is_empty() else State.keys()[state]))
+	debug_label.text+="\nROUTE: "+_pursuit_route.reason
+	if not _search_behavior.phase.is_empty(): debug_label.text+="\nMEMORY: %s  TRAVEL: %.2fs  AREA: %.2fs" % [last_seen_position,_search_behavior.travel_elapsed,maxf(0.0,_search_behavior.area_elapsed)]
 
 func _current_readiness() -> String:
 	if not player_alive(): return "NO_TARGET"
 	if state==State.DEAD: return "DEAD"
+	if not _search_behavior.phase.is_empty(): return _search_behavior.phase
 	if walker.busy(): return "ACTOR_AIRBORNE"
 	if state==State.WINDUP:
 		if not aim_locked: return "WINDUP_TRACKING"
@@ -204,9 +211,11 @@ func _work_physics_process(delta: float) -> void:
 	elapsed += delta
 	walker.advance_cooldown(delta)
 	cooldown = maxf(0.0, cooldown - delta)
-	var distance := global_position.distance_to(player.global_position) if player_alive() else INF
-	if player_alive() and active_attack.weapon!=null: distance=Walker.horizontal(global_position,player.global_position)
 	var sight := has_sight()
+	var memory_only: bool=not sight and not debug_unlimited_pursuit and state in [State.CHASE,State.RECOVERY]
+	var known_position: Vector3=last_seen_position if memory_only else (player.global_position if player_alive() else global_position)
+	var distance := global_position.distance_to(known_position) if player_alive() else INF
+	if player_alive() and active_attack.weapon!=null: distance=Walker.horizontal(global_position,known_position)
 	_seen_now=sight
 	_distance_now=distance
 	_perception_frame=Engine.get_physics_frames()
@@ -226,22 +235,38 @@ func _work_physics_process(delta: float) -> void:
 	if sight:
 		last_seen_position = player.global_position
 		_last_seen_valid = true
-	var beyond_leash := not inside_home(player.global_position) if player_alive() else true
+	if (sight or debug_unlimited_pursuit) and not _search_behavior.phase.is_empty():
+		_search_behavior.reset()
+		_pursuit_route.reset()
+	var searching: bool=memory_only and player_alive() and _last_seen_valid
+	var beyond_leash := not inside_home(known_position) if player_alive() else true
 	beyond_leash = beyond_leash or not inside_home(global_position)
 	var committed := _projectile_cast_committed() or (aim_locked and state in [State.WINDUP,State.DASH_APPROACH,State.ATTACK,State.DASH_RETURN])
 	if committed and beyond_leash: _return_after_recovery = true
-	var leashed := (beyond_leash or sight_lost >= settings.sight_loss_seconds) and not committed and not (debug_unlimited_pursuit and player_alive())
+	var leashed := (beyond_leash or (sight_lost >= settings.sight_loss_seconds and not searching)) and not committed and not (debug_unlimited_pursuit and player_alive())
 	# Complete an attack return before going home; never replace its anchor.
 	if leashed and state in [State.CHASE, State.WINDUP]: _set_state(State.RETURN)
 	elif leashed and state in [State.DASH_APPROACH, State.ATTACK, State.DASH_RETURN]:
 		_return_after_recovery = true
 		if state != State.DASH_RETURN: _begin_attack_return("Leash or sight lost")
 	if leashed and state == State.RECOVERY and not _return_after_recovery: _set_state(State.RETURN)
+	if searching and state in [State.CHASE,State.RECOVERY]:
+		var search_started:=Work.start(self)
+		PlanningBudget.begin()
+		var continues: bool=_search_behavior.tick(self,delta)
+		PlanningBudget.end()
+		Work.finish(self,"enemy.search_tick",search_started)
+		if not continues and (state!=State.RECOVERY or elapsed>=active_attack.recovery_seconds): _set_state(State.RETURN)
 	if walker.busy() and state in [State.CHASE,State.RECOVERY,State.RETURN]:
 		if locomotion_held() and not walker.airborne(): velocity = Vector3.ZERO
 		else:
 			walker.continue_climb(delta)
 			_face_walk_velocity()
+		return
+	if searching and state in [State.CHASE,State.RECOVERY]:
+		_search_step(delta)
+		if state==State.RECOVERY and elapsed>=active_attack.recovery_seconds: _set_state(State.CHASE)
+		_update_telegraph_position()
 		return
 	match state:
 		State.IDLE:
@@ -261,7 +286,7 @@ func _work_physics_process(delta: float) -> void:
 			elif distance <= engagement_range() and cooldown <= 0.0 and melee_available: _start_windup()
 			elif distance > engagement_range() or not melee_available:
 				if not melee_available and distance<=engagement_range(): _walk_to_attack_position(delta)
-				elif _can_pursue() and attack_count > 0: _pursuit_step(delta)
+				elif _can_pursue() and attack_count > 0: _walk_towards(player.global_position,delta,clampf(settings.pursuit_speed,0.1,10.0))
 				else: _walk_towards(player.global_position, delta)
 			elif _can_pursue() and attack_count > 0: _post_attack_step(delta)
 			else: velocity = Vector3.ZERO # Stopped cooldown uses Idle, not a stale walk velocity.
@@ -378,7 +403,7 @@ func _walk_towards(at: Vector3, delta: float, speed_override: float = -1.0, loca
 	if walker.retry>0.0 and not walker.busy():
 		walker.retry=maxf(0.0,walker.retry-delta)
 		return # Do not run route/jump preflights while the mover is waiting.
-	var needs_route: bool=debug_unlimited_pursuit or (state==State.CHASE and (walker.blocked or _pursuit_route.target.is_finite()))
+	var needs_route: bool=debug_unlimited_pursuit or state==State.CHASE
 	if not local_goal and needs_route and player_alive() and state in [State.CHASE,State.RECOVERY]:
 		at=_pursuit_route.goal(self,at,delta)
 		if not at.is_finite(): return
@@ -396,6 +421,20 @@ func _walk_to_attack_position(delta: float) -> void:
 	var goal: Vector3=_pursuit_route.combat_goal(self,delta)
 	if _pursuit_route.positioning(): _eligibility_job={}
 	if goal.is_finite(): _walk_towards(goal,delta,-1.0,true)
+
+func _search_step(delta: float) -> void:
+	velocity=Vector3.ZERO
+	if _search_behavior.phase=="DONE" or locomotion_held(): return
+	if walker.retry>0.0:
+		walker.retry=maxf(0.0,walker.retry-delta); return
+	var started:=Work.start(self)
+	PlanningBudget.begin()
+	var destination: Vector3=_search_behavior.goal(self)
+	var route:=Vector3.INF
+	if destination.is_finite(): route=_pursuit_route.goal(self,destination,delta,true,false,_search_behavior.stand_off(self) if _search_behavior.area_elapsed<0.0 else 0.0)
+	PlanningBudget.end()
+	Work.finish(self,"enemy.search",started)
+	if route.is_finite(): _walk_towards(route,delta,-1.0,true)
 
 func firing_position_clear(at: Vector3) -> bool:
 	if not player_alive(): return false
@@ -953,6 +992,7 @@ func _set_state(next: State) -> void:
 		_aim_plan_ready = false
 	if next not in [State.CHASE,State.RECOVERY]:
 		_pursuit_route.reset()
+		_search_behavior.reset()
 	_availability_until=0
 	_availability_frame=-1
 	if next!=State.CHASE: _eligibility_job={}

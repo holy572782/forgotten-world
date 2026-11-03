@@ -1,7 +1,7 @@
 extends RefCounted
 const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
 const PlanningBudget=preload("res://scripts/combat/planning_budget.gd")
-## Bounded local A* for debug pursuit and CHASE attack positioning.
+## Bounded local A* shared by pursuit, last-seen search and attack positioning.
 ## Every edge uses the existing safe walk probe;
 ## actual motion is still owned by EnemyWalk, including its native jump checks.
 const CELL:=0.75
@@ -50,9 +50,14 @@ func _reset_route() -> void:
 	reason=""
 	_probe_stage=-1
 
-func _work_goal(actor: CharacterBody3D, at: Vector3, delta: float, allow_search: bool=true) -> Vector3:
+func _work_goal(actor: CharacterBody3D, at: Vector3, delta: float, allow_search: bool=true, live_target: bool=true, stand_off: float=0.0) -> Vector3:
 	retry=maxf(0.0,retry-delta)
 	var walker=actor.walker
+	# Consume reached points before cached intent, and retain a proven detour
+	# until it ends or becomes blocked. A clear first cell is not a clear route.
+	while not waypoints.is_empty() and walker.horizontal(actor.global_position,waypoints[0])<0.18:
+		waypoints.pop_front()
+		_decision_until=0
 	var moved:=actor.global_position.distance_to(_decision_origin)>=0.2 or at.distance_to(_decision_target)>=0.35
 	if moved:
 		_probe_stage=-1
@@ -78,8 +83,8 @@ func _work_goal(actor: CharacterBody3D, at: Vector3, delta: float, allow_search:
 	while not waypoints.is_empty() and walker.horizontal(actor.global_position,waypoints[0])<0.18: waypoints.pop_front()
 	var offset:=Vector3(at.x-actor.global_position.x,0,at.z-actor.global_position.z)
 	var safe_goal:=at
-	if walker.horizontal(at,actor.player.global_position)<0.1:
-		var gap: float=actor.get_node("CollisionShape3D").shape.radius+actor.player.get_node("CollisionShape3D").shape.radius+0.15
+	if stand_off>0.0 or (live_target and walker.horizontal(at,actor.player.global_position)<0.1):
+		var gap: float=stand_off if stand_off>0.0 else actor.get_node("CollisionShape3D").shape.radius+actor.player.get_node("CollisionShape3D").shape.radius+0.15
 		safe_goal=actor.global_position+offset.normalized()*maxf(0.0,offset.length()-gap)
 	var safe_offset:=Vector3(safe_goal.x-actor.global_position.x,0,safe_goal.z-actor.global_position.z)
 	while _probe_stage<4:
@@ -91,8 +96,9 @@ func _work_goal(actor: CharacterBody3D, at: Vector3, delta: float, allow_search:
 		var clear:=false
 		match stage:
 			0:
-				if not _mover_stalled(actor): clear=walker.can_reach(actor.global_position+safe_offset.normalized()*minf(CELL,safe_offset.length()))
-			1: clear=not walker._jump_plan(safe_offset.normalized()).is_empty()
+				if not _mover_stalled(actor) and (waypoints.is_empty() or safe_offset.length()<=CELL): clear=walker.can_reach(actor.global_position+safe_offset.normalized()*minf(CELL,safe_offset.length()))
+			1:
+				if waypoints.is_empty(): clear=not walker._jump_plan(safe_offset.normalized()).is_empty()
 			2:
 				if not waypoints.is_empty():
 					if walker.can_reach(waypoints[0]): return _remember(waypoints[0])
@@ -190,10 +196,10 @@ func _work_advance_search(actor: CharacterBody3D) -> void:
 		_search.previous[key]=current
 		if not _search.open.has(key): _search.open.append(key)
 
-func goal(actor: CharacterBody3D, at: Vector3, delta: float, allow_search: bool=true) -> Vector3:
+func goal(actor: CharacterBody3D, at: Vector3, delta: float, allow_search: bool=true, live_target: bool=true, stand_off: float=0.0) -> Vector3:
 	var started:=Work.start(actor)
 	PlanningBudget.begin()
-	var result: Vector3=_work_goal(actor,at,delta,allow_search)
+	var result: Vector3=_work_goal(actor,at,delta,allow_search,live_target,stand_off)
 	PlanningBudget.end()
 	Work.finish(actor,"route.goal",started)
 	return result

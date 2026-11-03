@@ -18,6 +18,11 @@ const Visual = preload("res://scripts/enemies/enemy_visual_data.gd")
 @export var leash_radius := 9.0
 @export_range(0.5, 5.0, 0.05) var sight_loss_seconds := 1.75
 @export_range(0.1, 2.0, 0.05) var leash_reentry_margin := 0.3
+@export_group("Lost target search")
+## Arrival starts this timer; travelling has its own bounded deadline.
+@export_range(0.0, 10.0, 0.1) var search_duration_seconds := 2.0
+@export_range(0.0, 4.0, 0.1) var search_radius := 2.0
+@export_range(2.0, 20.0, 0.5) var search_travel_timeout_seconds := 8.0
 @export_group("Attack warning presentation")
 @export var attack_warning_flash_enabled := true
 @export var attack_warning_flash_color := Color(1.0, 0.15, 0.1, 1.0)
