@@ -90,7 +90,8 @@ func _work_goal(actor: CharacterBody3D, at: Vector3, delta: float, allow_search:
 		_probe_stage+=1
 		var clear:=false
 		match stage:
-			0: clear=walker.can_reach(actor.global_position+safe_offset.normalized()*minf(CELL,safe_offset.length()))
+			0:
+				if not _mover_stalled(actor): clear=walker.can_reach(actor.global_position+safe_offset.normalized()*minf(CELL,safe_offset.length()))
 			1: clear=not walker._jump_plan(safe_offset.normalized()).is_empty()
 			2:
 				if not waypoints.is_empty():

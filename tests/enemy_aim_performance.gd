@@ -27,6 +27,10 @@ func _case(terrain: String, kinds: Array, unlimited: bool) -> void:
 	var selector: Node = main.get_node("PracticeSelector")
 	var config: Resource = selector.performance_diagnostics
 	selector.set_process(false)
+	if "--empty" in OS.get_cmdline_user_args():
+		for child in main.get_children():
+			if child is StaticBody3D and child.has_node("Targetable"): child.free()
+		await _ticks(2)
 	config.capture_timings = true
 	var timer = TimerSource.PhysicsTimer.new()
 	main.add_child(timer)
@@ -96,7 +100,11 @@ func _case(terrain: String, kinds: Array, unlimited: bool) -> void:
 	frames.sort(); physics.sort(); timer.samples.sort()
 	var attacks := 0
 	for actor in actors: attacks += actor.attack_count
+	var static_targets:=0
+	for child in main.get_children():
+		if child is StaticBody3D and child.has_node("Targetable"): static_targets+=1
 	var row: Dictionary = {"terrain":terrain,"kinds":kinds,"unlimited":unlimited,"seconds":duration,"fps":frames.size()/duration,"frame_max_ms":frames[-1],"frame_p95_ms":frames[int(frames.size()*0.95)],"physics_p95_ms":physics[int(physics.size()*0.95)],"node_physics_p95_ms":timer.samples[int(timer.samples.size()*0.95)],"attacks":attacks,"states":states,"timings":config.timings.duplicate(true)}
+	row["static_targets"]=static_targets
 	rows.append(row)
 	print("AIM PERF ",JSON.stringify(row))
 	main.free()
@@ -107,8 +115,12 @@ func _run() -> void:
 	root.size = Vector2i(1152,720)
 	for unlimited in [false,true]:
 		for terrain in ["flat","ramp","stairs"]:
-			for kind in [0,1]: await _case(terrain,[kind],unlimited)
-		await _case("flat",[0,1],unlimited)
+			if "--empty" in OS.get_cmdline_user_args(): await _case(terrain,[],unlimited)
+			elif "--regression" in OS.get_cmdline_user_args():
+				for kinds in [[],[0],[1],[0,1]]: await _case(terrain,kinds,unlimited)
+			else:
+				for kind in [0,1]: await _case(terrain,[kind],unlimited)
+		if not "--regression" in OS.get_cmdline_user_args() and not "--empty" in OS.get_cmdline_user_args(): await _case("flat",[0,1],unlimited)
 	var args := OS.get_cmdline_user_args()
 	var label: String = args[args.find("--label")+1] if args.has("--label") else "sample"
 	FileAccess.open("res://.godot/aim_performance_"+label+".json",FileAccess.WRITE).store_string(JSON.stringify(rows,"  "))

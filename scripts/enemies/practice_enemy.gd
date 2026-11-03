@@ -378,7 +378,8 @@ func _walk_towards(at: Vector3, delta: float, speed_override: float = -1.0, loca
 	if walker.retry>0.0 and not walker.busy():
 		walker.retry=maxf(0.0,walker.retry-delta)
 		return # Do not run route/jump preflights while the mover is waiting.
-	if not local_goal and debug_unlimited_pursuit and player_alive() and state in [State.CHASE,State.RECOVERY]:
+	var needs_route: bool=debug_unlimited_pursuit or (state==State.CHASE and (walker.blocked or _pursuit_route.target.is_finite()))
+	if not local_goal and needs_route and player_alive() and state in [State.CHASE,State.RECOVERY]:
 		at=_pursuit_route.goal(self,at,delta)
 		if not at.is_finite(): return
 	var direction := _horizontal_direction(at) # Preserve intent before a one-tick goal is consumed.
@@ -425,6 +426,12 @@ func _ranged_chase_step(delta: float, distance: float, sight: bool, allow_attack
 	if distance > reach or not firing_clear: _ranged_pursuit_active = true
 	elif distance <= reach - margin: _ranged_pursuit_active = false
 	if not _ranged_pursuit_active: return
+	if state==State.CHASE:
+		# Route toward the real target, not a one-tick point a few centimetres
+		# ahead. A* would otherwise regard that point as already reached when a
+		# ramp edge blocks direct movement. Range/shot checks above still stop us.
+		_walk_to_attack_position(delta)
+		return
 	var remaining := maxf(0.0, distance - (reach-margin))
 	if not firing_clear and distance <= reach:
 		if state==State.CHASE:

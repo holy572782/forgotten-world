@@ -25,7 +25,7 @@ class FlightTrace extends Node:
 			peak=maxf(peak,actor.global_position.y-data.start.y)
 			rising=rising or actor.velocity.y>0.1
 			falling=falling or actor.velocity.y < -0.1
-			var expected: Vector3=walker.Arc.position_at(data.start,data.direction,data.speed,data.takeoff,data.gravity,walker.jump_elapsed)
+			var expected: Vector3=walker.Arc.position_at(data.start,data.direction,data.speed,data.takeoff,data.gravity,walker.jump_elapsed,data.duration,int(data.get("curve",0)))
 			error=maxf(error,expected.distance_to(actor.global_position))
 			wrong_state=wrong_state or actor.state not in [actor.State.CHASE,actor.State.RECOVERY,actor.State.RETURN]
 			var horizontal:=Vector3(actor.velocity.x,0,actor.velocity.z)

@@ -864,3 +864,9 @@ F5の聴感・演出の自然さと最終速度はユーザー確認待ち。詳
 `enemy_edge_attack`は実mainと正式な剣／魔法Resourceで、両敵×通常・無制限×平地／坂下端・中央・上端／階段上下・側面の32配置を検査する。対象後方の壁、認識はできるが手元が遮られる壁、中心線だけ通る球半径の障害物、左右迂回後の実HP減少、閉じた壁内の安全停止、現在の診断と過去の結果・PENDING/STALLEDを独立に確認する。`--quick --fps30`で核となる遮蔽／迂回／停止を再確認する。
 旧剣／ジャンプ／坂接触の検査は、新仕様の「動作開始は許可・実命中で遮断」「剣が通る低段差と空隙は身体移動と区別」へ更新する。壁／床を横切るダメージと、身体が危険な経路へ進むことは引き続き拒否する。主人公の旧判定は変更しない。`pursuit_budget`の制御スタブにhome述語を追加し、同じ予算上限を検査する。
 `enemy_aim_performance --edge`で実Player更新と正式Resource／交戦状態を維持し、14配置のFPS・物理p95と関数時間を同じスクリプトで前後測定する。照準／下り追跡・通常ジャンプと主人公の防御／連撃を回帰し、Godot import／実main起動を確認する。F5と長時間／多数敵は自動確認と区別する。結果・生データは `m09_enemy_edge_attack_audit.md`。
+
+## M09坂の透明描画・密着階段上り・坂道下り（2026-11-03、ADR-058）
+`enemy_faded_terrain`は実敵2種×坂前後4位置×カメラ2方向を画素比較し、敵alpha=1.0・不自然な地形の上書き0を確認する。不透明な壁は遮蔽し、実際に手前の半透明壁は合成されること、地形fadeの影用プロキシ／collisionと正確な復元も確認する。既存target_marker_depth／weapon_depth／m04_occlusionで共通Shaderの描画を回帰する。
+`enemy_ramp_stair_regression`は正式射程・実mainで通常追跡と移動単独を分ける。中央の階段／坂上下、密着段差・斜め上り、坂の縁から内向き／外向きの接近を、両敵・通常／無制限で検査する。移動単独で危険な坂側面へ進まないことと、AIが安全に迂回して攻撃することを別々に検査する。`--focus`は再現地点、`--performance`は実Player更新込みの同地点測定。再試行の待機が実時間なので、早送りheadlessの未完了を実描画・通常時間の停止と同一視しない。
+既存enemy_auto_jumpで0.25／0.5／1m・天井／壁・床なし／上限／home／Cooldown／1.1m頂点を回帰する。軌道の照会と実移動はJumpArcの同一curveを使う。enemy_descent・enemy_aim_lock・enemy_edge_attackと主人公の連撃／防御・高低差操作／魔法を回帰し、通常射程・ratio0.4／0.5を維持する。
+`enemy_aim_performance --edge --regression`は実Player更新あり、攻撃AIなし／雑兵／魔導士／両敵×平地／坂／階段×通常／無制限の24配置（既存静止敵4体は共通）でFPS・Physics p95を前後比較する。`--empty`では静止敵も除いた本当の敵なし6配置を別途測定する。最終Godot import／main起動も確認する。採用した実行条件・測定値・制約とF5は `m09_ramp_stair_visibility_audit.md` に記録する。

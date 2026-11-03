@@ -1,5 +1,7 @@
 shader_type spatial;
-render_mode unshaded, cull_disabled;
+// Depth-texture readers render in the late pass. Keep the corrected capsule
+// depth there too, so a faded ramp behind the actor cannot blend over its pixels.
+render_mode unshaded, cull_disabled, depth_draw_always;
 
 uniform sampler2D sprite_sheet : source_color, filter_nearest, repeat_disable;
 uniform sampler2D scene_depth : hint_depth_texture, repeat_disable, filter_nearest;

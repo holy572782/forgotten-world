@@ -12,12 +12,14 @@ static func position_at(start: Vector3, direction: Vector3, horizontal_speed: fl
 	var horizontal_time:=time
 	if duration>0.0 and curve!=0:
 		var phase:=clampf(time/duration,0.0,1.0)
-		horizontal_time=duration*(phase*phase if curve>0 else 1.0-(1.0-phase)*(1.0-phase))
+		# A close-riser hop initially rises almost vertically, then approaches
+		# the configured horizontal speed without ever exceeding it.
+		horizontal_time=duration*(phase-0.25*tanh(phase/0.25) if curve==2 else (phase*phase if curve>0 else 1.0-(1.0-phase)*(1.0-phase)))
 	return start+direction*horizontal_speed*horizontal_time+Vector3.UP*(takeoff_speed*time-0.5*g*time*time)
 
 static func clear(body: CharacterBody3D, start: Vector3, direction: Vector3, horizontal_speed: float, takeoff_speed: float, g: float, duration: float, curve: int=0) -> bool:
 	# Chords deviate less than 0.5mm from the parabola, including fast settings.
-	var acceleration:=Vector2(g,2.0*horizontal_speed/maxf(0.01,duration) if curve!=0 else 0.0).length()
+	var acceleration:=Vector2(g,(4.0 if curve==2 else 2.0)*horizontal_speed/maxf(0.01,duration) if curve!=0 else 0.0).length()
 	var interval:=minf(0.01,sqrt(0.004/maxf(0.01,acceleration)))
 	var count:=maxi(1,ceili(duration/interval))
 	var previous:=start

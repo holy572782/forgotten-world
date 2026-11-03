@@ -66,6 +66,28 @@ func _support(at: Vector3, flat: bool = false) -> bool:
 		if flat and absf(rise)>0.04: return false
 	return true
 
+func _walk_support(at: Vector3, from: Vector3) -> bool:
+	if _support(at): return true
+	# A capsule can stand beside a ledge with part of its footprint over air.
+	# Permit only a small step INWARD from that existing support; never let this
+	# recovery rule lead outward over the edge or across a gap.
+	var motion:=Vector3(at.x-from.x,0,at.z-from.z)
+	if motion.length()>0.16 or motion.is_zero_approx(): return false
+	var center:=_sample(at)
+	var previous:=_sample(from)
+	if center.is_empty() or previous.is_empty(): return false
+	# Follow the same real supporting plane, including a slope. A new ledge or
+	# discontinuous floor is not an inward-recovery step.
+	if absf((center.position-previous.position).dot(previous.normal))>0.04 or center.normal.dot(previous.normal)<0.95: return false
+	var radius: float=actor.get_node("CollisionShape3D").shape.radius*0.95
+	var found:=false
+	for offset in [Vector3.LEFT*radius,Vector3.RIGHT*radius,Vector3.FORWARD*radius,Vector3.BACK*radius]:
+		var support:=_sample(from+offset)
+		if not support.is_empty() and absf(support.position.y-previous.position.y)<=config.maximum_step_down: continue
+		found=true
+		if motion.dot(offset)>=-0.000001: return false
+	return found
+
 func _motion_clear(start: Vector3, motion: Vector3, floor_ok: bool = false) -> bool:
 	var collision := KinematicCollision3D.new()
 	if not actor.test_move(Transform3D(actor.global_basis,start),motion,collision,actor.safe_margin,false,8): return true
@@ -104,7 +126,7 @@ func _work_can_reach(at: Vector3, check_clearance: bool = true, from: Vector3 = 
 		# that height, not from inside the upper tread's solid riser.
 		var support_at:=next
 		if rise < -0.04: support_at.y=current.y
-		if not _support(support_at): return false
+		if not _walk_support(support_at,current): return false
 		if next.y < current.y-0.04:
 			# A downward diagonal cuts through the convex stair lip while the
 			# capsule is still supported by the upper tread. Walk off at the
@@ -183,14 +205,16 @@ func _work_jump_plan(direction: Vector3) -> Dictionary:
 		seen[key]=true
 		if rise>config.maximum_step_up+0.01 or rise+0.003>height: continue
 		var duration:=Arc.flight_time(height,takeoff,rise+0.003)
-		var landing:=start+direction*speed*duration
-		landing.y=start.y+rise+0.003
-		var floor_at:=floor_hit(actor,landing,0.02,0.08,config.max_slope_degrees)
-		if floor_at.is_empty() or absf(floor_at.position.y-hit.position.y)>0.02: continue
-		if not _support(Vector3(landing.x,floor_at.position.y,landing.z),true) or not _jump_corridor(landing): continue
 		var g:=Arc.gravity(height,takeoff)
-		if not Arc.clear(actor,start,direction,speed,takeoff,g,duration): continue
-		return {"start":start,"direction":direction,"speed":speed,"takeoff":takeoff,"gravity":g,"duration":duration,"landing":landing,"cooldown":config.jump_cooldown_seconds,"height":height}
+		for curve in [0,2]:
+			# The original arc wins whenever safe. A close-riser alternative gains
+			# height first, with the same apex/takeoff and capped horizontal speed.
+			var landing:=Arc.position_at(start,direction,speed,takeoff,g,duration,duration,curve)
+			var floor_at:=floor_hit(actor,landing,0.02,0.08,config.max_slope_degrees)
+			if floor_at.is_empty() or absf(floor_at.position.y-hit.position.y)>0.02: continue
+			if not _support(Vector3(landing.x,floor_at.position.y,landing.z),true) or not _jump_corridor(landing): continue
+			if not Arc.clear(actor,start,direction,speed,takeoff,g,duration,curve): continue
+			return {"start":start,"direction":direction,"speed":speed,"takeoff":takeoff,"gravity":g,"duration":duration,"landing":landing,"cooldown":config.jump_cooldown_seconds,"height":height,"curve":curve}
 	return {}
 
 func _begin_jump(plan: Dictionary) -> void:
@@ -240,7 +264,7 @@ func _advance_air(delta: float) -> void:
 		return
 	if motion_mode==Motion.JUMP:
 		jump_elapsed=minf(jump_elapsed+delta,jump_data.duration)
-		var next:=Arc.position_at(jump_data.start,jump_data.direction,jump_data.speed,jump_data.takeoff,jump_data.gravity,jump_elapsed)
+		var next:=Arc.position_at(jump_data.start,jump_data.direction,jump_data.speed,jump_data.takeoff,jump_data.gravity,jump_elapsed,jump_data.duration,int(jump_data.get("curve",0)))
 		var collision:=actor.move_and_collide(next-before)
 		actor.velocity=(actor.global_position-before)/maxf(delta,0.0001)
 		if collision!=null:
@@ -388,7 +412,7 @@ func _work_walk(at: Vector3, delta: float, speed: float) -> void:
 	if _rise_ahead>config.walking_step_height: speed=minf(speed,1.5)
 	var motion:=direction*minf(speed*delta,offset.length())
 	var next:=actor.global_position+motion
-	if not _within_walk_bounds(next) or not _support(next):
+	if not _within_walk_bounds(next) or not _walk_support(next,actor.global_position):
 		blocked=true
 		blocked_reason="HOME_BOUNDARY" if not _within_walk_bounds(next) else "NO_WALKABLE_SUPPORT"
 		retry=config.blocked_retry_seconds
