@@ -62,7 +62,8 @@ func _work_update_attack_debug() -> void:
 	debug_label.text=State.keys()[state]+"  PURSUIT: "+("UNLIMITED" if debug_unlimited_pursuit else "BOUNDED")+"\nDIST: %.2fm  MOVE: %s" % [distance,blocked]+"\nSTART(now): "+_current_readiness()+"\nPOSITION: "+_pursuit_route.position_reason+"\nBLOCKER: "+attack_blocker+"\nABORT(last): "+attack_abort_reason+"\nHIT(last): "+attack_hit_reason+" "+last_hit_blocker
 	debug_label.text+="\nACTION: "+(_search_behavior.phase if not _search_behavior.phase.is_empty() else ("DETOUR" if not _pursuit_route.waypoints.is_empty() or not _pursuit_route._search.is_empty() else State.keys()[state]))
 	debug_label.text+="\nROUTE: "+_pursuit_route.reason
-	if not _search_behavior.phase.is_empty(): debug_label.text+="\nMEMORY: %s  TRAVEL: %.2fs  AREA: %.2fs" % [last_seen_position,_search_behavior.travel_elapsed,maxf(0.0,_search_behavior.area_elapsed)]
+	debug_label.text+="\nSTALLS: %s  LAST: %s  COST: %.2fm" % [_pursuit_route.stall_count,_pursuit_route.last_stall_reason,_pursuit_route.selected_cost]
+	if not _search_behavior.phase.is_empty(): debug_label.text+="\nMEMORY: %s  LOST: %.2f/%.2fs  AREA: %.2fs" % [last_seen_position,sight_lost,settings.lost_target_timeout_seconds,maxf(0.0,_search_behavior.area_elapsed)]
 
 func _current_readiness() -> String:
 	if not player_alive(): return "NO_TARGET"
@@ -169,9 +170,22 @@ func player_alive() -> bool:
 	return is_instance_valid(player) and player.is_inside_tree() and player.get_node("HealthComponent").current_hp > 0.0
 
 func _work_has_sight() -> bool:
+	if not player_alive(): return false
+	# Acquisition/reacquisition uses the view cone. An already visible CHASE
+	# target stays recognized outside the initial range/cone, until occluded.
+	if (state in [State.IDLE,State.RETURN] or not _search_behavior.phase.is_empty()) and not _in_view_cone(player.global_position): return false
 	if player_alive() and active_attack!=null and (active_attack.kind==AttackData.Kind.PROJECTILE or (active_attack.weapon!=null and active_attack.weapon.hit_height_up>=0.0)):
 		return _recognized_from(global_position,player.global_position)
 	return player_alive() and Path.sight(self, player.global_position)
+
+func _in_view_cone(at: Vector3) -> bool:
+	var offset:=at-global_position
+	var horizontal:=Vector3(offset.x,0.0,offset.z)
+	if not horizontal.is_zero_approx() and facing.dot(horizontal.normalized())<cos(deg_to_rad(settings.horizontal_field_of_view_degrees*0.5))-0.00001: return false
+	return absf(atan2(offset.y,horizontal.length()))<=deg_to_rad(settings.vertical_field_of_view_degrees*0.5)+0.00001
+
+func _can_acquire(sight: bool, distance: float) -> bool:
+	return player_alive() and sight and distance<=settings.detection_radius and inside_home(player.global_position,settings.leash_reentry_margin)
 
 func _recognized_from(from: Vector3, at: Vector3) -> bool:
 	var space:=get_world_3d().direct_space_state
@@ -243,7 +257,7 @@ func _work_physics_process(delta: float) -> void:
 	beyond_leash = beyond_leash or not inside_home(global_position)
 	var committed := _projectile_cast_committed() or (aim_locked and state in [State.WINDUP,State.DASH_APPROACH,State.ATTACK,State.DASH_RETURN])
 	if committed and beyond_leash: _return_after_recovery = true
-	var leashed := (beyond_leash or (sight_lost >= settings.sight_loss_seconds and not searching)) and not committed and not (debug_unlimited_pursuit and player_alive())
+	var leashed := (beyond_leash or (sight_lost >= settings.lost_target_timeout_seconds and not searching)) and not committed and not (debug_unlimited_pursuit and player_alive())
 	# Complete an attack return before going home; never replace its anchor.
 	if leashed and state in [State.CHASE, State.WINDUP]: _set_state(State.RETURN)
 	elif leashed and state in [State.DASH_APPROACH, State.ATTACK, State.DASH_RETURN]:
@@ -256,7 +270,10 @@ func _work_physics_process(delta: float) -> void:
 		var continues: bool=_search_behavior.tick(self,delta)
 		PlanningBudget.end()
 		Work.finish(self,"enemy.search_tick",search_started)
-		if not continues and (state!=State.RECOVERY or elapsed>=active_attack.recovery_seconds): _set_state(State.RETURN)
+		if not continues:
+			# Start going home at the deadline without making the next attack early.
+			if state==State.RECOVERY: cooldown=maxf(cooldown,active_attack.recovery_seconds-elapsed)
+			_set_state(State.RETURN)
 	if walker.busy() and state in [State.CHASE,State.RECOVERY,State.RETURN]:
 		if locomotion_held() and not walker.airborne(): velocity = Vector3.ZERO
 		else:
@@ -270,7 +287,7 @@ func _work_physics_process(delta: float) -> void:
 		return
 	match state:
 		State.IDLE:
-			if (debug_unlimited_pursuit and player_alive()) or (sight and distance <= settings.detection_radius and inside_home(player.global_position,settings.leash_reentry_margin)): _set_state(State.CHASE)
+			if (debug_unlimited_pursuit and player_alive()) or _can_acquire(sight,distance): _set_state(State.CHASE)
 		State.CHASE:
 			var melee_available:=false
 			var positioning:=_pursuit_route.positioning()
@@ -279,7 +296,7 @@ func _work_physics_process(delta: float) -> void:
 			if not sight:
 				velocity = Vector3.ZERO
 				if debug_unlimited_pursuit and player_alive(): _walk_to_attack_position(delta)
-				elif _last_seen_valid and sight_lost < settings.sight_loss_seconds: _walk_towards(last_seen_position,delta)
+				elif _last_seen_valid and sight_lost < settings.lost_target_timeout_seconds: _walk_towards(last_seen_position,delta)
 			elif active_attack.kind == AttackData.Kind.PROJECTILE: _ranged_chase_step(delta, distance, sight, true)
 			elif positioning and not melee_available: _walk_to_attack_position(delta)
 			elif distance<=engagement_range() and not melee_available and attack_start_reason=="PLANNING_PENDING": velocity=Vector3.ZERO
@@ -308,7 +325,11 @@ func _work_physics_process(delta: float) -> void:
 				_stop_pursuit()
 			if elapsed >= active_attack.recovery_seconds: _set_state(State.RETURN if _return_after_recovery else State.CHASE)
 		State.RETURN:
-			if global_position.distance_to(home) <= 0.04: _set_state(State.IDLE)
+			if _can_acquire(sight,distance):
+				walker.returning=false
+				_return_after_recovery=false
+				_set_state(State.CHASE)
+			elif global_position.distance_to(home) <= 0.04: _set_state(State.IDLE)
 			else: _walk_towards(walker.home_goal(), delta)
 	_update_telegraph_position()
 
@@ -399,32 +420,39 @@ func locomotion_held() -> bool:
 
 func _walk_towards(at: Vector3, delta: float, speed_override: float = -1.0, local_goal: bool=false) -> void:
 	velocity = Vector3.ZERO
-	if locomotion_held(): return # Chase waits but its attack state machine still runs.
+	if locomotion_held():
+		_pursuit_route.pause_progress(); return # Combat owns this pause.
 	if walker.retry>0.0 and not walker.busy():
 		walker.retry=maxf(0.0,walker.retry-delta)
 		return # Do not run route/jump preflights while the mover is waiting.
 	var needs_route: bool=debug_unlimited_pursuit or state==State.CHASE
 	if not local_goal and needs_route and player_alive() and state in [State.CHASE,State.RECOVERY]:
 		at=_pursuit_route.goal(self,at,delta)
-		if not at.is_finite(): return
+		if not at.is_finite():
+			_pursuit_route.planning_wait(); return
 	var direction := _horizontal_direction(at) # Preserve intent before a one-tick goal is consumed.
 	var speed := settings.chase_speed if speed_override < 0.0 else speed_override
+	var before:=global_position
 	walker.walk(at,delta,speed)
+	if state in [State.CHASE,State.RECOVERY]: _pursuit_route.observe_move(self,at,before,delta)
 	_face_walk_velocity(direction)
 
 func _walk_to_attack_position(delta: float) -> void:
 	velocity=Vector3.ZERO
-	if locomotion_held(): return
+	if locomotion_held():
+		_pursuit_route.pause_progress(); return
 	if walker.retry>0.0:
 		walker.retry=maxf(0.0,walker.retry-delta)
 		return
 	var goal: Vector3=_pursuit_route.combat_goal(self,delta)
 	if _pursuit_route.positioning(): _eligibility_job={}
 	if goal.is_finite(): _walk_towards(goal,delta,-1.0,true)
+	else: _pursuit_route.planning_wait()
 
 func _search_step(delta: float) -> void:
 	velocity=Vector3.ZERO
-	if _search_behavior.phase=="DONE" or locomotion_held(): return
+	if _search_behavior.phase=="DONE" or locomotion_held():
+		_pursuit_route.pause_progress(); return
 	if walker.retry>0.0:
 		walker.retry=maxf(0.0,walker.retry-delta); return
 	var started:=Work.start(self)
@@ -435,6 +463,7 @@ func _search_step(delta: float) -> void:
 	PlanningBudget.end()
 	Work.finish(self,"enemy.search",started)
 	if route.is_finite(): _walk_towards(route,delta,-1.0,true)
+	else: _pursuit_route.planning_wait()
 
 func firing_position_clear(at: Vector3) -> bool:
 	if not player_alive(): return false
@@ -982,6 +1011,7 @@ func _play_projectile_launch_sound() -> void:
 	audio.play()
 
 func _set_state(next: State) -> void:
+	_pursuit_route.pause_progress()
 	_jump_arrived=false
 	var previous := state
 	state = next

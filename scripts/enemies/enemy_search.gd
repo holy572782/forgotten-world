@@ -24,23 +24,18 @@ func tick(actor: CharacterBody3D, delta: float) -> bool:
 	if phase.is_empty():
 		anchor=actor.last_seen_position
 		phase="LAST_SEEN"
-	if phase=="DONE": return false
+	# sight_lost is the sole authoritative clock and is reset only by sight.
+	if phase=="DONE" or actor.sight_lost>=actor.settings.lost_target_timeout_seconds:
+		phase="DONE"; return false
 	if area_elapsed>=0.0:
 		area_elapsed+=delta
-		if area_elapsed>=maxf(0.0,actor.settings.search_duration_seconds):
-			phase="DONE"; return false
 		return true
 	travel_elapsed+=delta
-	phase="LAST_SEEN" if actor.sight_lost<actor.settings.sight_loss_seconds else "SEARCH_TRAVEL"
+	phase="SEARCH_TRAVEL"
 	if _center.is_finite() and not actor.walker.busy() and actor.walker.horizontal(actor.global_position,_center)<=stand_off(actor) and absf(actor.global_position.y-_center.y)<0.2 and Budget.take() and actor._recognized_from(actor.global_position,_center):
-		if actor.sight_lost>=actor.settings.sight_loss_seconds:
-			if actor.settings.search_duration_seconds<=0.0:
-				phase="DONE"; return false
-			area_elapsed=0.0; phase="SEARCH_AREA"; _goal=Vector3.INF
-			actor._pursuit_route.reset()
+		area_elapsed=0.0; phase="SEARCH_AREA"; _goal=Vector3.INF
+		actor._pursuit_route.reset()
 		return true
-	if travel_elapsed>=maxf(actor.settings.sight_loss_seconds,actor.settings.search_travel_timeout_seconds):
-		phase="DONE"; return false
 	return true
 
 func goal(actor: CharacterBody3D) -> Vector3:

@@ -44,6 +44,7 @@ func _run() -> void:
 	ai.position=origin+Vector3(1.2,0,0)
 	main.add_child(ai)
 	ai.set_physics_process(false)
+	ai.facing=ai._horizontal_direction(player.global_position) # Positive-cache trial has a genuinely visible acquired target.
 	await _ticks(3)
 	_check(ai._attack_position_available(),"Real sword has a valid initial plan")
 	for i in range(100): _check(ai._attack_position_available(),"Same-frame eligibility reuses its positive result")

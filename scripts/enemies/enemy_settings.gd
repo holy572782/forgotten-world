@@ -10,19 +10,22 @@ const Visual = preload("res://scripts/enemies/enemy_visual_data.gd")
 @export var defeat: Defeat
 @export var attack: AttackData = preload("res://resources/enemies/melee_attack.tres")
 @export var path: PathSettings = PathSettings.new()
-@export var detection_radius := 7.0
+@export_range(0.1, 30.0, 0.1) var detection_radius := 5.0
+@export_range(1.0, 360.0, 1.0) var horizontal_field_of_view_degrees := 120.0
+@export_range(1.0, 180.0, 1.0) var vertical_field_of_view_degrees := 80.0
 @export var attack_start_distance := 1.8
 @export var chase_speed := 2.0
 ## Projectile-only hysteresis; does not change the 6m attack eligibility.
 @export_range(0.0, 1.0, 0.01) var ranged_stop_margin := 0.2
 @export var leash_radius := 9.0
-@export_range(0.5, 5.0, 0.05) var sight_loss_seconds := 1.75
+@export_storage var sight_loss_seconds := 1.75 # ADR-059 saved-resource compatibility; no longer a deadline.
 @export_range(0.1, 2.0, 0.05) var leash_reentry_margin := 0.3
 @export_group("Lost target search")
-## Arrival starts this timer; travelling has its own bounded deadline.
-@export_range(0.0, 10.0, 0.1) var search_duration_seconds := 2.0
+## One deadline measured from the last actual sighting, including travel.
+@export_range(0.1, 20.0, 0.1) var lost_target_timeout_seconds := 5.0
 @export_range(0.0, 4.0, 0.1) var search_radius := 2.0
-@export_range(2.0, 20.0, 0.5) var search_travel_timeout_seconds := 8.0
+@export_storage var search_duration_seconds := 2.0 # Legacy serialized fields, not active timers.
+@export_storage var search_travel_timeout_seconds := 8.0
 @export_group("Attack warning presentation")
 @export var attack_warning_flash_enabled := true
 @export var attack_warning_flash_color := Color(1.0, 0.15, 0.1, 1.0)

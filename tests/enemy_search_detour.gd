@@ -68,7 +68,7 @@ func _reacquire(kind: int) -> void:
 
 func _unreachable(kind: int, unlimited: bool) -> void:
 	await _actor(kind,unlimited,true)
-	ai.sight_override=0; ai.settings.search_travel_timeout_seconds=2.5
+	ai.sight_override=0; ai.settings.lost_target_timeout_seconds=2.5
 	var walls: Array[Node]=[]
 	for item in [[Vector3(1,1.5,8),Vector3(0.2,3,4)],[Vector3(-1,1.5,8),Vector3(0.2,3,4)],[Vector3(0,1.5,6),Vector3(2,3,0.2)],[Vector3(0,1.5,10),Vector3(2,3,0.2)]]: walls.append(_block(item[0],item[1]))
 	await _ticks(3); ai.set_physics_process(true)
@@ -161,8 +161,8 @@ func _memory(kind: int, zero: bool=false) -> void:
 	var row: Dictionary={"case":"memory_zero" if zero else "memory","kind":kind,"furthest":furthest,"searched":searched,"area_time":area_time,"return_time":first_return,"returned":returned,"wrong_memory":wrong_memory,"attacks":ai.attack_count,"position":str(ai.global_position)}
 	search_rows.append(row); print("SEARCH TRIAL ",JSON.stringify(row))
 	if not "--probe" in OS.get_cmdline_user_args():
-		_check(furthest>(3.0 if zero else 3.4) and searched==(not zero) and returned,"Reach last seen location, search if enabled, then return")
-		_check(first_return>=ai.settings.sight_loss_seconds if zero else first_return-area_time>=1.99,"Zero skips area exploration; positive timer starts on arrival")
+		_check(furthest>3.0 and searched and returned,"Reach last seen location, use remaining search time, then return")
+		_check(absf(first_return-ai.settings.lost_target_timeout_seconds)<0.05,"One deadline starts at sight loss, independent of arrival and legacy timers")
 		_check(not wrong_memory and ai.attack_count==0,"Hidden movement neither updates memory nor authorizes attacks")
 	ai.set_physics_process(false); wall.free()
 
@@ -188,10 +188,10 @@ func _run() -> void:
 			await _air_toggle(kind)
 	if not "--probe" in OS.get_cmdline_user_args():
 		var settings=load("res://scripts/enemies/enemy_settings.gd").new()
-		settings.search_duration_seconds=1.4; settings.search_radius=1.3; settings.search_travel_timeout_seconds=6.5
+		settings.lost_target_timeout_seconds=6.5; settings.search_radius=1.3
 		_check(ResourceSaver.save(settings,"res://.godot/search_settings_saved.tres")==OK,"Search tuning is saved as an existing EnemySettings Resource")
 		var saved: Resource=ResourceLoader.load("res://.godot/search_settings_saved.tres","",ResourceLoader.CACHE_MODE_IGNORE)
-		_check(is_equal_approx(saved.search_duration_seconds,1.4) and is_equal_approx(saved.search_radius,1.3) and is_equal_approx(saved.search_travel_timeout_seconds,6.5),"Search tuning survives a fresh resource load")
+		_check(is_equal_approx(saved.lost_target_timeout_seconds,6.5) and is_equal_approx(saved.search_radius,1.3),"Search tuning survives a fresh resource load")
 	var args:=OS.get_cmdline_user_args()
 	var label: String=args[args.find("--label")+1] if args.has("--label") else "sample"
 	FileAccess.open("res://.godot/search_detour_"+label+".json",FileAccess.WRITE).store_string(JSON.stringify(search_rows,"  "))

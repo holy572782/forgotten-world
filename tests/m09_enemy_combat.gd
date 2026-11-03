@@ -40,6 +40,7 @@ func _fresh(kind: int = 0, offset: Vector3 = Vector3(1.2, 0, 0)) -> void:
 	ai.position = origin + offset
 	main.add_child(ai)
 	ai.set_physics_process(false)
+	ai.facing=ai._horizontal_direction(player.global_position) # Combat fixture starts with the hero in the new acquisition cone.
 	await _ticks(3)
 	target = ai.targetable
 

@@ -8,6 +8,7 @@
 script = ExtResource("1")
 attack = ExtResource("2")
 visual = ExtResource("3_visual")
+detection_radius = 5.0
 attack_warning_sound = ExtResource("4_warning")
 pursuit_enabled = true
 

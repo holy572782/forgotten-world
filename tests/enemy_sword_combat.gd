@@ -35,6 +35,7 @@ func _fresh_sword(distance: float) -> void:
 	ai.position = origin + Vector3(distance, 0, 0)
 	main.add_child(ai)
 	ai.set_physics_process(false)
+	ai.facing=ai._horizontal_direction(player.global_position) # Perception boundaries are tested separately in enemy_ai_policy.
 	observed.clear()
 	rendered.clear()
 	await _ticks(4)

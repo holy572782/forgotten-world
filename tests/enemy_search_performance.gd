@@ -40,10 +40,13 @@ func _case(label: String,kinds: Array,unlimited: bool) -> void:
 		main.add_child(e); e.global_position=_floor(e,e.global_position); e.home=e.global_position
 		e._set_state(e.State.CHASE); e.last_seen_position=p.global_position; e._last_seen_valid=true
 		actors.append(e)
-	if label.begins_with("wall"): _box(main,Vector3(2,1.5,8),Vector3(0.3,3,2))
+	if label in ["wall_left","wall_right"]: _box(main,Vector3(2,1.5,7.2 if label=="wall_left" else 8.8),Vector3(0.3,3,3.6))
+	elif label.begins_with("wall"): _box(main,Vector3(2,1.5,8),Vector3(0.3,3,2))
 	elif label=="closed":
 		for item in [[Vector3(1,1.5,8),Vector3(0.2,3,4)],[Vector3(-1,1.5,8),Vector3(0.2,3,4)],[Vector3(0,1.5,6),Vector3(2,3,0.2)],[Vector3(0,1.5,10),Vector3(2,3,0.2)]]: _box(main,item[0],item[1])
-	main.get_node("CameraRig").snap_to_target(); await _ticks(3); config.reset()
+	# Performance monitors update periodically. Warm each fresh scene beyond
+	# that interval so startup/import or the previous placement is not sampled.
+	main.get_node("CameraRig").snap_to_target(); await _ticks(75); config.reset()
 	var start:=Time.get_ticks_usec(); var previous:=start
 	var frames: Array[float]=[]; var physics: Array[float]=[]; var states: Dictionary={}
 	while Time.get_ticks_usec()-start<3000000:
@@ -60,6 +63,8 @@ func _run() -> void:
 	Engine.max_fps=60; root.size=Vector2i(1152,720)
 	for unlimited in [false,true]:
 		for spec in [["empty",[]],["wall_melee",[0]],["wall_mage",[1]],["wall_both",[0,1]],["closed",[0,1]],["ramp",[0,1]],["stairs",[0,1]]]: await _case(spec[0],spec[1],unlimited)
+		if "--policy" in OS.get_cmdline_user_args():
+			for name in ["wall_left","wall_right"]: await _case(name,[0,1],unlimited)
 	var args:=OS.get_cmdline_user_args(); var label: String=args[args.find("--label")+1] if args.has("--label") else "sample"
 	FileAccess.open("res://.godot/search_performance_"+label+".json",FileAccess.WRITE).store_string(JSON.stringify(rows,"  "))
 	quit()

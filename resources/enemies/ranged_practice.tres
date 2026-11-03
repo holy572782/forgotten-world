@@ -8,7 +8,7 @@
 script = ExtResource("1")
 attack = ExtResource("2")
 visual = ExtResource("3_visual")
-detection_radius = 8.0
+detection_radius = 12.0
 attack_start_distance = 6.0
 leash_radius = 10.0
 attack_warning_sound = ExtResource("4_warning")

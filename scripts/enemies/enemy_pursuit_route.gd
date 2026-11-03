@@ -25,6 +25,17 @@ var _search: Dictionary={}
 var _failed_origin:=Vector3.INF
 var _failed_target:=Vector3.INF
 var _probe_stage:=-1
+const STALL_SECONDS:=0.75
+const FAILED_EDGE_SECONDS:=4.0
+var _rejected: Array[Dictionary]=[]
+var _progress_at:=Vector3.INF
+var _progress_goal:=Vector3.INF
+var _progress_distance:=INF
+var _progress_seconds:=0.0
+var _last_attempt_usec:=0
+var stall_count:=0
+var last_stall_reason:=""
+var selected_cost:=0.0
 var position_reason:=""
 var _position: Dictionary={}
 const POSITION_OFFSETS=[Vector2(1,0),Vector2(-1,0),Vector2(1,1),Vector2(-1,1),Vector2(1,-0.4),Vector2(-1,-0.4)]
@@ -39,6 +50,57 @@ func reset() -> void:
 	_position.clear()
 	position_reason=""
 	_reset_route()
+	_rejected.clear()
+	_clear_progress()
+
+func _clear_progress() -> void:
+	_progress_at=Vector3.INF; _progress_goal=Vector3.INF
+	_progress_distance=INF
+	_progress_seconds=0.0; _last_attempt_usec=0
+
+func pause_progress() -> void:
+	_clear_progress()
+
+func planning_wait() -> void:
+	# Exclude this pause's elapsed time without erasing earlier actual failures.
+	_last_attempt_usec=0
+
+func observe_move(actor: CharacterBody3D, goal_at: Vector3, before: Vector3, delta: float) -> void:
+	# Only actual walk attempts count: callers exclude attack/held/planning/retry.
+	# Jump cooldown and every existing airborne/climb owner are normal waiting.
+	if actor.walker.busy() or actor.walker.blocked_reason=="JUMP_COOLDOWN":
+		_clear_progress(); return
+	var now:=Time.get_ticks_usec()
+	var distance: float=actor.walker.horizontal(actor.global_position,goal_at)
+	if not _progress_at.is_finite() or goal_at.distance_to(_progress_goal)>0.3 or distance<_progress_distance-0.06:
+		_progress_at=actor.global_position; _progress_goal=goal_at; _progress_seconds=0.0
+		_progress_distance=distance
+	elif actor.walker.horizontal(actor.global_position,goal_at)>0.2:
+		# Include the mover's deliberate retry delay after a rejected attempt,
+		# but never an arbitrary long pause spent in combat or planning.
+		var span: float=float(now-_last_attempt_usec)/1000000.0 if _last_attempt_usec>0 else delta+actor.walker.retry
+		_progress_seconds+=minf(span,actor.settings.walk.blocked_retry_seconds+delta) if actor.walker.blocked else delta
+	_last_attempt_usec=now
+	if _progress_seconds<STALL_SECONDS: return
+	var direction:=Vector3(goal_at.x-before.x,0,goal_at.z-before.z).normalized()
+	_rejected.append({"from":before,"direction":direction,"until":now+int(FAILED_EDGE_SECONDS*1000000.0)})
+	if _rejected.size()>8: _rejected.pop_front()
+	stall_count+=1
+	last_stall_reason=actor.walker.blocked_reason if actor.walker.blocked else "NO_WAYPOINT_PROGRESS"
+	# Keep the failure memory across local replans/position candidates.
+	_reset_route()
+	if not _position.is_empty(): _position.phase=0
+	reason="STALLED_REPLAN: "+last_stall_reason
+	_clear_progress()
+
+func _rejected_edge(from: Vector3, to: Vector3) -> bool:
+	var now:=Time.get_ticks_usec()
+	for index in range(_rejected.size()-1,-1,-1):
+		if now>=_rejected[index].until: _rejected.remove_at(index)
+	var direction:=Vector3(to.x-from.x,0,to.z-from.z).normalized()
+	for edge in _rejected:
+		if Vector2(from.x-edge.from.x,from.z-edge.from.z).length()<CELL*0.8 and direction.dot(edge.direction)>0.7: return true
+	return false
 
 func _reset_route() -> void:
 	waypoints.clear()
@@ -55,7 +117,7 @@ func _work_goal(actor: CharacterBody3D, at: Vector3, delta: float, allow_search:
 	var walker=actor.walker
 	# Consume reached points before cached intent, and retain a proven detour
 	# until it ends or becomes blocked. A clear first cell is not a clear route.
-	while not waypoints.is_empty() and walker.horizontal(actor.global_position,waypoints[0])<0.18:
+	while not waypoints.is_empty() and walker.horizontal(actor.global_position,waypoints[0])<0.18 and absf(actor.global_position.y-waypoints[0].y)<0.2:
 		waypoints.pop_front()
 		_decision_until=0
 	var moved:=actor.global_position.distance_to(_decision_origin)>=0.2 or at.distance_to(_decision_target)>=0.35
@@ -74,19 +136,19 @@ func _work_goal(actor: CharacterBody3D, at: Vector3, delta: float, allow_search:
 		_decision_origin=actor.global_position
 		_decision_target=at
 		_probe_stage=0
-	if target.is_finite() and target.distance_to(at)>1.0:
-		waypoints.clear()
+	if waypoints.is_empty() and target.is_finite() and target.distance_to(at)>1.0:
 		_search.clear()
 		retry=0.0
 	if _failed_origin.is_finite() and (actor.global_position.distance_to(_failed_origin)>0.35 or at.distance_to(_failed_target)>0.5): retry=0.0
 	target=at
-	while not waypoints.is_empty() and walker.horizontal(actor.global_position,waypoints[0])<0.18: waypoints.pop_front()
+	while not waypoints.is_empty() and walker.horizontal(actor.global_position,waypoints[0])<0.18 and absf(actor.global_position.y-waypoints[0].y)<0.2: waypoints.pop_front()
 	var offset:=Vector3(at.x-actor.global_position.x,0,at.z-actor.global_position.z)
 	var safe_goal:=at
 	if stand_off>0.0 or (live_target and walker.horizontal(at,actor.player.global_position)<0.1):
 		var gap: float=stand_off if stand_off>0.0 else actor.get_node("CollisionShape3D").shape.radius+actor.player.get_node("CollisionShape3D").shape.radius+0.15
 		safe_goal=actor.global_position+offset.normalized()*maxf(0.0,offset.length()-gap)
 	var safe_offset:=Vector3(safe_goal.x-actor.global_position.x,0,safe_goal.z-actor.global_position.z)
+	var direct_rejected:=_rejected_edge(actor.global_position,safe_goal)
 	while _probe_stage<4:
 		if not PlanningBudget.take():
 			reason="PLANNING_BUDGET (PREFLIGHT)"
@@ -96,15 +158,15 @@ func _work_goal(actor: CharacterBody3D, at: Vector3, delta: float, allow_search:
 		var clear:=false
 		match stage:
 			0:
-				if not _mover_stalled(actor) and (waypoints.is_empty() or safe_offset.length()<=CELL): clear=walker.can_reach(actor.global_position+safe_offset.normalized()*minf(CELL,safe_offset.length()))
+				if not direct_rejected and not _mover_stalled(actor) and (waypoints.is_empty() or safe_offset.length()<=CELL): clear=walker.can_reach(actor.global_position+safe_offset.normalized()*minf(CELL,safe_offset.length()))
 			1:
-				if waypoints.is_empty(): clear=not walker._jump_plan(safe_offset.normalized()).is_empty()
+				if not direct_rejected and waypoints.is_empty(): clear=not walker._jump_plan(safe_offset.normalized()).is_empty()
 			2:
 				if not waypoints.is_empty():
-					if walker.can_reach(waypoints[0]): return _remember(waypoints[0])
+					if not _rejected_edge(actor.global_position,waypoints[0]) and walker.can_reach(waypoints[0]): return _remember(waypoints[0])
 					waypoints.clear()
 			3:
-				if not _mover_stalled(actor): clear=walker.can_reach(actor.global_position+safe_offset.normalized()*minf(actor.settings.chase_speed*delta,safe_offset.length()))
+				if not direct_rejected and not _mover_stalled(actor): clear=walker.can_reach(actor.global_position+safe_offset.normalized()*minf(actor.settings.chase_speed*delta,safe_offset.length()))
 		if clear:
 			waypoints.clear()
 			_search.clear()
@@ -134,10 +196,11 @@ func _begin_search(actor: CharacterBody3D, goal_at: Vector3) -> void:
 	var anchor:=actor.global_position
 	var offset:=Vector3(goal_at.x-anchor.x,0,goal_at.z-anchor.z)
 	var destination:=anchor+offset.normalized()*minf(4.5,offset.length())
-	_search={"anchor":anchor,"destination":destination,"open":[Vector2i.ZERO],"points":{Vector2i.ZERO:anchor},"costs":{Vector2i.ZERO:0.0},"previous":{},"closed":{},"current":Vector2i.ZERO,"edge":8,"expanded":0}
+	_search={"anchor":anchor,"destination":destination,"open":[Vector2i.ZERO],"points":{Vector2i.ZERO:anchor},"costs":{Vector2i.ZERO:0.0},"previous":{},"closed":{},"current":Vector2i.ZERO,"edge":8,"expanded":0,"best":Vector2i.ZERO,"best_cost":INF}
 	reason="NO_SAFE_LOCAL_ROUTE (SEARCHING)"
 
 func _finish_search(end: Vector2i) -> void:
+	selected_cost=float(_search.costs.get(end,0.0))
 	while end!=Vector2i.ZERO:
 		waypoints.push_front(_search.points[end])
 		end=_search.previous[end]
@@ -159,21 +222,28 @@ func _work_advance_search(actor: CharacterBody3D) -> void:
 	while not _search.is_empty() and PlanningBudget.allowed():
 		if _search.edge>=8:
 			if _search.open.is_empty() or _search.expanded>=BUDGET:
-				_finish_search(Vector2i.ZERO)
+				_finish_search(_search.best)
 				break
 			var best:=0
 			var score:=INF
 			for index in range(_search.open.size()):
 				var candidate: Vector2i=_search.open[index]
-				var value: float=_search.costs[candidate]+actor.walker.horizontal(_search.points[candidate],_search.destination)
+				# Admissible lower bound to the goal region, not its center.
+				# The shared frontier compares safe left/right path costs over frames.
+				var value: float=_search.costs[candidate]+maxf(0.0,actor.walker.horizontal(_search.points[candidate],_search.destination)-CELL)
 				if value<score:
 					score=value
 					best=index
+			if _search.best_cost<=score:
+				_finish_search(_search.best)
+				break
 			_search.current=_search.open[best]
 			_search.open.remove_at(best)
 			if actor.walker.horizontal(_search.points[_search.current],_search.destination)<CELL:
-				_finish_search(_search.current)
-				break
+				_search.best=_search.current
+				_search.best_cost=_search.costs[_search.current]
+				_search.closed[_search.current]=true
+				continue # Complete comparison against remaining frontier lower bounds.
 			_search.closed[_search.current]=true
 			_search.edge=0
 			_search.expanded+=1
@@ -184,6 +254,7 @@ func _work_advance_search(actor: CharacterBody3D) -> void:
 		if _search.closed.has(key) or Vector2(key).length()*CELL>RADIUS: continue
 		var anchor: Vector3=_search.anchor
 		var at:=Vector3(anchor.x+key.x*CELL,_search.points[current].y,anchor.z+key.y*CELL)
+		if _rejected_edge(_search.points[current],at): continue
 		var floor_at: Dictionary=actor.walker._sample(at)
 		if floor_at.is_empty(): continue
 		at.y=floor_at.position.y
@@ -224,7 +295,7 @@ func _combat_goal(actor: CharacterBody3D, delta: float) -> Vector3:
 	if actor.state!=actor.State.CHASE or not actor.player_alive(): return Vector3.INF
 	var at: Vector3=actor.player.global_position
 	var now:=Time.get_ticks_usec()
-	if _position.is_empty() or at.distance_to(_position.target)>0.35:
+	if _position.is_empty() or (at.distance_to(_position.target)>0.35 and waypoints.is_empty()):
 		_reset_route()
 		_position={"origin":actor.global_position,"target":at,"phase":0,"index":0,"frame":-1,"until":0,"goal":Vector3.INF}
 	if _position.phase==3:
