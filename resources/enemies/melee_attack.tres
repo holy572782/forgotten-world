@@ -1,13 +1,13 @@
-[gd_resource type="Resource" load_steps=4 format=3]
-[ext_resource type="Script" path="res://scripts/enemies/enemy_attack_data.gd" id="1"]
-[ext_resource type="Resource" path="res://resources/weapons/one_handed_sword.tres" id="2_weapon"]
+[gd_resource type="Resource" format=3 uid="uid://dlbsl1rq07cph"]
+
+[ext_resource type="Script" uid="uid://2lb6l60m6a73" path="res://scripts/enemies/enemy_attack_data.gd" id="1"]
+[ext_resource type="Resource" uid="uid://drpbum6i8xsx2" path="res://resources/weapons/one_handed_sword.tres" id="2_weapon"]
 [ext_resource type="Resource" path="res://resources/target_dash_settings.tres" id="3_travel"]
+
 [resource]
 script = ExtResource("1")
 weapon = ExtResource("2_weapon")
 travel_settings = ExtResource("3_travel")
-aim_lock_ratio = 0.4
-recovery_seconds = 3.0
-
-override_weapon_hit_height = false
+aim_lock_ratio = 0.9
 hit_height_tolerance = 1.8
+recovery_seconds = 3.0

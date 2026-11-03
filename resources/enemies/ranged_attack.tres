@@ -1,17 +1,19 @@
-[gd_resource type="Resource" load_steps=3 format=3]
-[ext_resource type="Script" path="res://scripts/enemies/enemy_attack_data.gd" id="1"]
-[ext_resource type="Resource" path="res://resources/enemies/mage_magic_visual.tres" id="2_visual"]
+[gd_resource type="Resource" format=3 uid="uid://dpc7jswxiqfbr"]
+
+[ext_resource type="Script" uid="uid://2lb6l60m6a73" path="res://scripts/enemies/enemy_attack_data.gd" id="1"]
+[ext_resource type="Resource" uid="uid://dexxdiji5r3h2" path="res://resources/enemies/mage_magic_visual.tres" id="2_visual"]
+
 [resource]
 script = ExtResource("1")
 kind = 2
 windup_seconds = 1.0
-aim_lock_ratio = 0.5
+aim_lock_ratio = 0.9
 attack_seconds = 0.12
 hit_delay_seconds = 0.0
-recovery_seconds = 10.0
-minimum_attack_interval = 10.0
-commit_projectile_on_windup = true
 damage_kind = 1
 magic_visual = ExtResource("2_visual")
+recovery_seconds = 10.0
+minimum_attack_interval = 10.0
 projectile_speed = 5.0
 projectile_range = 13.2
+commit_projectile_on_windup = true

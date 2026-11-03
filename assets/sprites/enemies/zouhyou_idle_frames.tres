@@ -1,42 +1,58 @@
-[gd_resource type="SpriteFrames" load_steps=6 format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://dcdrkjwovqeno"]
 
-[ext_resource type="Texture2D" path="res://画像フォルダ/敵/雑兵_歩行.png" id="1"]
+[ext_resource type="Texture2D" uid="uid://dw1nj8lxgujua" path="res://画像フォルダ/敵/雑兵_歩行.png" id="1"]
 
 [sub_resource type="AtlasTexture" id="frame_0_0"]
-
 atlas = ExtResource("1")
-
 region = Rect2(0, 0, 48, 48)
-
 filter_clip = true
 
 [sub_resource type="AtlasTexture" id="frame_1_0"]
-
 atlas = ExtResource("1")
-
 region = Rect2(0, 48, 48, 48)
-
 filter_clip = true
 
 [sub_resource type="AtlasTexture" id="frame_2_0"]
-
 atlas = ExtResource("1")
-
 region = Rect2(0, 96, 48, 48)
-
 filter_clip = true
 
 [sub_resource type="AtlasTexture" id="frame_3_0"]
-
 atlas = ExtResource("1")
-
 region = Rect2(0, 144, 48, 48)
-
 filter_clip = true
 
 [resource]
-
-animations = [{"frames": [{"duration": 1.0, "texture": SubResource("frame_0_0")}], "loop": false, "name": &"idle_down", "speed": 1.0},
-{"frames": [{"duration": 1.0, "texture": SubResource("frame_1_0")}], "loop": false, "name": &"idle_left", "speed": 1.0},
-{"frames": [{"duration": 1.0, "texture": SubResource("frame_2_0")}], "loop": false, "name": &"idle_right", "speed": 1.0},
-{"frames": [{"duration": 1.0, "texture": SubResource("frame_3_0")}], "loop": false, "name": &"idle_up", "speed": 1.0}]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame_0_0")
+}],
+"loop": 0,
+"name": &"idle_down",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame_1_0")
+}],
+"loop": 0,
+"name": &"idle_left",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame_2_0")
+}],
+"loop": 0,
+"name": &"idle_right",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("frame_3_0")
+}],
+"loop": 0,
+"name": &"idle_up",
+"speed": 1.0
+}]
