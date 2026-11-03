@@ -4,7 +4,7 @@ const Walk = preload("res://scripts/enemies/enemy_walk.gd")
 const BladeTerrain=preload("res://scripts/combat/melee_terrain.gd")
 static func clear(body: CharacterBody3D, at: Vector3) -> bool:
 	if body.active_attack.weapon!=null and body.active_attack.weapon.hit_height_up>=0.0:
-		return BladeTerrain.clear(body,at,body.settings.path,body.active_attack.target_ground_probe_depth)
+		return report(body,at).clear
 	var config: Resource=body.settings.walk
 	var ground:=Walk.floor_hit(body,at,0.05,body.active_attack.target_ground_probe_depth,config.max_slope_degrees)
 	if ground.is_empty(): return false
@@ -25,3 +25,7 @@ static func clear(body: CharacterBody3D, at: Vector3) -> bool:
 			var allowance := 0.04 + radius*tan(acos(clampf(hit.normal.y,0.01,1.0)))
 			if hit.position.y<low-allowance or hit.position.y>high+allowance: return false
 	return true
+
+static func report(body: CharacterBody3D, at: Vector3, from: Vector3=Vector3.INF) -> Dictionary:
+	var radius: float=body.player.get_node("CollisionShape3D").shape.radius
+	return BladeTerrain.strike_segment(body,at,from,radius)

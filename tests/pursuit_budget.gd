@@ -24,6 +24,7 @@ class CountingWalker:
 class SearchActor:
 	extends CharacterBody3D
 	var walker:=CountingWalker.new()
+	func inside_home(_at: Vector3) -> bool: return true # Explicit unbounded scheduling stub.
 
 func _run() -> void:
 	Engine.max_fps=60

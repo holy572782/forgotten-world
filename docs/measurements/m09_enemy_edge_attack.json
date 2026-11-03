@@ -1,0 +1,3534 @@
+{
+  "date": "2026-11-02",
+  "adr": "ADR-057",
+  "baseline_revision": "126f690",
+  "verification_pending": false,
+  "engine": "Godot 4.7.2.stable.official.ed1daf0bf",
+  "renderer": "Compatibility, OpenGL 3.3.0",
+  "device": "NVIDIA GeForce GTX 1080, driver 572.16",
+  "viewport": "1152x720",
+  "physics_hz": 60,
+  "render_cap": 60,
+  "environment": "Isolated .godot/mage_fire_validation; APPDATA redirected. Root and validation scripts/scenes/resources/tests/project.godot byte-identical.",
+  "validated_files": 335,
+  "source_sha256": {
+    "tests/enemy_jump_strike.gd": "52755D0B3C1289DF96E0311B69443DD86D3FB541E6EEEEBBDC9265819B119D3A",
+    "tests/elevation_strike.gd": "188C06FE46CE3DE0407DA86631D31D2DB9035E2E2522C7EA6997DD3AEC868519",
+    "scripts/combat/elevation_path.gd": "33C1138A9DC06ADEE40048774CD72D03C874C54B2C9DB8F7673C55838E3CA236",
+    "tests/ramp_contact_attack.gd": "611A7D35B77BBC111271BA99DE5D8902AB9806AAC744FB0D1E829B230E4B0BAE",
+    "tests/pursuit_budget.gd": "CEA499CA0CF3C9FBA53AA33D2F8FE066183819518585C56910E24F096706FD72",
+    "scripts/enemies/enemy_pursuit_route.gd": "C5DD42142754E4E70A6087FAE2B5F18974BC2583D67538B273B54E9148EFE278",
+    "scripts/enemies/practice_enemy.gd": "6B061C459F203E10C0DB12255B49E86EE1001816383C3BC755729D963DE222BE",
+    "scripts/combat/melee_terrain.gd": "26C2DE70EEB42845B8E743ECDDF3A22B2F331C071ED10C4EDA726E48513C755E",
+    "tests/enemy_aim_performance.gd": "F91C9C345FB584F756E8F7BC4D75754D1A9766CD58DC54F95001C948F016E924",
+    "tests/enemy_sword_combat.gd": "B4589FDDA7DC3EE1B85665F706C20DE5CF20E065CBEC0594D7DE485B9217F75D",
+    "scripts/enemies/enemy_melee_geometry.gd": "65D4BAEB9480E62BD372D0697D133E649BC25B18FA31F3AB5C141D5086F0C28D",
+    "tests/enemy_edge_attack.gd.uid": "32B5CA9F7F066C7FD5777C5A2F5B32CC0AB960FFAD0EE748C963F5B30B8FC5F6",
+    "tests/enemy_edge_attack.gd": "381C91D2C972D3DD160DCC029630975FD32E6574C83BA499A2C7625C3A192EF6"
+  },
+  "baseline_probe": [
+    {
+      "abort": "",
+      "attacks": 0,
+      "available": false,
+      "case": "wall behind target",
+      "hit": false,
+      "hp": 100.0,
+      "position": "(0.0, 0.001, 8.0)",
+      "position_reason": "legacy",
+      "sight": true,
+      "start": "BLADE_BLOCKED",
+      "state": "CHASE",
+      "target": "(2.0, 0.001, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 0,
+      "available": false,
+      "case": "hand blocked, head visible",
+      "hit": false,
+      "hp": 100.0,
+      "position": "(0.0, 0.001, 8.0)",
+      "position_reason": "legacy",
+      "sight": true,
+      "start": "BLADE_BLOCKED",
+      "state": "CHASE",
+      "target": "(2.0, 0.001, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 0,
+      "available": true,
+      "case": "projectile radius graze",
+      "hit": true,
+      "hp": 100.0,
+      "position": "(0.0, 0.001, 8.0)",
+      "position_reason": "legacy",
+      "sight": true,
+      "start": "OK",
+      "state": "CHASE",
+      "target": "(4.0, 0.001, 8.0)"
+    }
+  ],
+  "functional_matrix": [
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "wall behind target",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(0.0, 0.001, 8.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(2.0, 0.001, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "hand blocked, head visible",
+      "hit": false,
+      "hp": 100.0,
+      "position": "(0.0, 0.001, 8.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(2.0, 0.001, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 0,
+      "available": false,
+      "case": "projectile radius graze",
+      "hit": false,
+      "hp": 100.0,
+      "position": "(0.0, 0.001, 8.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "PROJECTILE_PATH_BLOCKED",
+      "state": "CHASE",
+      "target": "(4.0, 0.001, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "detour 0",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(1.997645, 0.000838, 9.486463)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "ATTACK",
+      "target": "(4.0, 0.001, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "detour 1",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(1.799598, 0.000838, 9.298427)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(4.0, 0.001, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 0,
+      "available": false,
+      "case": "C blocked enclosure / 0",
+      "hit": false,
+      "hp": 100.0,
+      "position": "(0.466667, 0.000839, 8.0)",
+      "position_reason": "POSITION_FAILED (RETRY)",
+      "sight": false,
+      "start": "TARGET_NOT_VISIBLE",
+      "state": "CHASE",
+      "target": "(2.0, 0.023438, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 0,
+      "available": false,
+      "case": "C blocked enclosure / 1",
+      "hit": false,
+      "hp": 100.0,
+      "position": "(0.466667, 0.000839, 8.0)",
+      "position_reason": "POSITION_FAILED (RETRY)",
+      "sight": false,
+      "start": "TARGET_NOT_VISIBLE",
+      "state": "CHASE",
+      "target": "(2.0, 0.023438, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "flat / 0 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(-4.0, 0.0, -4.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(-5.7, 0.023438, -4.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "ramp_bottom / 0 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(0.5, 0.234375, -6.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(2.0, 0.726563, -6.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "ramp_middle / 0 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(2.4, 0.867188, -6.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(4.0, 1.40625, -6.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "ramp_top / 0 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(5.4, 1.886719, -6.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(7.0, 2.023438, -6.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_top_down / 0 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(3.3, 1.023438, 5.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(1.2, 0.523438, 5.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_top_up / 0 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(1.2, 0.523438, 5.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(3.3, 1.023438, 5.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_side_up / 0 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(3.0, 0.023438, 7.5)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(3.0, 1.023438, 6.3)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_side_down / 0 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(3.0, 1.0, 6.3)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(3.0, 0.023438, 7.5)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "flat / 0 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(-4.0, 0.0, -4.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(-5.7, 0.023438, -4.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "ramp_bottom / 0 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(0.5, 0.234375, -6.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(2.0, 0.726563, -6.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "ramp_middle / 0 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(2.4, 0.867188, -6.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(4.0, 1.40625, -6.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "ramp_top / 0 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(5.4, 1.886719, -6.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(7.0, 2.023438, -6.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_top_down / 0 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(3.3, 1.023438, 5.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(1.2, 0.523438, 5.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_top_up / 0 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(1.2, 0.523438, 5.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(3.3, 1.023438, 5.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_side_up / 0 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(3.0, 0.023438, 7.5)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(3.0, 1.023438, 6.3)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_side_down / 0 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(3.0, 1.0, 6.3)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(3.0, 0.023438, 7.5)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "flat / 1 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(-4.0, 0.0, -4.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(-5.7, 0.023438, -4.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "ramp_bottom / 1 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(0.5, 0.234375, -6.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(2.0, 0.726563, -6.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "ramp_middle / 1 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(2.4, 0.867188, -6.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(4.0, 1.40625, -6.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "ramp_top / 1 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(5.4, 1.886719, -6.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(7.0, 2.023438, -6.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_top_down / 1 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(3.3, 1.023438, 5.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(1.2, 0.523438, 5.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_top_up / 1 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(1.2, 0.523438, 5.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(3.3, 1.023438, 5.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_side_up / 1 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(3.0, 0.023438, 7.5)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(3.0, 1.023438, 6.3)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_side_down / 1 / false",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(3.0, 1.0, 6.3)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(3.0, 0.023438, 7.5)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "flat / 1 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(-4.0, 0.0, -4.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(-5.7, 0.023438, -4.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "ramp_bottom / 1 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(0.5, 0.234375, -6.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(2.0, 0.726563, -6.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "ramp_middle / 1 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(2.4, 0.867188, -6.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(4.0, 1.40625, -6.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "ramp_top / 1 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(5.4, 1.886719, -6.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(7.0, 2.023438, -6.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_top_down / 1 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(3.3, 1.023438, 5.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(1.2, 0.523438, 5.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_top_up / 1 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(1.2, 0.523438, 5.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(3.3, 1.023438, 5.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_side_up / 1 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(3.0, 0.023438, 7.5)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(3.0, 1.023438, 6.3)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "stair_side_down / 1 / true",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(3.0, 1.0, 6.3)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(3.0, 0.023438, 7.5)"
+    }
+  ],
+  "quick_30_matrix": [
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "wall behind target",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(0.0, 0.001, 8.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(2.0, 0.001, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "hand blocked, head visible",
+      "hit": false,
+      "hp": 100.0,
+      "position": "(0.0, 0.001, 8.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "RECOVERY",
+      "target": "(2.0, 0.001, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 0,
+      "available": false,
+      "case": "projectile radius graze",
+      "hit": false,
+      "hp": 100.0,
+      "position": "(0.0, 0.001, 8.0)",
+      "position_reason": "",
+      "sight": true,
+      "start": "PROJECTILE_PATH_BLOCKED",
+      "state": "CHASE",
+      "target": "(4.0, 0.001, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "detour 0",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(1.997645, 0.000838, 9.486463)",
+      "position_reason": "",
+      "sight": true,
+      "start": "READY_IN_PLACE",
+      "state": "ATTACK",
+      "target": "(4.0, 0.001, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 1,
+      "available": true,
+      "case": "detour 1",
+      "hit": true,
+      "hp": 90.0,
+      "position": "(1.799598, 0.000838, 9.298427)",
+      "position_reason": "",
+      "sight": true,
+      "start": "OK",
+      "state": "RECOVERY",
+      "target": "(4.0, 0.001, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 0,
+      "available": false,
+      "case": "C blocked enclosure / 0",
+      "hit": false,
+      "hp": 100.0,
+      "position": "(0.466667, 0.000839, 8.0)",
+      "position_reason": "POSITION_FAILED (RETRY)",
+      "sight": false,
+      "start": "TARGET_NOT_VISIBLE",
+      "state": "CHASE",
+      "target": "(2.0, 0.023438, 8.0)"
+    },
+    {
+      "abort": "",
+      "attacks": 0,
+      "available": false,
+      "case": "C blocked enclosure / 1",
+      "hit": false,
+      "hp": 100.0,
+      "position": "(0.466667, 0.000839, 8.0)",
+      "position_reason": "POSITION_FAILED (RETRY)",
+      "sight": false,
+      "start": "TARGET_NOT_VISIBLE",
+      "state": "CHASE",
+      "target": "(2.0, 0.023438, 8.0)"
+    }
+  ],
+  "functional_tests": [
+    {
+      "assertions": 241,
+      "exit": 0,
+      "test": "enemy_edge_attack",
+      "log": ".godot/edge_adopted_matrix.log",
+      "result": "PASS",
+      "pass_line": "EDGE ATTACK PASS 241",
+      "sha256": "493CE2BBCE6011A1112074E4382BA75ECCE1C59EB1E6807B99F6C72D3BE5F2F1"
+    },
+    {
+      "assertions": 33,
+      "exit": 0,
+      "test": "enemy_edge_attack_30_quick",
+      "log": ".godot/edge_adopted_30.log",
+      "result": "PASS",
+      "pass_line": "EDGE ATTACK PASS 33",
+      "sha256": "728A465C0E9A386C1FEFADFE790152396E22FF518AE080732E3123D41CB745CD"
+    },
+    {
+      "assertions": 818,
+      "exit": 0,
+      "test": "enemy_aim_lock",
+      "log": ".godot/edge_enemy_aim_lock.log",
+      "result": "PASS",
+      "pass_line": "AIM LOCK PASS: 818 fps cap=60 metrics=[{\"captures\":1,\"kind\":0,\"lock_elapsed\":0.0,\"ratio\":0.0,\"release_count\":0},{\"captures\":1,\"kind\":0,\"lock_elapsed\":0.366666666666667,\"ratio\":0.4,\"release_count\":0},{\"captures\":1,\"kind\":0,\"lock_elapsed\":0.45,\"ratio\":0.5,\"release_count\":0},{\"captures\":1,\"kind\":0,\"lock_elapsed\":0.633333333333334,\"ratio\":0.7,\"release_count\":0},{\"captures\":1,\"kind\":0,\"lock_elapsed\":0.900000000000001,\"ratio\":1.0,\"release_count\":0},{\"captures\":1,\"kind\":1,\"lock_elapsed\":0.0,\"ratio\":0.0,\"release_count\":1},{\"captures\":1,\"kind\":1,\"lock_elapsed\":0.4,\"ratio\":0.4,\"release_count\":1},{\"captures\":1,\"kind\":1,\"lock_elapsed\":0.5,\"ratio\":0.5,\"release_count\":1},{\"captures\":1,\"kind\":1,\"lock_elapsed\":0.700000000000001,\"ratio\":0.7,\"release_count\":1},{\"captures\":1,\"kind\":1,\"lock_elapsed\":1.0,\"ratio\":1.0,\"release_count\":1}]",
+      "sha256": "97803B121E72342A3BADA3F05C7DA604BD5960684AFDF0623D418AA1F9D96BB6"
+    },
+    {
+      "assertions": 447,
+      "exit": 0,
+      "test": "enemy_sword_combat",
+      "log": ".godot/edge_retest_enemy_sword_combat.log",
+      "result": "PASS",
+      "pass_line": "ENEMY SWORD PASS: 447 assertions; fps cap=60",
+      "sha256": "8D4178F791DAACD17055E9F0CF1ACAC25606B93A8FC55841E11AE4A07E9AFFA8"
+    },
+    {
+      "assertions": 584,
+      "exit": 0,
+      "test": "enemy_jump_strike",
+      "log": ".godot/edge_retest_enemy_jump_strike.log",
+      "result": "PASS",
+      "pass_line": "ENEMY JUMP PASS: 584 assertions; fps cap=60",
+      "sha256": "C5E24AC5658A7D5E401BFE08C0624EF9246D48F8197383DA5EBA429185F062B2"
+    },
+    {
+      "assertions": 138,
+      "exit": 0,
+      "test": "terrain_attack",
+      "log": ".godot/edge_terrain_attack.log",
+      "result": "PASS",
+      "pass_line": "TERRAIN ATTACK PASS: 138",
+      "sha256": "5F04D0AE1E9F03457418CFE8505FEB83C6089AF7FC544E5AEE9F5C2327D50A48"
+    },
+    {
+      "assertions": 349,
+      "exit": 0,
+      "test": "elevation_strike",
+      "log": ".godot/edge_retest_elevation_strike.log",
+      "result": "PASS",
+      "pass_line": "ELEVATION STRIKE PASS: 349",
+      "sha256": "E5D3861D2444DC9F932C91A3CD86FD45DCFB08B81836103E566ECFA275B5287B"
+    },
+    {
+      "assertions": 916,
+      "exit": 0,
+      "test": "ramp_contact_attack",
+      "log": ".godot/edge_retest_ramp_contact_attack.log",
+      "result": "PASS",
+      "pass_line": "RAMP CONTACT PASS: 916",
+      "sha256": "91178CC6A547160BEE1EFEB0D571A3C40A0542424F5F7BD185A4D307087A1843"
+    },
+    {
+      "assertions": 216,
+      "exit": 0,
+      "test": "pursuit_budget",
+      "log": ".godot/edge_adopted_budget.log",
+      "result": "PASS",
+      "pass_line": "PURSUIT BUDGET PASS: 216 checks",
+      "sha256": "2C8E418E55DEB6551D0DA6CE3EFBD71322E32E9608427A09D56D39205B07A364"
+    },
+    {
+      "assertions": 25,
+      "exit": 0,
+      "test": "enemy_work_diagnostics",
+      "log": ".godot/edge_enemy_work_diagnostics.log",
+      "result": "PASS",
+      "pass_line": "ENEMY WORK DIAGNOSTICS PASS: 25",
+      "sha256": "1BDB5E780EA01E839D8AF5169A7E4E22C4F67AC8B01542EEB4083E9A0DA035F5"
+    },
+    {
+      "assertions": 124,
+      "exit": 0,
+      "test": "mage_magic",
+      "log": ".godot/edge_mage_magic.log",
+      "result": "PASS",
+      "pass_line": "MAGE MAGIC PASS: 124 assertions; fps cap=60",
+      "sha256": "E32682406202FF262426CBC77EFA9B3630F1FC240BD835211F7B96FDADA03264"
+    },
+    {
+      "assertions": 29,
+      "exit": 0,
+      "test": "mage_cast_commitment",
+      "log": ".godot/edge_mage_cast_commitment.log",
+      "result": "PASS",
+      "pass_line": "MAGE CAST PASS: 29 assertions; fps cap=60; metrics={ \"recovery_seconds\": 10.0166666666667, \"shot_interval\": 11.15, \"coverage_guard_false\": { \"fraction\": 0.99168747663498, \"samples\": 1203 }, \"coverage_guard_true\": { \"fraction\": 0.99683547019958, \"samples\": 1264 } }",
+      "sha256": "FECCD0732DFFFDC6C6BFFB983116B3CE674BC1DF5384885A599CA403ACC958F9"
+    },
+    {
+      "assertions": 263,
+      "exit": 0,
+      "test": "elevation_controls",
+      "log": ".godot/edge_elevation_controls.log",
+      "result": "PASS",
+      "pass_line": "ELEVATION CONTROLS PASS: 263",
+      "sha256": "AB9A58EA57B981EFC242BAEA8674524E629618823233F88402C8B3D3909997B5"
+    },
+    {
+      "assertions": null,
+      "exit": 0,
+      "test": "m07_chain",
+      "log": ".godot/edge_m07_chain.log",
+      "result": "PASS",
+      "pass_line": "PASS M07 chain: facing aim, manual release, pivot lock, orbit, ABC, replacement, invalid next, return",
+      "sha256": "F251961189858A594104FCF7A77E93A0C70FBF7663B762463CD63D9BEFEC484C"
+    },
+    {
+      "assertions": null,
+      "exit": 0,
+      "test": "m08_defense",
+      "log": ".godot/edge_m08_defense.log",
+      "result": "PASS",
+      "pass_line": "PASS M08 return: directional intent, hold/neutral/taps/noise, guard, stock/hits, safe Return, camera, reset, reserved K/east",
+      "sha256": "531F0CD14DFD405338B427C8698F6957D4A01E772BA8946F703A5F12874E141F"
+    },
+    {
+      "assertions": 312,
+      "exit": 0,
+      "test": "enemy_descent",
+      "log": ".godot/edge_descent.log",
+      "result": "PASS",
+      "pass_line": "ENEMY DESCENT PASS 312",
+      "sha256": "D3C30102496BA99C986364DC1C1A58A32B2DD799052B0C9DEB705E448EEA8289"
+    },
+    {
+      "assertions": 1536,
+      "exit": 0,
+      "test": "enemy_tactics",
+      "log": ".godot/edge_tactics.log",
+      "result": "PASS",
+      "pass_line": "ENEMY TACTICS PASS: 1536 assertions; fps cap=60",
+      "sha256": "03A045E7E3AEA36BC8D5A2DB4A542DF1108EC31BE3198878F54DB59A94C9C6D4"
+    }
+  ],
+  "performance_before": [
+    {
+      "attacks": 1,
+      "fps": 59.9609054896208,
+      "frame_max_ms": 33.378,
+      "frame_p95_ms": 18.2,
+      "kinds": [
+        0
+      ],
+      "node_physics_p95_ms": 2.616,
+      "physics_p95_ms": 4.51,
+      "seconds": 3.001956,
+      "states": {
+        "ATTACK": 20,
+        "DASH_APPROACH": 16,
+        "DASH_RETURN": 15,
+        "RECOVERY": 68,
+        "WINDUP": 61
+      },
+      "terrain": "flat",
+      "timings": {
+        "blade.clear": {
+          "calls": 97,
+          "max_us": 519,
+          "total_us": 21739
+        },
+        "elevation.step": {
+          "calls": 99,
+          "max_us": 1515,
+          "total_us": 105897
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 45,
+          "total_us": 4579
+        },
+        "enemy.physics": {
+          "calls": 180,
+          "max_us": 1694,
+          "total_us": 47770
+        },
+        "enemy.recovery_motion": {
+          "calls": 66,
+          "max_us": 879,
+          "total_us": 21259
+        },
+        "enemy.sight": {
+          "calls": 247,
+          "max_us": 77,
+          "total_us": 3059
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 301,
+          "total_us": 21341
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 2923,
+          "total_us": 175262
+        },
+        "player.preview_plan": {
+          "calls": 1260,
+          "max_us": 1573,
+          "total_us": 118550
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 2768,
+          "total_us": 147074
+        },
+        "walk.can_reach": {
+          "calls": 55,
+          "max_us": 485,
+          "total_us": 5279
+        },
+        "walk.jump_plan": {
+          "calls": 53,
+          "max_us": 289,
+          "total_us": 8485
+        },
+        "walk.move": {
+          "calls": 53,
+          "max_us": 449,
+          "total_us": 13236
+        }
+      },
+      "unlimited": false
+    },
+    {
+      "attacks": 1,
+      "fps": 60.0027780291706,
+      "frame_max_ms": 19.295,
+      "frame_p95_ms": 18.061,
+      "kinds": [
+        1
+      ],
+      "node_physics_p95_ms": 1.995,
+      "physics_p95_ms": 3.567,
+      "seconds": 3.016527,
+      "states": {
+        "ATTACK": 8,
+        "RECOVERY": 118,
+        "WINDUP": 55
+      },
+      "terrain": "flat",
+      "timings": {
+        "blade.clear": {
+          "calls": 68,
+          "max_us": 286,
+          "total_us": 13263
+        },
+        "elevation.step": {
+          "calls": 68,
+          "max_us": 1395,
+          "total_us": 76509
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 56,
+          "total_us": 4220
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1879,
+          "total_us": 18647
+        },
+        "enemy.sight": {
+          "calls": 181,
+          "max_us": 19,
+          "total_us": 2435
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 118,
+          "total_us": 16602
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 2830,
+          "total_us": 125742
+        },
+        "player.preview_plan": {
+          "calls": 1267,
+          "max_us": 1433,
+          "total_us": 86754
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 2697,
+          "total_us": 103769
+        }
+      },
+      "unlimited": false
+    },
+    {
+      "attacks": 1,
+      "fps": 59.9985200365058,
+      "frame_max_ms": 18.691,
+      "frame_p95_ms": 17.285,
+      "kinds": [
+        0
+      ],
+      "node_physics_p95_ms": 1.808,
+      "physics_p95_ms": 2.891,
+      "seconds": 3.000074,
+      "states": {
+        "ATTACK": 20,
+        "RECOVERY": 86,
+        "WINDUP": 74
+      },
+      "terrain": "ramp",
+      "timings": {
+        "blade.clear": {
+          "calls": 32,
+          "max_us": 698,
+          "total_us": 15175
+        },
+        "elevation.step": {
+          "calls": 31,
+          "max_us": 730,
+          "total_us": 15391
+        },
+        "enemy.debug": {
+          "calls": 182,
+          "max_us": 88,
+          "total_us": 4347
+        },
+        "enemy.physics": {
+          "calls": 180,
+          "max_us": 1900,
+          "total_us": 49858
+        },
+        "enemy.recovery_motion": {
+          "calls": 85,
+          "max_us": 1294,
+          "total_us": 31475
+        },
+        "enemy.sight": {
+          "calls": 266,
+          "max_us": 12,
+          "total_us": 2181
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 186,
+          "total_us": 26749
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 1325,
+          "total_us": 105745
+        },
+        "player.preview_plan": {
+          "calls": 540,
+          "max_us": 784,
+          "total_us": 20755
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 1099,
+          "total_us": 73222
+        },
+        "walk.can_reach": {
+          "calls": 64,
+          "max_us": 820,
+          "total_us": 12342
+        },
+        "walk.jump_plan": {
+          "calls": 61,
+          "max_us": 193,
+          "total_us": 8741
+        },
+        "walk.move": {
+          "calls": 61,
+          "max_us": 318,
+          "total_us": 15892
+        }
+      },
+      "unlimited": false
+    },
+    {
+      "attacks": 1,
+      "fps": 59.995458907254,
+      "frame_max_ms": 18.307,
+      "frame_p95_ms": 17.086,
+      "kinds": [
+        1
+      ],
+      "node_physics_p95_ms": 1.174,
+      "physics_p95_ms": 3.448,
+      "seconds": 3.016895,
+      "states": {
+        "ATTACK": 8,
+        "RECOVERY": 117,
+        "WINDUP": 56
+      },
+      "terrain": "ramp",
+      "timings": {
+        "blade.clear": {
+          "calls": 23,
+          "max_us": 985,
+          "total_us": 10042
+        },
+        "elevation.step": {
+          "calls": 23,
+          "max_us": 1026,
+          "total_us": 10572
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 41,
+          "total_us": 4678
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1149,
+          "total_us": 18170
+        },
+        "enemy.sight": {
+          "calls": 181,
+          "max_us": 22,
+          "total_us": 1667
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 295,
+          "total_us": 27074
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 1960,
+          "total_us": 102008
+        },
+        "player.preview_plan": {
+          "calls": 543,
+          "max_us": 1103,
+          "total_us": 15995
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 1607,
+          "total_us": 69242
+        }
+      },
+      "unlimited": false
+    },
+    {
+      "attacks": 1,
+      "fps": 60.0005303914289,
+      "frame_max_ms": 18.279,
+      "frame_p95_ms": 17.136,
+      "kinds": [
+        0
+      ],
+      "node_physics_p95_ms": 1.591,
+      "physics_p95_ms": 2.716,
+      "seconds": 3.01664,
+      "states": {
+        "ATTACK": 20,
+        "RECOVERY": 87,
+        "WINDUP": 74
+      },
+      "terrain": "stairs",
+      "timings": {
+        "blade.clear": {
+          "calls": 31,
+          "max_us": 700,
+          "total_us": 13562
+        },
+        "elevation.step": {
+          "calls": 30,
+          "max_us": 722,
+          "total_us": 13882
+        },
+        "enemy.debug": {
+          "calls": 183,
+          "max_us": 37,
+          "total_us": 4236
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1571,
+          "total_us": 40284
+        },
+        "enemy.recovery_motion": {
+          "calls": 85,
+          "max_us": 842,
+          "total_us": 22198
+        },
+        "enemy.sight": {
+          "calls": 267,
+          "max_us": 14,
+          "total_us": 2243
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 212,
+          "total_us": 29850
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 1286,
+          "total_us": 112358
+        },
+        "player.preview_plan": {
+          "calls": 543,
+          "max_us": 769,
+          "total_us": 19030
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 1082,
+          "total_us": 76613
+        },
+        "walk.can_reach": {
+          "calls": 62,
+          "max_us": 447,
+          "total_us": 5303
+        },
+        "walk.jump_plan": {
+          "calls": 59,
+          "max_us": 192,
+          "total_us": 8725
+        },
+        "walk.move": {
+          "calls": 59,
+          "max_us": 285,
+          "total_us": 13774
+        }
+      },
+      "unlimited": false
+    },
+    {
+      "attacks": 1,
+      "fps": 59.9925556198938,
+      "frame_max_ms": 18.029,
+      "frame_p95_ms": 17.116,
+      "kinds": [
+        1
+      ],
+      "node_physics_p95_ms": 1.201,
+      "physics_p95_ms": 3.194,
+      "seconds": 3.017041,
+      "states": {
+        "ATTACK": 8,
+        "RECOVERY": 117,
+        "WINDUP": 56
+      },
+      "terrain": "stairs",
+      "timings": {
+        "blade.clear": {
+          "calls": 23,
+          "max_us": 481,
+          "total_us": 9064
+        },
+        "elevation.step": {
+          "calls": 23,
+          "max_us": 504,
+          "total_us": 9584
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 40,
+          "total_us": 4236
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1151,
+          "total_us": 17034
+        },
+        "enemy.sight": {
+          "calls": 181,
+          "max_us": 14,
+          "total_us": 1684
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 240,
+          "total_us": 29142
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 1099,
+          "total_us": 107488
+        },
+        "player.preview_plan": {
+          "calls": 543,
+          "max_us": 551,
+          "total_us": 15047
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 881,
+          "total_us": 72759
+        }
+      },
+      "unlimited": false
+    },
+    {
+      "attacks": 2,
+      "fps": 59.9635821177938,
+      "frame_max_ms": 19.431,
+      "frame_p95_ms": 18.682,
+      "kinds": [
+        0,
+        1
+      ],
+      "node_physics_p95_ms": 2.92,
+      "physics_p95_ms": 3.551,
+      "seconds": 3.001822,
+      "states": {
+        "ATTACK": 28,
+        "DASH_APPROACH": 16,
+        "DASH_RETURN": 15,
+        "RECOVERY": 184,
+        "WINDUP": 117
+      },
+      "terrain": "flat",
+      "timings": {
+        "blade.clear": {
+          "calls": 123,
+          "max_us": 408,
+          "total_us": 25224
+        },
+        "elevation.step": {
+          "calls": 131,
+          "max_us": 2147,
+          "total_us": 120258
+        },
+        "enemy.debug": {
+          "calls": 367,
+          "max_us": 57,
+          "total_us": 6494
+        },
+        "enemy.physics": {
+          "calls": 360,
+          "max_us": 1398,
+          "total_us": 46179
+        },
+        "enemy.recovery_motion": {
+          "calls": 66,
+          "max_us": 872,
+          "total_us": 10333
+        },
+        "enemy.sight": {
+          "calls": 427,
+          "max_us": 22,
+          "total_us": 4062
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 270,
+          "total_us": 22655
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 2848,
+          "total_us": 186512
+        },
+        "player.preview_plan": {
+          "calls": 1620,
+          "max_us": 2219,
+          "total_us": 132873
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 2564,
+          "total_us": 158326
+        },
+        "walk.can_reach": {
+          "calls": 26,
+          "max_us": 477,
+          "total_us": 2784
+        },
+        "walk.jump_plan": {
+          "calls": 24,
+          "max_us": 185,
+          "total_us": 3584
+        },
+        "walk.move": {
+          "calls": 24,
+          "max_us": 294,
+          "total_us": 5616
+        }
+      },
+      "unlimited": false
+    },
+    {
+      "attacks": 1,
+      "fps": 59.9838243620304,
+      "frame_max_ms": 19.19,
+      "frame_p95_ms": 18.591,
+      "kinds": [
+        0
+      ],
+      "node_physics_p95_ms": 2.598,
+      "physics_p95_ms": 3.964,
+      "seconds": 3.000809,
+      "states": {
+        "ATTACK": 20,
+        "DASH_APPROACH": 16,
+        "DASH_RETURN": 15,
+        "RECOVERY": 69,
+        "WINDUP": 60
+      },
+      "terrain": "flat",
+      "timings": {
+        "blade.clear": {
+          "calls": 99,
+          "max_us": 402,
+          "total_us": 19966
+        },
+        "elevation.step": {
+          "calls": 101,
+          "max_us": 1412,
+          "total_us": 98803
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 41,
+          "total_us": 4371
+        },
+        "enemy.physics": {
+          "calls": 180,
+          "max_us": 1716,
+          "total_us": 46341
+        },
+        "enemy.recovery_motion": {
+          "calls": 67,
+          "max_us": 855,
+          "total_us": 22143
+        },
+        "enemy.sight": {
+          "calls": 315,
+          "max_us": 29,
+          "total_us": 3122
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 205,
+          "total_us": 19343
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 2783,
+          "total_us": 157056
+        },
+        "player.preview_plan": {
+          "calls": 1260,
+          "max_us": 1450,
+          "total_us": 108573
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 2655,
+          "total_us": 132012
+        },
+        "route.goal": {
+          "calls": 54,
+          "max_us": 98,
+          "total_us": 1080
+        },
+        "walk.can_reach": {
+          "calls": 65,
+          "max_us": 410,
+          "total_us": 5611
+        },
+        "walk.jump_plan": {
+          "calls": 54,
+          "max_us": 223,
+          "total_us": 8005
+        },
+        "walk.move": {
+          "calls": 54,
+          "max_us": 318,
+          "total_us": 12442
+        }
+      },
+      "unlimited": true
+    },
+    {
+      "attacks": 1,
+      "fps": 60.003494126122,
+      "frame_max_ms": 19.209,
+      "frame_p95_ms": 17.961,
+      "kinds": [
+        1
+      ],
+      "node_physics_p95_ms": 1.903,
+      "physics_p95_ms": 3.883,
+      "seconds": 3.016491,
+      "states": {
+        "ATTACK": 8,
+        "RECOVERY": 117,
+        "WINDUP": 56
+      },
+      "terrain": "flat",
+      "timings": {
+        "blade.clear": {
+          "calls": 68,
+          "max_us": 237,
+          "total_us": 13086
+        },
+        "elevation.step": {
+          "calls": 68,
+          "max_us": 1453,
+          "total_us": 76584
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 39,
+          "total_us": 4251
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1155,
+          "total_us": 17700
+        },
+        "enemy.sight": {
+          "calls": 181,
+          "max_us": 26,
+          "total_us": 2451
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 209,
+          "total_us": 16418
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 2798,
+          "total_us": 125252
+        },
+        "player.preview_plan": {
+          "calls": 1267,
+          "max_us": 1502,
+          "total_us": 86760
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 2667,
+          "total_us": 103555
+        }
+      },
+      "unlimited": true
+    },
+    {
+      "attacks": 1,
+      "fps": 59.997640092823,
+      "frame_max_ms": 18.735,
+      "frame_p95_ms": 17.266,
+      "kinds": [
+        0
+      ],
+      "node_physics_p95_ms": 1.936,
+      "physics_p95_ms": 2.975,
+      "seconds": 3.000118,
+      "states": {
+        "ATTACK": 20,
+        "RECOVERY": 86,
+        "WINDUP": 74
+      },
+      "terrain": "ramp",
+      "timings": {
+        "blade.clear": {
+          "calls": 32,
+          "max_us": 660,
+          "total_us": 14956
+        },
+        "elevation.step": {
+          "calls": 31,
+          "max_us": 684,
+          "total_us": 15223
+        },
+        "enemy.debug": {
+          "calls": 182,
+          "max_us": 41,
+          "total_us": 4465
+        },
+        "enemy.physics": {
+          "calls": 180,
+          "max_us": 1889,
+          "total_us": 53668
+        },
+        "enemy.recovery_motion": {
+          "calls": 85,
+          "max_us": 1658,
+          "total_us": 35129
+        },
+        "enemy.sight": {
+          "calls": 351,
+          "max_us": 15,
+          "total_us": 2647
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 178,
+          "total_us": 26743
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 1209,
+          "total_us": 105332
+        },
+        "player.preview_plan": {
+          "calls": 540,
+          "max_us": 730,
+          "total_us": 20494
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 1020,
+          "total_us": 73006
+        },
+        "route.goal": {
+          "calls": 61,
+          "max_us": 206,
+          "total_us": 2196
+        },
+        "walk.can_reach": {
+          "calls": 74,
+          "max_us": 837,
+          "total_us": 14186
+        },
+        "walk.jump_plan": {
+          "calls": 61,
+          "max_us": 209,
+          "total_us": 8866
+        },
+        "walk.move": {
+          "calls": 61,
+          "max_us": 374,
+          "total_us": 15966
+        }
+      },
+      "unlimited": true
+    },
+    {
+      "attacks": 1,
+      "fps": 59.9943452843616,
+      "frame_max_ms": 19.031,
+      "frame_p95_ms": 17.149,
+      "kinds": [
+        1
+      ],
+      "node_physics_p95_ms": 1.292,
+      "physics_p95_ms": 3.62,
+      "seconds": 3.016951,
+      "states": {
+        "ATTACK": 8,
+        "RECOVERY": 117,
+        "WINDUP": 56
+      },
+      "terrain": "ramp",
+      "timings": {
+        "blade.clear": {
+          "calls": 23,
+          "max_us": 839,
+          "total_us": 10173
+        },
+        "elevation.step": {
+          "calls": 23,
+          "max_us": 873,
+          "total_us": 10703
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 53,
+          "total_us": 4450
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1942,
+          "total_us": 18044
+        },
+        "enemy.sight": {
+          "calls": 181,
+          "max_us": 21,
+          "total_us": 1667
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 272,
+          "total_us": 27614
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 1680,
+          "total_us": 103011
+        },
+        "player.preview_plan": {
+          "calls": 543,
+          "max_us": 938,
+          "total_us": 16216
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 1390,
+          "total_us": 69692
+        }
+      },
+      "unlimited": true
+    },
+    {
+      "attacks": 1,
+      "fps": 59.9988795789338,
+      "frame_max_ms": 18.346,
+      "frame_p95_ms": 17.171,
+      "kinds": [
+        0
+      ],
+      "node_physics_p95_ms": 1.648,
+      "physics_p95_ms": 3.175,
+      "seconds": 3.016723,
+      "states": {
+        "ATTACK": 20,
+        "RECOVERY": 87,
+        "WINDUP": 74
+      },
+      "terrain": "stairs",
+      "timings": {
+        "blade.clear": {
+          "calls": 31,
+          "max_us": 608,
+          "total_us": 13544
+        },
+        "elevation.step": {
+          "calls": 30,
+          "max_us": 631,
+          "total_us": 13860
+        },
+        "enemy.debug": {
+          "calls": 183,
+          "max_us": 41,
+          "total_us": 4452
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1579,
+          "total_us": 42529
+        },
+        "enemy.recovery_motion": {
+          "calls": 85,
+          "max_us": 938,
+          "total_us": 24384
+        },
+        "enemy.sight": {
+          "calls": 352,
+          "max_us": 20,
+          "total_us": 2744
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 240,
+          "total_us": 29204
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 1218,
+          "total_us": 111285
+        },
+        "player.preview_plan": {
+          "calls": 543,
+          "max_us": 675,
+          "total_us": 19130
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 1010,
+          "total_us": 76418
+        },
+        "route.goal": {
+          "calls": 59,
+          "max_us": 103,
+          "total_us": 1193
+        },
+        "walk.can_reach": {
+          "calls": 72,
+          "max_us": 443,
+          "total_us": 5900
+        },
+        "walk.jump_plan": {
+          "calls": 59,
+          "max_us": 246,
+          "total_us": 8526
+        },
+        "walk.move": {
+          "calls": 59,
+          "max_us": 380,
+          "total_us": 13602
+        }
+      },
+      "unlimited": true
+    },
+    {
+      "attacks": 1,
+      "fps": 59.9963538127517,
+      "frame_max_ms": 17.924,
+      "frame_p95_ms": 17.15,
+      "kinds": [
+        1
+      ],
+      "node_physics_p95_ms": 1.301,
+      "physics_p95_ms": 2.963,
+      "seconds": 3.01685,
+      "states": {
+        "ATTACK": 8,
+        "RECOVERY": 117,
+        "WINDUP": 56
+      },
+      "terrain": "stairs",
+      "timings": {
+        "blade.clear": {
+          "calls": 23,
+          "max_us": 499,
+          "total_us": 9585
+        },
+        "elevation.step": {
+          "calls": 23,
+          "max_us": 523,
+          "total_us": 10097
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 40,
+          "total_us": 4308
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1091,
+          "total_us": 17061
+        },
+        "enemy.sight": {
+          "calls": 181,
+          "max_us": 22,
+          "total_us": 1729
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 386,
+          "total_us": 29940
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 1114,
+          "total_us": 111217
+        },
+        "player.preview_plan": {
+          "calls": 543,
+          "max_us": 569,
+          "total_us": 15655
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 885,
+          "total_us": 75530
+        }
+      },
+      "unlimited": true
+    },
+    {
+      "attacks": 2,
+      "fps": 59.9679371429409,
+      "frame_max_ms": 20.034,
+      "frame_p95_ms": 18.763,
+      "kinds": [
+        0,
+        1
+      ],
+      "node_physics_p95_ms": 3.049,
+      "physics_p95_ms": 4.558,
+      "seconds": 3.001604,
+      "states": {
+        "ATTACK": 28,
+        "DASH_APPROACH": 16,
+        "DASH_RETURN": 15,
+        "RECOVERY": 184,
+        "WINDUP": 117
+      },
+      "terrain": "flat",
+      "timings": {
+        "blade.clear": {
+          "calls": 124,
+          "max_us": 388,
+          "total_us": 24802
+        },
+        "elevation.step": {
+          "calls": 132,
+          "max_us": 1408,
+          "total_us": 118503
+        },
+        "enemy.debug": {
+          "calls": 367,
+          "max_us": 59,
+          "total_us": 6876
+        },
+        "enemy.physics": {
+          "calls": 360,
+          "max_us": 1854,
+          "total_us": 48915
+        },
+        "enemy.recovery_motion": {
+          "calls": 66,
+          "max_us": 1014,
+          "total_us": 11371
+        },
+        "enemy.sight": {
+          "calls": 493,
+          "max_us": 31,
+          "total_us": 4461
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 349,
+          "total_us": 23018
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 2975,
+          "total_us": 184099
+        },
+        "player.preview_plan": {
+          "calls": 1620,
+          "max_us": 1446,
+          "total_us": 130765
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 2735,
+          "total_us": 155624
+        },
+        "route.goal": {
+          "calls": 24,
+          "max_us": 112,
+          "total_us": 528
+        },
+        "walk.can_reach": {
+          "calls": 30,
+          "max_us": 490,
+          "total_us": 3001
+        },
+        "walk.jump_plan": {
+          "calls": 23,
+          "max_us": 196,
+          "total_us": 3466
+        },
+        "walk.move": {
+          "calls": 23,
+          "max_us": 291,
+          "total_us": 5426
+        }
+      },
+      "unlimited": true
+    }
+  ],
+  "performance_after": [
+    {
+      "attacks": 1,
+      "fps": 59.9799866777785,
+      "frame_max_ms": 34.925,
+      "frame_p95_ms": 18.504,
+      "kinds": [
+        0
+      ],
+      "node_physics_p95_ms": 2.665,
+      "physics_p95_ms": 4.532,
+      "seconds": 3.001001,
+      "states": {
+        "ATTACK": 20,
+        "DASH_APPROACH": 16,
+        "DASH_RETURN": 15,
+        "RECOVERY": 69,
+        "WINDUP": 60
+      },
+      "terrain": "flat",
+      "timings": {
+        "blade.clear": {
+          "calls": 96,
+          "max_us": 396,
+          "total_us": 20550
+        },
+        "elevation.step": {
+          "calls": 100,
+          "max_us": 2389,
+          "total_us": 104504
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 55,
+          "total_us": 6036
+        },
+        "enemy.physics": {
+          "calls": 180,
+          "max_us": 1427,
+          "total_us": 49283
+        },
+        "enemy.recovery_motion": {
+          "calls": 67,
+          "max_us": 924,
+          "total_us": 22163
+        },
+        "enemy.sight": {
+          "calls": 247,
+          "max_us": 25,
+          "total_us": 2995
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 215,
+          "total_us": 20574
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 2877,
+          "total_us": 166977
+        },
+        "player.preview_plan": {
+          "calls": 1260,
+          "max_us": 2446,
+          "total_us": 115508
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 2672,
+          "total_us": 140525
+        },
+        "walk.can_reach": {
+          "calls": 56,
+          "max_us": 511,
+          "total_us": 5737
+        },
+        "walk.jump_plan": {
+          "calls": 54,
+          "max_us": 307,
+          "total_us": 8689
+        },
+        "walk.move": {
+          "calls": 54,
+          "max_us": 457,
+          "total_us": 13597
+        }
+      },
+      "unlimited": false
+    },
+    {
+      "attacks": 1,
+      "fps": 60.0032156419432,
+      "frame_max_ms": 19.908,
+      "frame_p95_ms": 18.838,
+      "kinds": [
+        1
+      ],
+      "node_physics_p95_ms": 2.667,
+      "physics_p95_ms": 3.711,
+      "seconds": 3.016505,
+      "states": {
+        "ATTACK": 8,
+        "RECOVERY": 118,
+        "WINDUP": 55
+      },
+      "terrain": "flat",
+      "timings": {
+        "blade.clear": {
+          "calls": 68,
+          "max_us": 428,
+          "total_us": 14652
+        },
+        "elevation.step": {
+          "calls": 68,
+          "max_us": 2508,
+          "total_us": 85784
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 51,
+          "total_us": 5652
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1753,
+          "total_us": 21152
+        },
+        "enemy.sight": {
+          "calls": 181,
+          "max_us": 33,
+          "total_us": 2645
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 224,
+          "total_us": 18942
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 3002,
+          "total_us": 140697
+        },
+        "player.preview_plan": {
+          "calls": 1267,
+          "max_us": 2588,
+          "total_us": 97032
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 2798,
+          "total_us": 115777
+        }
+      },
+      "unlimited": false
+    },
+    {
+      "attacks": 1,
+      "fps": 59.9992000106665,
+      "frame_max_ms": 18.953,
+      "frame_p95_ms": 17.674,
+      "kinds": [
+        0
+      ],
+      "node_physics_p95_ms": 2.286,
+      "physics_p95_ms": 3.95,
+      "seconds": 3.00004,
+      "states": {
+        "ATTACK": 20,
+        "RECOVERY": 86,
+        "WINDUP": 74
+      },
+      "terrain": "ramp",
+      "timings": {
+        "blade.clear": {
+          "calls": 30,
+          "max_us": 1247,
+          "total_us": 16922
+        },
+        "elevation.step": {
+          "calls": 30,
+          "max_us": 1289,
+          "total_us": 17782
+        },
+        "enemy.debug": {
+          "calls": 182,
+          "max_us": 106,
+          "total_us": 7992
+        },
+        "enemy.physics": {
+          "calls": 180,
+          "max_us": 2050,
+          "total_us": 67674
+        },
+        "enemy.recovery_motion": {
+          "calls": 85,
+          "max_us": 1916,
+          "total_us": 41637
+        },
+        "enemy.sight": {
+          "calls": 265,
+          "max_us": 30,
+          "total_us": 3132
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 330,
+          "total_us": 33540
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 1957,
+          "total_us": 123932
+        },
+        "player.preview_plan": {
+          "calls": 540,
+          "max_us": 1361,
+          "total_us": 24136
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 1772,
+          "total_us": 83841
+        },
+        "walk.can_reach": {
+          "calls": 64,
+          "max_us": 1198,
+          "total_us": 15509
+        },
+        "walk.jump_plan": {
+          "calls": 61,
+          "max_us": 367,
+          "total_us": 11904
+        },
+        "walk.move": {
+          "calls": 61,
+          "max_us": 613,
+          "total_us": 21763
+        }
+      },
+      "unlimited": false
+    },
+    {
+      "attacks": 1,
+      "fps": 59.9769900431569,
+      "frame_max_ms": 18.184,
+      "frame_p95_ms": 17.23,
+      "kinds": [
+        1
+      ],
+      "node_physics_p95_ms": 1.329,
+      "physics_p95_ms": 3.271,
+      "seconds": 3.017824,
+      "states": {
+        "ATTACK": 8,
+        "RECOVERY": 117,
+        "WINDUP": 56
+      },
+      "terrain": "ramp",
+      "timings": {
+        "blade.clear": {
+          "calls": 23,
+          "max_us": 876,
+          "total_us": 10971
+        },
+        "elevation.step": {
+          "calls": 23,
+          "max_us": 912,
+          "total_us": 11583
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 48,
+          "total_us": 5495
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1165,
+          "total_us": 19230
+        },
+        "enemy.sight": {
+          "calls": 181,
+          "max_us": 57,
+          "total_us": 1896
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 320,
+          "total_us": 30154
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 1785,
+          "total_us": 110311
+        },
+        "player.preview_plan": {
+          "calls": 543,
+          "max_us": 1038,
+          "total_us": 17468
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 1480,
+          "total_us": 74070
+        }
+      },
+      "unlimited": false
+    },
+    {
+      "attacks": 1,
+      "fps": 59.9967913318227,
+      "frame_max_ms": 18.268,
+      "frame_p95_ms": 17.423,
+      "kinds": [
+        0
+      ],
+      "node_physics_p95_ms": 1.814,
+      "physics_p95_ms": 2.793,
+      "seconds": 3.016828,
+      "states": {
+        "ATTACK": 20,
+        "RECOVERY": 87,
+        "WINDUP": 74
+      },
+      "terrain": "stairs",
+      "timings": {
+        "blade.clear": {
+          "calls": 29,
+          "max_us": 804,
+          "total_us": 13678
+        },
+        "elevation.step": {
+          "calls": 29,
+          "max_us": 853,
+          "total_us": 14412
+        },
+        "enemy.debug": {
+          "calls": 183,
+          "max_us": 55,
+          "total_us": 6026
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1249,
+          "total_us": 43817
+        },
+        "enemy.recovery_motion": {
+          "calls": 85,
+          "max_us": 761,
+          "total_us": 23576
+        },
+        "enemy.sight": {
+          "calls": 266,
+          "max_us": 34,
+          "total_us": 2628
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 328,
+          "total_us": 31806
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 1603,
+          "total_us": 119304
+        },
+        "player.preview_plan": {
+          "calls": 543,
+          "max_us": 920,
+          "total_us": 20392
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 1388,
+          "total_us": 81570
+        },
+        "walk.can_reach": {
+          "calls": 62,
+          "max_us": 418,
+          "total_us": 5476
+        },
+        "walk.jump_plan": {
+          "calls": 59,
+          "max_us": 306,
+          "total_us": 9268
+        },
+        "walk.move": {
+          "calls": 59,
+          "max_us": 471,
+          "total_us": 14748
+        }
+      },
+      "unlimited": false
+    },
+    {
+      "attacks": 1,
+      "fps": 59.991561407992,
+      "frame_max_ms": 18.225,
+      "frame_p95_ms": 17.184,
+      "kinds": [
+        1
+      ],
+      "node_physics_p95_ms": 1.389,
+      "physics_p95_ms": 2.935,
+      "seconds": 3.017091,
+      "states": {
+        "ATTACK": 8,
+        "RECOVERY": 117,
+        "WINDUP": 56
+      },
+      "terrain": "stairs",
+      "timings": {
+        "blade.clear": {
+          "calls": 23,
+          "max_us": 673,
+          "total_us": 10071
+        },
+        "elevation.step": {
+          "calls": 23,
+          "max_us": 708,
+          "total_us": 10670
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 101,
+          "total_us": 5784
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1291,
+          "total_us": 20203
+        },
+        "enemy.sight": {
+          "calls": 181,
+          "max_us": 20,
+          "total_us": 1981
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 292,
+          "total_us": 33085
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 1313,
+          "total_us": 121933
+        },
+        "player.preview_plan": {
+          "calls": 543,
+          "max_us": 766,
+          "total_us": 17074
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 1106,
+          "total_us": 82405
+        }
+      },
+      "unlimited": false
+    },
+    {
+      "attacks": 2,
+      "fps": 59.9959602720084,
+      "frame_max_ms": 19.293,
+      "frame_p95_ms": 18.68,
+      "kinds": [
+        0,
+        1
+      ],
+      "node_physics_p95_ms": 3.112,
+      "physics_p95_ms": 6.137,
+      "seconds": 3.000202,
+      "states": {
+        "ATTACK": 28,
+        "DASH_APPROACH": 16,
+        "DASH_RETURN": 15,
+        "RECOVERY": 183,
+        "WINDUP": 118
+      },
+      "terrain": "flat",
+      "timings": {
+        "blade.clear": {
+          "calls": 120,
+          "max_us": 550,
+          "total_us": 27252
+        },
+        "elevation.step": {
+          "calls": 130,
+          "max_us": 2465,
+          "total_us": 130396
+        },
+        "enemy.debug": {
+          "calls": 367,
+          "max_us": 63,
+          "total_us": 8934
+        },
+        "enemy.physics": {
+          "calls": 360,
+          "max_us": 1514,
+          "total_us": 49717
+        },
+        "enemy.recovery_motion": {
+          "calls": 65,
+          "max_us": 729,
+          "total_us": 9806
+        },
+        "enemy.sight": {
+          "calls": 425,
+          "max_us": 29,
+          "total_us": 4374
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 377,
+          "total_us": 24180
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 3602,
+          "total_us": 200308
+        },
+        "player.preview_plan": {
+          "calls": 1620,
+          "max_us": 2536,
+          "total_us": 143797
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 3178,
+          "total_us": 170546
+        },
+        "walk.can_reach": {
+          "calls": 25,
+          "max_us": 397,
+          "total_us": 2559
+        },
+        "walk.jump_plan": {
+          "calls": 23,
+          "max_us": 178,
+          "total_us": 3396
+        },
+        "walk.move": {
+          "calls": 23,
+          "max_us": 272,
+          "total_us": 5350
+        }
+      },
+      "unlimited": false
+    },
+    {
+      "attacks": 1,
+      "fps": 59.9845040031325,
+      "frame_max_ms": 21.442,
+      "frame_p95_ms": 18.757,
+      "kinds": [
+        0
+      ],
+      "node_physics_p95_ms": 2.821,
+      "physics_p95_ms": 4.261,
+      "seconds": 3.000775,
+      "states": {
+        "ATTACK": 20,
+        "DASH_APPROACH": 16,
+        "DASH_RETURN": 15,
+        "RECOVERY": 69,
+        "WINDUP": 60
+      },
+      "terrain": "flat",
+      "timings": {
+        "blade.clear": {
+          "calls": 92,
+          "max_us": 407,
+          "total_us": 18832
+        },
+        "elevation.step": {
+          "calls": 96,
+          "max_us": 2160,
+          "total_us": 94503
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 62,
+          "total_us": 5769
+        },
+        "enemy.physics": {
+          "calls": 180,
+          "max_us": 1356,
+          "total_us": 39361
+        },
+        "enemy.recovery_motion": {
+          "calls": 67,
+          "max_us": 1159,
+          "total_us": 13688
+        },
+        "enemy.sight": {
+          "calls": 314,
+          "max_us": 24,
+          "total_us": 3372
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 214,
+          "total_us": 19002
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 2870,
+          "total_us": 151624
+        },
+        "player.preview_plan": {
+          "calls": 1260,
+          "max_us": 2233,
+          "total_us": 104293
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 2739,
+          "total_us": 127352
+        },
+        "route.goal": {
+          "calls": 30,
+          "max_us": 115,
+          "total_us": 618
+        },
+        "walk.can_reach": {
+          "calls": 37,
+          "max_us": 865,
+          "total_us": 3956
+        },
+        "walk.jump_plan": {
+          "calls": 29,
+          "max_us": 171,
+          "total_us": 4113
+        },
+        "walk.move": {
+          "calls": 29,
+          "max_us": 261,
+          "total_us": 6461
+        }
+      },
+      "unlimited": true
+    },
+    {
+      "attacks": 1,
+      "fps": 60.0044688411049,
+      "frame_max_ms": 19.337,
+      "frame_p95_ms": 18.818,
+      "kinds": [
+        1
+      ],
+      "node_physics_p95_ms": 2.675,
+      "physics_p95_ms": 5.425,
+      "seconds": 3.016442,
+      "states": {
+        "ATTACK": 8,
+        "RECOVERY": 117,
+        "WINDUP": 56
+      },
+      "terrain": "flat",
+      "timings": {
+        "blade.clear": {
+          "calls": 68,
+          "max_us": 251,
+          "total_us": 12553
+        },
+        "elevation.step": {
+          "calls": 68,
+          "max_us": 1479,
+          "total_us": 73943
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 41,
+          "total_us": 5641
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1176,
+          "total_us": 19090
+        },
+        "enemy.sight": {
+          "calls": 181,
+          "max_us": 23,
+          "total_us": 2545
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 120,
+          "total_us": 16222
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 3010,
+          "total_us": 124255
+        },
+        "player.preview_plan": {
+          "calls": 1267,
+          "max_us": 1513,
+          "total_us": 84365
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 2877,
+          "total_us": 102619
+        }
+      },
+      "unlimited": true
+    },
+    {
+      "attacks": 1,
+      "fps": 59.9973001214945,
+      "frame_max_ms": 18.308,
+      "frame_p95_ms": 17.282,
+      "kinds": [
+        0
+      ],
+      "node_physics_p95_ms": 1.776,
+      "physics_p95_ms": 3.146,
+      "seconds": 3.000135,
+      "states": {
+        "ATTACK": 20,
+        "RECOVERY": 86,
+        "WINDUP": 74
+      },
+      "terrain": "ramp",
+      "timings": {
+        "blade.clear": {
+          "calls": 30,
+          "max_us": 686,
+          "total_us": 14093
+        },
+        "elevation.step": {
+          "calls": 30,
+          "max_us": 710,
+          "total_us": 14813
+        },
+        "enemy.debug": {
+          "calls": 182,
+          "max_us": 50,
+          "total_us": 5701
+        },
+        "enemy.physics": {
+          "calls": 180,
+          "max_us": 1882,
+          "total_us": 53493
+        },
+        "enemy.recovery_motion": {
+          "calls": 85,
+          "max_us": 1784,
+          "total_us": 34894
+        },
+        "enemy.sight": {
+          "calls": 350,
+          "max_us": 14,
+          "total_us": 2852
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 201,
+          "total_us": 27736
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 1234,
+          "total_us": 106890
+        },
+        "player.preview_plan": {
+          "calls": 540,
+          "max_us": 757,
+          "total_us": 20445
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 1045,
+          "total_us": 73308
+        },
+        "route.goal": {
+          "calls": 61,
+          "max_us": 203,
+          "total_us": 2237
+        },
+        "walk.can_reach": {
+          "calls": 74,
+          "max_us": 1012,
+          "total_us": 13954
+        },
+        "walk.jump_plan": {
+          "calls": 61,
+          "max_us": 191,
+          "total_us": 8773
+        },
+        "walk.move": {
+          "calls": 61,
+          "max_us": 340,
+          "total_us": 15924
+        }
+      },
+      "unlimited": true
+    },
+    {
+      "attacks": 1,
+      "fps": 59.9918211150546,
+      "frame_max_ms": 18.32,
+      "frame_p95_ms": 17.186,
+      "kinds": [
+        1
+      ],
+      "node_physics_p95_ms": 1.319,
+      "physics_p95_ms": 2.963,
+      "seconds": 3.000409,
+      "states": {
+        "ATTACK": 8,
+        "RECOVERY": 116,
+        "WINDUP": 56
+      },
+      "terrain": "ramp",
+      "timings": {
+        "blade.clear": {
+          "calls": 22,
+          "max_us": 521,
+          "total_us": 9493
+        },
+        "elevation.step": {
+          "calls": 22,
+          "max_us": 546,
+          "total_us": 10015
+        },
+        "enemy.debug": {
+          "calls": 183,
+          "max_us": 48,
+          "total_us": 5923
+        },
+        "enemy.physics": {
+          "calls": 180,
+          "max_us": 1337,
+          "total_us": 19615
+        },
+        "enemy.sight": {
+          "calls": 180,
+          "max_us": 25,
+          "total_us": 1794
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 311,
+          "total_us": 27119
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 1089,
+          "total_us": 100873
+        },
+        "player.preview_plan": {
+          "calls": 540,
+          "max_us": 593,
+          "total_us": 15417
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 899,
+          "total_us": 68196
+        }
+      },
+      "unlimited": true
+    },
+    {
+      "attacks": 1,
+      "fps": 59.9966001926558,
+      "frame_max_ms": 19.113,
+      "frame_p95_ms": 17.605,
+      "kinds": [
+        0
+      ],
+      "node_physics_p95_ms": 1.887,
+      "physics_p95_ms": 2.933,
+      "seconds": 3.00017,
+      "states": {
+        "ATTACK": 20,
+        "RECOVERY": 86,
+        "WINDUP": 74
+      },
+      "terrain": "stairs",
+      "timings": {
+        "blade.clear": {
+          "calls": 29,
+          "max_us": 1067,
+          "total_us": 13813
+        },
+        "elevation.step": {
+          "calls": 29,
+          "max_us": 1100,
+          "total_us": 14519
+        },
+        "enemy.debug": {
+          "calls": 182,
+          "max_us": 76,
+          "total_us": 5973
+        },
+        "enemy.physics": {
+          "calls": 180,
+          "max_us": 1193,
+          "total_us": 47519
+        },
+        "enemy.recovery_motion": {
+          "calls": 84,
+          "max_us": 985,
+          "total_us": 27713
+        },
+        "enemy.sight": {
+          "calls": 348,
+          "max_us": 38,
+          "total_us": 3210
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 367,
+          "total_us": 31213
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 1943,
+          "total_us": 116257
+        },
+        "player.preview_plan": {
+          "calls": 540,
+          "max_us": 1161,
+          "total_us": 20343
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 1632,
+          "total_us": 79260
+        },
+        "route.goal": {
+          "calls": 59,
+          "max_us": 133,
+          "total_us": 1389
+        },
+        "walk.can_reach": {
+          "calls": 71,
+          "max_us": 456,
+          "total_us": 6405
+        },
+        "walk.jump_plan": {
+          "calls": 59,
+          "max_us": 371,
+          "total_us": 10216
+        },
+        "walk.move": {
+          "calls": 59,
+          "max_us": 562,
+          "total_us": 15863
+        }
+      },
+      "unlimited": true
+    },
+    {
+      "attacks": 1,
+      "fps": 60.0024199871045,
+      "frame_max_ms": 18.349,
+      "frame_p95_ms": 17.154,
+      "kinds": [
+        1
+      ],
+      "node_physics_p95_ms": 1.28,
+      "physics_p95_ms": 4.113,
+      "seconds": 3.016545,
+      "states": {
+        "ATTACK": 8,
+        "RECOVERY": 117,
+        "WINDUP": 56
+      },
+      "terrain": "stairs",
+      "timings": {
+        "blade.clear": {
+          "calls": 22,
+          "max_us": 462,
+          "total_us": 8620
+        },
+        "elevation.step": {
+          "calls": 22,
+          "max_us": 488,
+          "total_us": 9148
+        },
+        "enemy.debug": {
+          "calls": 184,
+          "max_us": 62,
+          "total_us": 5697
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1299,
+          "total_us": 18773
+        },
+        "enemy.sight": {
+          "calls": 181,
+          "max_us": 17,
+          "total_us": 1787
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 276,
+          "total_us": 29915
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 1065,
+          "total_us": 108582
+        },
+        "player.preview_plan": {
+          "calls": 543,
+          "max_us": 536,
+          "total_us": 14660
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 855,
+          "total_us": 73029
+        }
+      },
+      "unlimited": true
+    },
+    {
+      "attacks": 2,
+      "fps": 59.9784677300849,
+      "frame_max_ms": 19.929,
+      "frame_p95_ms": 18.639,
+      "kinds": [
+        0,
+        1
+      ],
+      "node_physics_p95_ms": 3.335,
+      "physics_p95_ms": 4.913,
+      "seconds": 3.001077,
+      "states": {
+        "ATTACK": 28,
+        "DASH_APPROACH": 16,
+        "DASH_RETURN": 15,
+        "RECOVERY": 184,
+        "WINDUP": 117
+      },
+      "terrain": "flat",
+      "timings": {
+        "blade.clear": {
+          "calls": 119,
+          "max_us": 423,
+          "total_us": 26382
+        },
+        "elevation.step": {
+          "calls": 129,
+          "max_us": 2634,
+          "total_us": 128351
+        },
+        "enemy.debug": {
+          "calls": 367,
+          "max_us": 92,
+          "total_us": 9635
+        },
+        "enemy.physics": {
+          "calls": 360,
+          "max_us": 1515,
+          "total_us": 51688
+        },
+        "enemy.recovery_motion": {
+          "calls": 66,
+          "max_us": 854,
+          "total_us": 9411
+        },
+        "enemy.sight": {
+          "calls": 492,
+          "max_us": 77,
+          "total_us": 5013
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 362,
+          "total_us": 24584
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 3424,
+          "total_us": 197848
+        },
+        "player.preview_plan": {
+          "calls": 1620,
+          "max_us": 2700,
+          "total_us": 141764
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 2984,
+          "total_us": 167671
+        },
+        "route.goal": {
+          "calls": 18,
+          "max_us": 93,
+          "total_us": 369
+        },
+        "walk.can_reach": {
+          "calls": 23,
+          "max_us": 370,
+          "total_us": 2374
+        },
+        "walk.jump_plan": {
+          "calls": 17,
+          "max_us": 214,
+          "total_us": 2713
+        },
+        "walk.move": {
+          "calls": 17,
+          "max_us": 325,
+          "total_us": 4210
+        }
+      },
+      "unlimited": true
+    }
+  ],
+  "blocked_position_after_only": [
+    {
+      "attacks": 0,
+      "enclosed": false,
+      "fps": 59.9965002041548,
+      "frame_max_ms": 18.876,
+      "kind": 0,
+      "physics_p95_ms": 3.414,
+      "position": "(1.997645, 0.000839, 9.486463)",
+      "position_reason": "POSITION_DETOUR",
+      "seconds": 3.000175,
+      "states": {
+        "1": 180
+      },
+      "timings": {
+        "blade.clear": {
+          "calls": 93,
+          "max_us": 1170,
+          "total_us": 30983
+        },
+        "elevation.step": {
+          "calls": 144,
+          "max_us": 1737,
+          "total_us": 67526
+        },
+        "enemy.debug": {
+          "calls": 180,
+          "max_us": 51,
+          "total_us": 6730
+        },
+        "enemy.physics": {
+          "calls": 180,
+          "max_us": 1858,
+          "total_us": 81681
+        },
+        "enemy.sight": {
+          "calls": 180,
+          "max_us": 35,
+          "total_us": 3610
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 301,
+          "total_us": 13368
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 1980,
+          "total_us": 100028
+        },
+        "player.preview_plan": {
+          "calls": 375,
+          "max_us": 1786,
+          "total_us": 71329
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 1876,
+          "total_us": 81339
+        },
+        "route.astar": {
+          "calls": 16,
+          "max_us": 1685,
+          "total_us": 17296
+        },
+        "route.goal": {
+          "calls": 120,
+          "max_us": 1697,
+          "total_us": 27451
+        },
+        "route.position": {
+          "calls": 131,
+          "max_us": 1714,
+          "total_us": 31040
+        },
+        "walk.can_reach": {
+          "calls": 91,
+          "max_us": 646,
+          "total_us": 22053
+        },
+        "walk.jump_plan": {
+          "calls": 118,
+          "max_us": 200,
+          "total_us": 17487
+        },
+        "walk.move": {
+          "calls": 102,
+          "max_us": 300,
+          "total_us": 23965
+        },
+        "walk.step_plan": {
+          "calls": 1,
+          "max_us": 12,
+          "total_us": 12
+        }
+      }
+    },
+    {
+      "attacks": 0,
+      "enclosed": true,
+      "fps": 59.9667384490736,
+      "frame_max_ms": 18.411,
+      "kind": 0,
+      "physics_p95_ms": 2.738,
+      "position": "(0.466667, 0.000839, 8.0)",
+      "position_reason": "POSITION_DETOUR",
+      "seconds": 3.001664,
+      "states": {
+        "1": 180
+      },
+      "timings": {
+        "blade.clear": {
+          "calls": 72,
+          "max_us": 681,
+          "total_us": 22249
+        },
+        "elevation.step": {
+          "calls": 82,
+          "max_us": 1207,
+          "total_us": 45877
+        },
+        "enemy.debug": {
+          "calls": 180,
+          "max_us": 54,
+          "total_us": 5570
+        },
+        "enemy.physics": {
+          "calls": 180,
+          "max_us": 1894,
+          "total_us": 51917
+        },
+        "enemy.sight": {
+          "calls": 180,
+          "max_us": 48,
+          "total_us": 5022
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 348,
+          "total_us": 14307
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 1514,
+          "total_us": 81016
+        },
+        "player.preview_plan": {
+          "calls": 360,
+          "max_us": 1253,
+          "total_us": 51345
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 1347,
+          "total_us": 61230
+        },
+        "route.astar": {
+          "calls": 19,
+          "max_us": 1744,
+          "total_us": 19172
+        },
+        "route.goal": {
+          "calls": 34,
+          "max_us": 1755,
+          "total_us": 22529
+        },
+        "route.position": {
+          "calls": 147,
+          "max_us": 1773,
+          "total_us": 27100
+        },
+        "walk.can_reach": {
+          "calls": 84,
+          "max_us": 767,
+          "total_us": 18239
+        },
+        "walk.jump_plan": {
+          "calls": 21,
+          "max_us": 300,
+          "total_us": 3336
+        },
+        "walk.move": {
+          "calls": 13,
+          "max_us": 317,
+          "total_us": 3228
+        },
+        "walk.step_plan": {
+          "calls": 1,
+          "max_us": 14,
+          "total_us": 14
+        }
+      }
+    },
+    {
+      "attacks": 0,
+      "enclosed": false,
+      "fps": 60.014416722868,
+      "frame_max_ms": 26.349,
+      "kind": 1,
+      "physics_p95_ms": 3.203,
+      "position": "(1.799598, 0.000839, 9.298427)",
+      "position_reason": "",
+      "seconds": 3.015942,
+      "states": {
+        "1": 177,
+        "2": 4
+      },
+      "timings": {
+        "blade.clear": {
+          "calls": 100,
+          "max_us": 1492,
+          "total_us": 41986
+        },
+        "elevation.step": {
+          "calls": 129,
+          "max_us": 2015,
+          "total_us": 77944
+        },
+        "enemy.debug": {
+          "calls": 182,
+          "max_us": 56,
+          "total_us": 6676
+        },
+        "enemy.physics": {
+          "calls": 181,
+          "max_us": 1079,
+          "total_us": 59754
+        },
+        "enemy.sight": {
+          "calls": 182,
+          "max_us": 39,
+          "total_us": 3224
+        },
+        "player.markers": {
+          "calls": 181,
+          "max_us": 332,
+          "total_us": 14599
+        },
+        "player.physics": {
+          "calls": 181,
+          "max_us": 2350,
+          "total_us": 116986
+        },
+        "player.preview_plan": {
+          "calls": 364,
+          "max_us": 2083,
+          "total_us": 85255
+        },
+        "player.selection": {
+          "calls": 181,
+          "max_us": 2178,
+          "total_us": 96601
+        },
+        "route.goal": {
+          "calls": 106,
+          "max_us": 494,
+          "total_us": 7026
+        },
+        "route.position": {
+          "calls": 113,
+          "max_us": 767,
+          "total_us": 10792
+        },
+        "walk.can_reach": {
+          "calls": 26,
+          "max_us": 636,
+          "total_us": 5923
+        },
+        "walk.jump_plan": {
+          "calls": 106,
+          "max_us": 300,
+          "total_us": 16423
+        },
+        "walk.move": {
+          "calls": 99,
+          "max_us": 457,
+          "total_us": 24581
+        },
+        "walk.step_plan": {
+          "calls": 2,
+          "max_us": 13,
+          "total_us": 24
+        }
+      }
+    },
+    {
+      "attacks": 0,
+      "enclosed": true,
+      "fps": 59.9845439825005,
+      "frame_max_ms": 19.259,
+      "kind": 1,
+      "physics_p95_ms": 3.238,
+      "position": "(0.466667, 0.000839, 8.0)",
+      "position_reason": "POSITION_DETOUR",
+      "seconds": 3.000773,
+      "states": {
+        "1": 180
+      },
+      "timings": {
+        "blade.clear": {
+          "calls": 72,
+          "max_us": 688,
+          "total_us": 21920
+        },
+        "elevation.step": {
+          "calls": 82,
+          "max_us": 1244,
+          "total_us": 46128
+        },
+        "enemy.debug": {
+          "calls": 180,
+          "max_us": 56,
+          "total_us": 5863
+        },
+        "enemy.physics": {
+          "calls": 180,
+          "max_us": 1783,
+          "total_us": 52158
+        },
+        "enemy.sight": {
+          "calls": 180,
+          "max_us": 48,
+          "total_us": 5089
+        },
+        "player.markers": {
+          "calls": 180,
+          "max_us": 352,
+          "total_us": 15223
+        },
+        "player.physics": {
+          "calls": 180,
+          "max_us": 1568,
+          "total_us": 82894
+        },
+        "player.preview_plan": {
+          "calls": 360,
+          "max_us": 1292,
+          "total_us": 51755
+        },
+        "player.selection": {
+          "calls": 180,
+          "max_us": 1393,
+          "total_us": 61965
+        },
+        "route.astar": {
+          "calls": 18,
+          "max_us": 1550,
+          "total_us": 18860
+        },
+        "route.goal": {
+          "calls": 34,
+          "max_us": 1643,
+          "total_us": 22174
+        },
+        "route.position": {
+          "calls": 147,
+          "max_us": 1659,
+          "total_us": 26971
+        },
+        "walk.can_reach": {
+          "calls": 83,
+          "max_us": 780,
+          "total_us": 18394
+        },
+        "walk.jump_plan": {
+          "calls": 20,
+          "max_us": 340,
+          "total_us": 3081
+        },
+        "walk.move": {
+          "calls": 13,
+          "max_us": 278,
+          "total_us": 3016
+        },
+        "walk.step_plan": {
+          "calls": 1,
+          "max_us": 11,
+          "total_us": 11
+        }
+      }
+    }
+  ],
+  "lifecycle": [
+    {
+      "sha256": "EFF9C94BBB4CE6D8A5B6BA05A8339B50C562FB01BE898CCE7AE5C46403D05807",
+      "exit": 0,
+      "log": ".godot/edge_adopted_position.log"
+    },
+    {
+      "sha256": "5889F9438F9A019892139E962BD34AA813DE10D30C7BC423F9CB3080552F25C3",
+      "exit": 0,
+      "log": ".godot/edge_adopted_perf.log"
+    },
+    {
+      "sha256": "5AD68A12772B87FAA5FC184FABF78F4225EC61CA7770F0EE5E2E29242E960A94",
+      "exit": 0,
+      "log": ".godot/edge_adopted_import.log"
+    },
+    {
+      "sha256": "F396EA5693A6B3E9B4017460556FB0327EC63A21A00F3AC57EF184B5B8FB7FDF",
+      "exit": 0,
+      "log": ".godot/edge_adopted_startup.log"
+    }
+  ],
+  "protected_unchanged": [
+    "scripts/player/",
+    "enemy_walk.gd",
+    "enemy_walk_settings.gd",
+    "dash_path.gd",
+    "melee_sweep.gd",
+    "terrain_ground.gd",
+    "planning_budget.gd",
+    "enemy_attack_data.gd",
+    "practice_projectile.gd",
+    "resources/enemies/",
+    "resources/weapons/",
+    "project.godot"
+  ],
+  "limitations": [
+    "User reports prior FPS fix remains 60FPS; acceptance of this new behavior is pending F5.",
+    "Each performance placement measured for approximately 3 seconds; no guarantee for every frame, long sessions, arbitrary maps, or many enemies.",
+    "Real main and player physics/selection/markers enabled for performance. Functional fixtures freeze player movement.",
+    "Blocked-position 3-second captures show ongoing detour search; zero attacks at that instant is not proof of no eventual attack. Longer functional detour fixtures verify one real hit; enclosed fixtures verify no attack and safe stop.",
+    "OS certificate-store read error occurs in baseline and after runs under sandbox; no script/resource errors or warnings in adopted logs.",
+    "Superseded tests expected attack animations to be blocked by terrain; revised tests explicitly retain zero damage and body path safety checks."
+  ]
+}

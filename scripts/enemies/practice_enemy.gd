@@ -40,8 +40,14 @@ var _availability_attack: Resource
 var _availability_unlimited:=false
 var _availability_value:=false
 var _availability_reason:=""
+var _availability_blocker:=""
 var _eligibility_job: Dictionary={}
 var _planning_async:=false
+var _perception_frame:=-1
+var _seen_now:=false
+var _distance_now:=INF
+var attack_blocker:=""
+var last_hit_blocker:=""
 
 func _work_update_attack_debug() -> void:
 	if performance_diagnostics!=null and not performance_diagnostics.details_enabled:
@@ -50,7 +56,32 @@ func _work_update_attack_debug() -> void:
 	debug_label.visible=true
 	var distance:=Walker.horizontal(global_position,player.global_position) if player_alive() else INF
 	var blocked: String=_pursuit_route.reason if debug_unlimited_pursuit and not _pursuit_route.reason.is_empty() else walker.blocked_reason
-	debug_label.text=State.keys()[state]+"  PURSUIT: "+("UNLIMITED" if debug_unlimited_pursuit else "BOUNDED")+"\nDIST: %.2fm  MOVE: %s" % [distance,blocked]+"\nSTART: "+attack_start_reason+"\nABORT: "+attack_abort_reason+"\nHIT: "+attack_hit_reason
+	debug_label.text=State.keys()[state]+"  PURSUIT: "+("UNLIMITED" if debug_unlimited_pursuit else "BOUNDED")+"\nDIST: %.2fm  MOVE: %s" % [distance,blocked]+"\nSTART(now): "+_current_readiness()+"\nPOSITION: "+_pursuit_route.position_reason+"\nBLOCKER: "+attack_blocker+"\nABORT(last): "+attack_abort_reason+"\nHIT(last): "+attack_hit_reason+" "+last_hit_blocker
+
+func _current_readiness() -> String:
+	if not player_alive(): return "NO_TARGET"
+	if state==State.DEAD: return "DEAD"
+	if walker.busy(): return "ACTOR_AIRBORNE"
+	if state==State.WINDUP:
+		if not aim_locked: return "WINDUP_TRACKING"
+		if _aim_plan_ready: return "LOCKED_READY"
+		return _pending_text(_aim_job)
+	if state!=State.CHASE: return State.keys()[state]
+	if performance_diagnostics!=null and not performance_diagnostics.attack_planning_enabled: return "DIAGNOSTIC_ATTACK_DISABLED"
+	var sight:=_seen_now if _perception_frame==Engine.get_physics_frames() else has_sight()
+	if not sight: return "TARGET_NOT_VISIBLE"
+	var distance:=_distance_now if _perception_frame==Engine.get_physics_frames() else (Walker.horizontal(global_position,player.global_position) if active_attack.weapon!=null else global_position.distance_to(player.global_position))
+	if distance>engagement_range(): return "OUT_OF_RANGE"
+	if _in_place_reach(player.global_position): return "READY_IN_PLACE"+(" (COOLDOWN)" if cooldown>0.0 else "")
+	if _pursuit_route.positioning(): return "POSITIONING"
+	if global_position.distance_to(_availability_origin)>=0.08 or player.global_position.distance_to(_availability_target)>=0.08: return "NEEDS_RECHECK"
+	if not _eligibility_job.is_empty(): return _pending_text(_eligibility_job)
+	if _availability_until<Time.get_ticks_usec(): return "NEEDS_RECHECK"
+	return _availability_reason+(" (COOLDOWN)" if cooldown>0.0 else "")
+
+func _pending_text(job: Dictionary) -> String:
+	var age:=float(Time.get_ticks_usec()-int(job.get("started",Time.get_ticks_usec())))/1000000.0
+	return ("PLANNING_STALLED" if age>2.0 else "PLANNING_PENDING")+" %.2fs" % age
 
 func _work_terrain_plan(at: Vector3) -> Dictionary:
 	var diagnostic: Dictionary={"enabled":true}
@@ -131,9 +162,19 @@ func player_alive() -> bool:
 	return is_instance_valid(player) and player.is_inside_tree() and player.get_node("HealthComponent").current_hp > 0.0
 
 func _work_has_sight() -> bool:
-	if player_alive() and active_attack!=null and active_attack.weapon!=null and active_attack.weapon.hit_height_up>=0.0:
-		return Path.sight(self,player.global_position) or StrikeGeometry.clear(self,player.global_position) or Elevation.Blade._line(self,global_position+Vector3.UP*1.6,player.global_position+Vector3.UP*1.6)
+	if player_alive() and active_attack!=null and (active_attack.kind==AttackData.Kind.PROJECTILE or (active_attack.weapon!=null and active_attack.weapon.hit_height_up>=0.0)):
+		return _recognized_from(global_position,player.global_position)
 	return player_alive() and Path.sight(self, player.global_position)
+
+func _recognized_from(from: Vector3, at: Vector3) -> bool:
+	var space:=get_world_3d().direct_space_state
+	var blocker:=""
+	for height in [0.8,1.6]:
+		var hit:=space.intersect_ray(PhysicsRayQueryParameters3D.create(from+Vector3.UP*height,at+Vector3.UP*height,1))
+		if hit.is_empty(): return true
+		blocker=str(hit.collider.get_path())
+	if show_attack_diagnostics and from.is_equal_approx(global_position): attack_blocker=blocker
+	return false
 
 func engagement_range() -> float:
 	return settings.attack.weapon.attack_range if settings.attack.weapon != null else settings.attack_start_distance
@@ -144,9 +185,15 @@ func current_weapon_visual() -> Resource:
 
 func _weapon_strike_clear(at: Vector3) -> bool:
 	if not Sweep.contains(global_position, facing, at, active_attack.weapon): return false
-	return StrikeGeometry.clear(self,at)
+	var report:=StrikeGeometry.report(self,at)
+	attack_blocker=report.blocker
+	return report.clear
+
+func blade_plan_clear(at: Vector3, from: Vector3) -> bool:
+	return StrikeGeometry.report(self,at,from).clear
 
 func _work_physics_process(delta: float) -> void:
+	attack_blocker=""
 	if state == State.DEAD: return
 	if health.current_hp <= 0.0:
 		_die(null)
@@ -160,6 +207,9 @@ func _work_physics_process(delta: float) -> void:
 	var distance := global_position.distance_to(player.global_position) if player_alive() else INF
 	if player_alive() and active_attack.weapon!=null: distance=Walker.horizontal(global_position,player.global_position)
 	var sight := has_sight()
+	_seen_now=sight
+	_distance_now=distance
+	_perception_frame=Engine.get_physics_frames()
 	if _diagnostics_shown and not show_attack_diagnostics: _refresh_visuals()
 	_diagnostics_shown=show_attack_diagnostics
 	debug_label.visible=(show_debug_state or show_attack_diagnostics) and (performance_diagnostics==null or performance_diagnostics.details_enabled)
@@ -172,7 +222,6 @@ func _work_physics_process(delta: float) -> void:
 		if walker.busy(): attack_start_reason="ACTOR_AIRBORNE"
 		elif not sight: attack_start_reason="TARGET_NOT_VISIBLE"
 		elif distance>engagement_range(): attack_start_reason="OUT_OF_RANGE"
-		_update_attack_debug()
 	sight_lost = 0.0 if sight else sight_lost + delta
 	if sight:
 		last_seen_position = player.global_position
@@ -199,16 +248,20 @@ func _work_physics_process(delta: float) -> void:
 			if (debug_unlimited_pursuit and player_alive()) or (sight and distance <= settings.detection_radius and inside_home(player.global_position,settings.leash_reentry_margin)): _set_state(State.CHASE)
 		State.CHASE:
 			var melee_available:=false
-			if sight and active_attack.kind!=AttackData.Kind.PROJECTILE and distance<=engagement_range(): melee_available=_attack_position_available()
+			var positioning:=_pursuit_route.positioning()
+			if sight and active_attack.kind!=AttackData.Kind.PROJECTILE and distance<=engagement_range():
+				if _in_place_reach(player.global_position) or not positioning: melee_available=_attack_position_available()
 			if not sight:
 				velocity = Vector3.ZERO
-				if debug_unlimited_pursuit and player_alive(): _walk_towards(player.global_position,delta)
+				if debug_unlimited_pursuit and player_alive(): _walk_to_attack_position(delta)
 				elif _last_seen_valid and sight_lost < settings.sight_loss_seconds: _walk_towards(last_seen_position,delta)
 			elif active_attack.kind == AttackData.Kind.PROJECTILE: _ranged_chase_step(delta, distance, sight, true)
+			elif positioning and not melee_available: _walk_to_attack_position(delta)
 			elif distance<=engagement_range() and not melee_available and attack_start_reason=="PLANNING_PENDING": velocity=Vector3.ZERO
 			elif distance <= engagement_range() and cooldown <= 0.0 and melee_available: _start_windup()
 			elif distance > engagement_range() or not melee_available:
-				if _can_pursue() and attack_count > 0: _pursuit_step(delta)
+				if not melee_available and distance<=engagement_range(): _walk_to_attack_position(delta)
+				elif _can_pursue() and attack_count > 0: _pursuit_step(delta)
 				else: _walk_towards(player.global_position, delta)
 			elif _can_pursue() and attack_count > 0: _post_attack_step(delta)
 			else: velocity = Vector3.ZERO # Stopped cooldown uses Idle, not a stale walk velocity.
@@ -251,6 +304,7 @@ func _attack_position_available() -> bool:
 	var unchanged:=active_attack==_availability_attack and debug_unlimited_pursuit==_availability_unlimited and global_position.distance_to(_availability_origin)<0.08 and player.global_position.distance_to(_availability_target)<0.08
 	if unchanged and (_planning_async or _availability_reason!="PLANNING_PENDING") and (frame==_availability_frame or now<_availability_until):
 		attack_start_reason=_availability_reason
+		attack_blocker=_availability_blocker
 		return _availability_value
 	_availability_frame=frame
 	_availability_origin=global_position
@@ -260,16 +314,25 @@ func _attack_position_available() -> bool:
 	_availability_value=_evaluate_attack_position()
 	_availability_until=0 if attack_start_reason=="PLANNING_PENDING" else Time.get_ticks_usec()+(150000 if _availability_value else 400000)
 	_availability_reason=attack_start_reason
+	_availability_blocker=attack_blocker
 	return _availability_value
 
 func _evaluate_attack_position() -> bool:
 	# Eligibility cache never authorizes a launch: _start_windup/_plan_attack,
 	# the committed dash, actual movement and hit retain fresh safety checks.
+	if not player_alive() or not (_seen_now if _planning_async else has_sight()):
+		attack_start_reason="TARGET_NOT_VISIBLE"
+		return false
 	if active_attack.weapon == null:
 		if active_attack.kind != AttackData.Kind.PROJECTILE: return true
 		var clear := _projectile_path_clear(player.global_position)
 		attack_start_reason = "OK" if clear else "PROJECTILE_PATH_BLOCKED"
 		return clear
+	if _in_place_reach(player.global_position):
+		_eligibility_job={}
+		if show_attack_diagnostics: attack_blocker=StrikeGeometry.report(self,player.global_position).blocker
+		attack_start_reason="READY_IN_PLACE"
+		return true # Recognition is checked by CHASE/entry; obstruction belongs to the hit.
 	if active_attack.weapon.elevation_travel!=null:
 		var floor_at: Vector3=walker.target_floor(player.global_position,active_attack.target_ground_probe_depth)
 		if not floor_at.is_finite():
@@ -280,7 +343,7 @@ func _evaluate_attack_position() -> bool:
 			return not immediate.is_empty() and inside_home(immediate.destination)
 		if _eligibility_job.is_empty() or _eligibility_job.weapon!=active_attack.weapon or global_position.distance_to(_eligibility_job.origin)>0.5 or floor_at.distance_to(_eligibility_job.target)>0.5:
 			_eligibility_job=Elevation.new_attack_job()
-			_eligibility_job.merge({"weapon":active_attack.weapon,"origin":global_position,"target":floor_at,"frame":-1})
+			_eligibility_job.merge({"weapon":active_attack.weapon,"origin":global_position,"target":floor_at,"frame":-1,"started":Time.get_ticks_usec()})
 		if _eligibility_job.frame==Engine.get_process_frames() or not PlanningBudget.take():
 			attack_start_reason="PLANNING_PENDING"
 			return false
@@ -309,19 +372,36 @@ func locomotion_held() -> bool:
 	var combat = player.combat
 	return combat.is_busy() and (combat.target == targetable or combat.queued_attack_target == targetable)
 
-func _walk_towards(at: Vector3, delta: float, speed_override: float = -1.0) -> void:
+func _walk_towards(at: Vector3, delta: float, speed_override: float = -1.0, local_goal: bool=false) -> void:
 	velocity = Vector3.ZERO
 	if locomotion_held(): return # Chase waits but its attack state machine still runs.
 	if walker.retry>0.0 and not walker.busy():
 		walker.retry=maxf(0.0,walker.retry-delta)
 		return # Do not run route/jump preflights while the mover is waiting.
-	if debug_unlimited_pursuit and player_alive() and state in [State.CHASE,State.RECOVERY]:
+	if not local_goal and debug_unlimited_pursuit and player_alive() and state in [State.CHASE,State.RECOVERY]:
 		at=_pursuit_route.goal(self,at,delta)
 		if not at.is_finite(): return
 	var direction := _horizontal_direction(at) # Preserve intent before a one-tick goal is consumed.
 	var speed := settings.chase_speed if speed_override < 0.0 else speed_override
 	walker.walk(at,delta,speed)
 	_face_walk_velocity(direction)
+
+func _walk_to_attack_position(delta: float) -> void:
+	velocity=Vector3.ZERO
+	if locomotion_held(): return
+	if walker.retry>0.0:
+		walker.retry=maxf(0.0,walker.retry-delta)
+		return
+	var goal: Vector3=_pursuit_route.combat_goal(self,delta)
+	if _pursuit_route.positioning(): _eligibility_job={}
+	if goal.is_finite(): _walk_towards(goal,delta,-1.0,true)
+
+func firing_position_clear(at: Vector3) -> bool:
+	if not player_alive(): return false
+	if not _recognized_from(at,player.global_position): return false
+	if active_attack.kind==AttackData.Kind.PROJECTILE:
+		return at.distance_to(player.global_position)<=engagement_range() and _projectile_path_clear(player.global_position,at)
+	return _in_place_reach(player.global_position,at) and StrikeGeometry.report(self,player.global_position,at).clear
 
 func _face_walk_velocity(climb_direction: Vector3 = Vector3.ZERO) -> void:
 	var direction := Vector3(velocity.x,0.0,velocity.z)
@@ -331,7 +411,8 @@ func _face_walk_velocity(climb_direction: Vector3 = Vector3.ZERO) -> void:
 func _ranged_chase_step(delta: float, distance: float, sight: bool, allow_attack: bool) -> void:
 	velocity = Vector3.ZERO
 	if not sight:
-		if debug_unlimited_pursuit and player_alive(): _walk_towards(player.global_position,delta)
+		if debug_unlimited_pursuit and player_alive() and state==State.CHASE: _walk_to_attack_position(delta)
+		elif debug_unlimited_pursuit and player_alive(): _walk_towards(player.global_position,delta)
 		return
 	var reach := engagement_range()
 	# Screen/range eligibility is not a safe firing position. Reuse the cached
@@ -346,6 +427,9 @@ func _ranged_chase_step(delta: float, distance: float, sight: bool, allow_attack
 	if not _ranged_pursuit_active: return
 	var remaining := maxf(0.0, distance - (reach-margin))
 	if not firing_clear and distance <= reach:
+		if state==State.CHASE:
+			_walk_to_attack_position(delta)
+			return
 		var gap: float = $CollisionShape3D.shape.radius + player.get_node("CollisionShape3D").shape.radius + 0.15
 		remaining = maxf(0.0,Walker.horizontal(global_position,player.global_position)-gap)
 	var step := minf(settings.chase_speed * delta,remaining)
@@ -523,12 +607,23 @@ func _lock_aim() -> void:
 	if active_attack.weapon != null and active_attack.weapon.elevation_travel != null:
 		_locked_floor = walker.target_floor(aimed_position,active_attack.target_ground_probe_depth)
 		_aim_job = Elevation.new_attack_job()
+		_aim_job["started"]=Time.get_ticks_usec()
 	aim_committed.emit()
+
+func _in_place_reach(at: Vector3, from: Vector3=Vector3.INF) -> bool:
+	if active_attack.weapon==null: return false
+	var start:=from if from.is_finite() else global_position
+	return Sweep.contains(start,at-start,at,active_attack.weapon)
 
 func _advance_locked_plan() -> void:
 	if _aim_plan_ready: return
 	if active_attack.weapon != null and performance_diagnostics != null and not performance_diagnostics.attack_planning_enabled:
 		_begin_attack_return("DIAGNOSTIC_ATTACK_DISABLED")
+		return
+	if _in_place_reach(aimed_position,attack_anchor):
+		_locked_plan={"in_place":true,"destination":attack_anchor,"out":{},"back":{}}
+		_apply_locked_plan(_locked_plan)
+		_aim_plan_ready=true
 		return
 	if active_attack.weapon == null or active_attack.weapon.elevation_travel == null:
 		_aim_plan_ready = _plan_attack()
@@ -571,6 +666,10 @@ func _plan_attack() -> bool:
 		var clear := _projectile_release_clear()
 		attack_start_reason = "OK" if clear else "PROJECTILE_PATH_BLOCKED"
 		return clear
+	if _in_place_reach(aimed_position,attack_anchor):
+		_apply_locked_plan({"in_place":true,"destination":attack_anchor,"out":{},"back":{}})
+		attack_start_reason="READY_IN_PLACE"
+		return true
 	_in_place = _forced_in_place or locomotion_held()
 	var route_position := aimed_position
 	if active_attack.weapon!=null and active_attack.weapon.elevation_travel!=null:
@@ -634,17 +733,37 @@ func _projectile_release_clear() -> bool:
 	# the muzzle must reject spawning, not merely consume the bolt a tick later.
 	return _projectile_path_clear(aimed_position)
 
-func _projectile_path_clear(at: Vector3) -> bool:
-	var muzzle := global_position + Vector3.UP * 0.9
+func _projectile_path_clear(at: Vector3, from: Vector3=Vector3.INF) -> bool:
+	var muzzle: Vector3=(from if from.is_finite() else global_position)+Vector3.UP*0.9
 	var goal := at + Vector3.UP * 0.9
-	if not Elevation.Blade._line(self,muzzle,goal): return false
+	var record:=not from.is_finite()
+	var space:=get_world_3d().direct_space_state
+	var line:=space.intersect_ray(PhysicsRayQueryParameters3D.create(muzzle,goal,1))
+	if not line.is_empty():
+		if record: attack_blocker=str(line.collider.get_path())
+		return false
 	var query := PhysicsShapeQueryParameters3D.new()
 	var shape := SphereShape3D.new()
 	shape.radius = active_attack.projectile_radius
 	query.shape = shape
 	query.transform = Transform3D(Basis.IDENTITY,muzzle)
 	query.collision_mask = 1
-	return get_world_3d().direct_space_state.intersect_shape(query,1).is_empty()
+	var overlap:=space.intersect_shape(query,1)
+	if not overlap.is_empty():
+		if record: attack_blocker=str(overlap[0].collider.get_path())
+		return false
+	query.motion=goal-muzzle
+	var fraction: float=space.cast_motion(query)[0]
+	if fraction<1.0:
+		if record:
+			attack_blocker="PROJECTILE_RADIUS @"+str(muzzle+query.motion*fraction)
+			query.transform.origin+=query.motion*minf(1.0,fraction+0.002)
+			query.motion=Vector3.ZERO
+			var contact:=space.intersect_shape(query,1)
+			if not contact.is_empty(): attack_blocker=str(contact[0].collider.get_path())
+		return false
+	if record: attack_blocker=""
+	return true
 
 func _begin_dash() -> void:
 	if active_attack.weapon != null and global_position.distance_to(dash_destination) <= 0.001:
@@ -674,7 +793,7 @@ func _begin_attack() -> void:
 	if active_attack.hit_delay_seconds <= 0.0: _execute_attack()
 
 func _begin_attack_return(reason: String) -> void:
-	if show_attack_diagnostics and not reason.is_empty() and state in [State.WINDUP,State.DASH_APPROACH,State.ATTACK]: attack_abort_reason=reason
+	if not reason.is_empty() and state in [State.WINDUP,State.DASH_APPROACH,State.ATTACK]: attack_abort_reason=reason
 	if _flight.active:
 		_air_return_reason=reason if not reason.is_empty() else "Return after landing"
 		return
@@ -753,8 +872,9 @@ func _dash_step(delta: float, returning: bool) -> void:
 			if _travel_elapsed >= duration + wait: _begin_attack()
 
 func melee_hits() -> bool:
-	if not player_alive() or not has_sight(): return false
+	if not player_alive(): return false
 	if active_attack.weapon != null: return _weapon_strike_clear(player.global_position)
+	if not has_sight(): return false
 	var offset := player.global_position - global_position
 	if absf(offset.y) > active_attack.hit_height_tolerance: return false
 	offset.y = 0.0
@@ -771,14 +891,14 @@ func _execute_attack() -> void:
 	cooldown = active_attack.minimum_attack_interval
 	if active_attack.kind != AttackData.Kind.PROJECTILE:
 		var connects:=melee_hits()
-		if show_attack_diagnostics:
-			attack_hit_reason="OK" if connects else "BLADE_BLOCKED_OR_OUT_OF_REACH"
-			if not connects and active_attack.weapon!=null:
-				var delta_y:=player.global_position.y-global_position.y
-				var weapon: WeaponData=active_attack.weapon
-				if delta_y>weapon.hit_height_up or -delta_y>weapon.hit_height_down: attack_hit_reason="HEIGHT_OUT_OF_RANGE"
-				elif not Sweep.contains(global_position,facing,player.global_position,weapon): attack_hit_reason="OUT_OF_RANGE_OR_DIRECTION"
-				else: attack_hit_reason="BLADE_BLOCKED"
+		attack_hit_reason="OK" if connects else "BLADE_BLOCKED_OR_OUT_OF_REACH"
+		last_hit_blocker=attack_blocker
+		if not connects and active_attack.weapon!=null:
+			var delta_y:=player.global_position.y-global_position.y
+			var weapon: WeaponData=active_attack.weapon
+			if delta_y>weapon.hit_height_up or -delta_y>weapon.hit_height_down: attack_hit_reason="HEIGHT_OUT_OF_RANGE"
+			elif not Sweep.contains(global_position,facing,player.global_position,weapon): attack_hit_reason="OUT_OF_RANGE_OR_DIRECTION"
+			else: attack_hit_reason="BLADE_BLOCKED"
 		if connects: player.get_node("HealthComponent").damage(active_attack.damage, self, active_attack.damage_kind)
 	elif aim_locked and _projectile_release_clear():
 		for index in range(shots.size() - 1, -1, -1):
@@ -792,9 +912,14 @@ func _execute_attack() -> void:
 		shot.global_position = global_position + Vector3.UP * 0.9
 		shot.direction = (aimed_position + Vector3.UP * 0.9 - shot.global_position).normalized()
 		shots.append(shot)
+		attack_hit_reason="PROJECTILE_RELEASED"
+		last_hit_blocker=""
 		_play_projectile_launch_sound()
 		projectile_released.emit(shot)
 		_refresh_visuals()
+	else:
+		attack_hit_reason="PROJECTILE_BLOCKED"
+		last_hit_blocker=attack_blocker
 
 func _play_projectile_launch_sound() -> void:
 	var visual: Resource = active_attack.magic_visual
@@ -823,6 +948,7 @@ func _set_state(next: State) -> void:
 		_pursuit_route.reset()
 	_availability_until=0
 	_availability_frame=-1
+	if next!=State.CHASE: _eligibility_job={}
 	if next == State.RETURN: walker.begin_return()
 	elif next == State.IDLE: walker.reset_home()
 	_ranged_pursuit_active = false
@@ -926,6 +1052,7 @@ func _physics_process(delta: float) -> void:
 	_planning_async=true
 	_work_physics_process(delta)
 	_planning_async=false
+	if show_attack_diagnostics: _update_attack_debug()
 	if performance_diagnostics!=null and performance_diagnostics.capture_timings:
 		performance_diagnostics.context={"enemy_position":global_position,"player_position":player.global_position if player_alive() else Vector3.INF,"state":State.keys()[state],"move":walker.blocked_reason,"route":_pursuit_route.reason,"start":attack_start_reason,"abort":attack_abort_reason,"unlimited":debug_unlimited_pursuit,"aim_locked":aim_locked,"aim_lock_elapsed":aim_lock_elapsed,"aim_target":aimed_position,"aim_plan_ready":_aim_plan_ready}
 	Work.finish(self,"enemy.physics",started)

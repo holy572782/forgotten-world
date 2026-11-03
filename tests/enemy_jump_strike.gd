@@ -158,7 +158,14 @@ func _run() -> void:
 		var before: Vector3 = ai.global_position
 		ai._start_windup()
 		await _planned_warning()
-		_check(ai.state == ai.State.RECOVERY and ai.attack_count == 0 and not ai.melee_hits() and ai.global_position == before, "Unsafe terrain is not bypassed by jump handling: "+kind)
+		if kind in ["wall","low_wall"]:
+			_check(ai.state==ai.State.WINDUP and ai._in_place and ai.global_position==before,"Visible airborne target allows a stationary warning: "+kind)
+			_check(ai.melee_hits()==(kind=="low_wall"),"Only geometry intersecting the blade segment blocks the hit: "+kind)
+		elif kind=="gap":
+			_check(ai.state==ai.State.WINDUP and ai.dash_destination.z<14.0,"A short safe dash may end before a gap, with the blade reaching beyond")
+			_check(not ai._locked_plan.out.is_empty() and not ai._locked_plan.back.is_empty(),"Gap is never crossed by an unverified body route")
+		else:
+			_check(ai.state == ai.State.RECOVERY and ai.attack_count == 0 and not ai.melee_hits() and ai.global_position == before, "Unsafe terrain is not bypassed by jump handling: "+kind)
 		if barrier != null: barrier.free()
 		player.set_physics_process(true)
 	for height in [0.8,2.0]:

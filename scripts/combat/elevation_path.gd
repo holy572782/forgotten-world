@@ -103,6 +103,12 @@ static func actors_clear(body: CharacterBody3D, start: Vector3, finish: Vector3)
 static func new_attack_job() -> Dictionary:
 	return {"index":-1,"done":false,"result":{},"reason":"NO_SAFE_LANDING"}
 
+static func _strike_clear(body: CharacterBody3D, at: Vector3, path: Resource, from: Vector3) -> bool:
+	# Enemy hit geometry is recipient-specific; player callers retain their
+	# existing contract. This hook never changes plan()'s full-body round trip.
+	if body.has_method("blade_plan_clear"): return body.blade_plan_clear(at,from)
+	return Blade.clear(body,at,path,2.0,from)
+
 static func _work_attack(body: CharacterBody3D, at: Vector3, weapon: WeaponData, path: Resource, stop: float, motion: Resource, from: Vector3=Vector3.INF, diagnostics: Dictionary={}) -> Dictionary:
 	var job:=new_attack_job()
 	while not job.done: attack_step(body,at,weapon,path,stop,motion,from,job,diagnostics)
@@ -129,7 +135,7 @@ static func _attack_step_now(body: CharacterBody3D, at: Vector3, weapon: WeaponD
 	if job.index<0:
 		if diagnostics.get("enabled",false): diagnostics["reason"]="NO_SAFE_LANDING"
 		job.index=0
-		if Sweep.contains(start,offset,at,weapon) and Blade.clear(body,at,path,2.0,start):
+		if Sweep.contains(start,offset,at,weapon) and _strike_clear(body,at,path,start):
 			job.result={"in_place":true,"destination":start,"out":{},"back":{}}
 			job.done=true
 		elif not supported(body,start) and not Path.clear(body,start,path,start):
@@ -158,7 +164,7 @@ static func _attack_step_now(body: CharacterBody3D, at: Vector3, weapon: WeaponD
 	if not Sweep.contains(destination,at-destination,at,weapon):
 		reject(diagnostics,"HEIGHT_OUT_OF_RANGE_OR_REACH")
 		return
-	if not Blade.clear(body,at,path,2.0,destination):
+	if not _strike_clear(body,at,path,destination):
 		reject(diagnostics,"BLADE_BLOCKED")
 		return
 	var out:=plan(body,start,destination,path,weapon.elevation_travel,motion)

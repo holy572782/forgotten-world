@@ -1,7 +1,8 @@
 extends RefCounted
 const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
 const PlanningBudget=preload("res://scripts/combat/planning_budget.gd")
-## Debug-only, bounded local A*. Every edge uses the existing safe walk probe;
+## Bounded local A* for debug pursuit and CHASE attack positioning.
+## Every edge uses the existing safe walk probe;
 ## actual motion is still owned by EnemyWalk, including its native jump checks.
 const CELL:=0.75
 const RADIUS:=6.0
@@ -24,8 +25,22 @@ var _search: Dictionary={}
 var _failed_origin:=Vector3.INF
 var _failed_target:=Vector3.INF
 var _probe_stage:=-1
+var position_reason:=""
+var _position: Dictionary={}
+const POSITION_OFFSETS=[Vector2(1,0),Vector2(-1,0),Vector2(1,1),Vector2(-1,1),Vector2(1,-0.4),Vector2(-1,-0.4)]
+
+func _mover_stalled(actor: CharacterBody3D) -> bool:
+	return actor.walker.blocked and actor.walker.blocked_reason not in ["", "JUMP_COOLDOWN"]
+
+func positioning() -> bool:
+	return not _position.is_empty() and _position.phase!=3
 
 func reset() -> void:
+	_position.clear()
+	position_reason=""
+	_reset_route()
+
+func _reset_route() -> void:
 	waypoints.clear()
 	_search.clear()
 	_decision_until=0
@@ -35,7 +50,7 @@ func reset() -> void:
 	reason=""
 	_probe_stage=-1
 
-func _work_goal(actor: CharacterBody3D, at: Vector3, delta: float) -> Vector3:
+func _work_goal(actor: CharacterBody3D, at: Vector3, delta: float, allow_search: bool=true) -> Vector3:
 	retry=maxf(0.0,retry-delta)
 	var walker=actor.walker
 	var moved:=actor.global_position.distance_to(_decision_origin)>=0.2 or at.distance_to(_decision_target)>=0.35
@@ -81,13 +96,17 @@ func _work_goal(actor: CharacterBody3D, at: Vector3, delta: float) -> Vector3:
 				if not waypoints.is_empty():
 					if walker.can_reach(waypoints[0]): return _remember(waypoints[0])
 					waypoints.clear()
-			3: clear=walker.can_reach(actor.global_position+safe_offset.normalized()*minf(actor.settings.chase_speed*delta,safe_offset.length()))
+			3:
+				if not _mover_stalled(actor): clear=walker.can_reach(actor.global_position+safe_offset.normalized()*minf(actor.settings.chase_speed*delta,safe_offset.length()))
 		if clear:
 			waypoints.clear()
 			_search.clear()
 			reason=""
 			return _remember(at,true)
 	if _search.is_empty():
+		if not allow_search:
+			reason="DIRECT_BLOCKED"
+			return _remember(Vector3.INF)
 		var diagnostic:=Work.for_body(actor)
 		if diagnostic!=null and not diagnostic.local_astar_enabled:
 			reason="DIAGNOSTIC_ASTAR_DISABLED"
@@ -161,6 +180,7 @@ func _work_advance_search(actor: CharacterBody3D) -> void:
 		var floor_at: Dictionary=actor.walker._sample(at)
 		if floor_at.is_empty(): continue
 		at.y=floor_at.position.y
+		if not actor.inside_home(at): continue
 		if not actor.walker.can_reach(at,true,_search.points[current]): continue
 		var cost: float=_search.costs[current]+_search.points[current].distance_to(at)
 		if _search.costs.has(key) and _search.costs[key]<=cost: continue
@@ -169,10 +189,10 @@ func _work_advance_search(actor: CharacterBody3D) -> void:
 		_search.previous[key]=current
 		if not _search.open.has(key): _search.open.append(key)
 
-func goal(actor: CharacterBody3D, at: Vector3, delta: float) -> Vector3:
+func goal(actor: CharacterBody3D, at: Vector3, delta: float, allow_search: bool=true) -> Vector3:
 	var started:=Work.start(actor)
 	PlanningBudget.begin()
-	var result: Vector3=_work_goal(actor,at,delta)
+	var result: Vector3=_work_goal(actor,at,delta,allow_search)
 	PlanningBudget.end()
 	Work.finish(actor,"route.goal",started)
 	return result
@@ -183,3 +203,86 @@ func _advance_search(actor: CharacterBody3D) -> void:
 	_work_advance_search(actor)
 	PlanningBudget.end()
 	Work.finish(actor,"route.astar",started)
+
+func combat_goal(actor: CharacterBody3D, delta: float) -> Vector3:
+	var started:=Work.start(actor)
+	PlanningBudget.begin()
+	var result:=_combat_goal(actor,delta)
+	PlanningBudget.end()
+	Work.finish(actor,"route.position",started)
+	return result
+
+func _combat_goal(actor: CharacterBody3D, delta: float) -> Vector3:
+	# CHASE-only hints. Actual walking and attack entry always prove safety afresh.
+	if actor.state!=actor.State.CHASE or not actor.player_alive(): return Vector3.INF
+	var at: Vector3=actor.player.global_position
+	var now:=Time.get_ticks_usec()
+	if _position.is_empty() or at.distance_to(_position.target)>0.35:
+		_reset_route()
+		_position={"origin":actor.global_position,"target":at,"phase":0,"index":0,"frame":-1,"until":0,"goal":Vector3.INF}
+	if _position.phase==3:
+		if now<_position.until:
+			position_reason="POSITION_FAILED (RETRY)"
+			return Vector3.INF
+		_position.clear()
+		return Vector3.INF
+	if _position.phase==2:
+		var destination: Vector3=_position.goal
+		if actor.walker.horizontal(actor.global_position,destination)<0.12:
+			_position.clear()
+			return Vector3.INF
+		if _position.get("travelling",false) and actor.walker.blocked:
+			_position.phase=1
+			_reset_route()
+			return Vector3.INF
+		position_reason="POSITION_MOVING"
+		var route:=goal(actor,destination,delta)
+		if route.is_finite(): _position.travelling=true
+		elif reason=="NO_SAFE_LOCAL_ROUTE":
+			_position.phase=1
+			_reset_route()
+		else: position_reason="POSITION_ROUTE_PENDING"
+		return route
+	if _position.phase==0:
+		var direct:=goal(actor,at,delta,false)
+		if direct.is_finite() and not _mover_stalled(actor):
+			position_reason="POSITION_DIRECT"
+			return direct
+		if reason.begins_with("PLANNING_BUDGET"):
+			position_reason="POSITION_PENDING (DIRECT)"
+			return Vector3.INF
+		_position.phase=1
+		_position.origin=actor.global_position
+		_reset_route()
+	if _position.index<POSITION_OFFSETS.size()*2:
+		position_reason="POSITION_SEARCHING %s/%s" % [_position.index,POSITION_OFFSETS.size()*2]
+		if _position.frame==Engine.get_process_frames() or not PlanningBudget.take(): return Vector3.INF
+		_position.frame=Engine.get_process_frames()
+		var toward:=Vector3(at.x-_position.origin.x,0,at.z-_position.origin.z).normalized()
+		var side:=toward.cross(Vector3.UP)
+		var offset: Vector2=POSITION_OFFSETS[_position.index%POSITION_OFFSETS.size()]
+		var distance:=CELL*(1.0 if _position.index<POSITION_OFFSETS.size() else 2.0)
+		_position.index+=1
+		var candidate: Vector3=_position.origin+(side*offset.x+toward*offset.y)*distance
+		var floor_at: Dictionary=actor.walker._sample(candidate)
+		if floor_at.is_empty(): return Vector3.INF
+		var radius: float=actor.get_node("CollisionShape3D").shape.radius
+		candidate.y=floor_at.position.y+radius*(1.0/floor_at.normal.y-1.0)+0.002
+		if not actor.inside_home(candidate) or not actor.walker._support(candidate): return Vector3.INF
+		if not actor.walker._motion_clear(candidate,Vector3.ZERO,true) or not actor.firing_position_clear(candidate): return Vector3.INF
+		if not actor.walker.can_reach(candidate): return Vector3.INF
+		_position.phase=2
+		_position.goal=candidate
+		_position.travelling=false
+		_reset_route()
+		position_reason="POSITION_ROUTE_PENDING"
+		return Vector3.INF
+	# No immediate shooting/striking point: reuse the bounded incremental A*
+	# toward the target. CHASE stops as soon as a real attack becomes available.
+	position_reason="POSITION_DETOUR"
+	var route:=goal(actor,at,delta)
+	if not route.is_finite() and reason=="NO_SAFE_LOCAL_ROUTE":
+		_position.phase=3
+		_position.until=now+int(FAILED_RETRY_SECONDS*1000000.0)
+		position_reason="POSITION_NO_SAFE_ROUTE"
+	return route

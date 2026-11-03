@@ -3,6 +3,18 @@ const Work=preload("res://scripts/enemies/enemy_work_diagnostics.gd")
 ## Blade clearance only. Does not authorize body movement or create damage.
 const Path=preload("res://scripts/combat/dash_path.gd")
 const Ground=preload("res://scripts/combat/terrain_ground.gd")
+
+static func strike_segment(body: CharacterBody3D, at: Vector3, from: Vector3=Vector3.INF, target_radius: float=0.0) -> Dictionary:
+	# A recipient-specific blade segment, never a body corridor or floor proof.
+	# Stop at the near surface of the hurt capsule; terrain behind it is irrelevant.
+	var start: Vector3=(from if from.is_finite() else body.global_position)+Vector3.UP*0.8
+	var finish:=at+Vector3.UP*0.8
+	var offset:=finish-start
+	if offset.length()>0.0001: finish-=offset.normalized()*minf(maxf(0.0,target_radius),offset.length()*0.5)
+	var hit:=body.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(start,finish,1))
+	if hit.is_empty(): return {"clear":true,"reason":"OK","blocker":""}
+	return {"clear":false,"reason":"BLADE_BLOCKED","blocker":str(hit.collider.get_path()),"point":hit.position}
+
 static func _work_clear(body: CharacterBody3D, at: Vector3, settings: Resource, depth: float=2.0, from: Vector3=Vector3.INF) -> bool:
 	var ground:=ground_at(body,at,depth)
 	if not ground.is_finite(): return false
