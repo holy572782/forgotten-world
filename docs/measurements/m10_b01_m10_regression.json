@@ -1,0 +1,52 @@
+{
+	"airborne_ticks": 0,
+	"checks": 111,
+	"environment": {
+		"enemies": 0,
+		"fast": true,
+		"fps_cap": 0,
+		"godot": "4.7.2-stable (official)",
+		"gpu": "",
+		"hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+		"os": "Windows",
+		"physics_hz": 60,
+		"renderer": "gl_compatibility",
+		"resolution": "1152x720",
+		"smoke": false
+	},
+	"failures": [],
+	"jump_peak_m": 1.28427624702454,
+	"left_loop": {
+		"finish": "(15.07958, 18.01043, -124.9623)",
+		"seconds": 45.55,
+		"start": "(-10.0, 8.003046, -80.0)",
+		"travel_m": 225.334850694519
+	},
+	"long_frames": [],
+	"main_design_length_m": 372.233387559652,
+	"main_down": {
+		"finish": "(-0.00009, -0.00011, 12.08857)",
+		"seconds": 75.3833333333333,
+		"start": "(30.03169, 44.00093, -230.0263)",
+		"travel_m": 372.738483332098
+	},
+	"main_up": {
+		"finish": "(30.03169, 44.00093, -230.0263)",
+		"seconds": 75.3833333333333,
+		"start": "(0.0, 0.0, 12.0)",
+		"travel_m": 372.737003114074
+	},
+	"river_back": {
+		"finish": "(-0.020047, 2.003795, -45.00488)",
+		"seconds": 28.9,
+		"start": "(114.9989, -6.999343, -90.09324)",
+		"travel_m": 142.163727656007
+	},
+	"river_out": {
+		"finish": "(114.9989, -6.999343, -90.09324)",
+		"seconds": 28.9,
+		"start": "(0.0, 2.002461, -45.0)",
+		"travel_m": 142.161792716011
+	},
+	"route_ticks": 15147
+}

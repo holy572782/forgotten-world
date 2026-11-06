@@ -1,0 +1,25 @@
+{
+  "date": "2026-11-06",
+  "scene": "res://scenes/maps/wind_hills/wind_hills_playground.tscn",
+  "route_and_orbit_comparison": {
+    "before": "m10_b01_before.json",
+    "after": "m10_b01_after.json",
+    "valid_sections": ["cold", "warm_1", "warm_2", "orbit_(0.0, 0.0, 0.0)", "orbit_(14.0, 1.0, -22.0)", "geometry", "views"],
+    "exclude_station_sections": ["start", "gate", "beyond_gate", "bend", "plaza_c"],
+    "reason": "These initial station aggregates include the preceding PNG encoding time in their first interval. Use the no-capture station files below for station performance. Route and orbit phases precede PNG capture and are unaffected."
+  },
+  "station_comparison": {
+    "before": "m10_b01_before_stations.json",
+    "after": "m10_b01_after_stations.json",
+    "capture": false,
+    "sampling_clock_reset_at_phase_start": true,
+    "seconds_per_location": 30,
+    "sequential_execution": true
+  },
+  "limits": [
+    "The very first baseline process used unmodified source at f1676ab; subsequent before runs use an in-memory disabled copy of the dedicated settings Resource.",
+    "Fresh processes do not clear driver or Godot shader caches. This is not a virgin-cache benchmark.",
+    "The known approximately 0.9-second gate stall from stage A was not reproduced in the new baseline; it has not been declared fixed.",
+    "Fixed-frame screenshot generation and its HUD FPS are not render performance measurements."
+  ]
+}

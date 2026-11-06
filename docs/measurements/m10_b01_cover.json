@@ -1,0 +1,31 @@
+{
+	"environment": {
+		"build_ms": 11971,
+		"enemies": 0,
+		"fps_cap": 60,
+		"godot": {
+			"build": "official",
+			"hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+			"hex": 263938,
+			"major": 4,
+			"minor": 7,
+			"patch": 2,
+			"status": "stable",
+			"string": "4.7.2-stable (official)",
+			"timestamp": 0
+		},
+		"gpu": "NVIDIA GeForce GTX 1080",
+		"physics_hz": 60,
+		"renderer": "gl_compatibility",
+		"resolution": "1152x720",
+		"stage": "after",
+		"stations_only": false
+	},
+	"view": {
+		"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707107, -0.707107), Z: (0.0, 0.707107, 0.707107), O: (0.0, 7.971771, 19.07107)]",
+		"distance": 10.0,
+		"pitch": -45.0,
+		"player": "(0.0, 0.000703, 12.0)",
+		"yaw": 0.0
+	}
+}

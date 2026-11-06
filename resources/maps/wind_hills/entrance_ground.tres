@@ -1,0 +1,16 @@
+[gd_resource type="Resource" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/wind_hills/entrance_ground_settings.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/textures/maps/wind_hills/entrance/grass_watercolor_v01.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/textures/maps/wind_hills/entrance/paving_watercolor_v01.png" id="3"]
+
+[resource]
+script = ExtResource("1")
+grass_repeat_meters = 4.0
+grass_strength = 0.55
+paving_strength = 0.80
+region_min = Vector2(-20, -50)
+region_max = Vector2(20, 20)
+feather_meters = 4.0
+grass_texture = ExtResource("2")
+paving_texture = ExtResource("3")

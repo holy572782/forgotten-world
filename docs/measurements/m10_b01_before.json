@@ -1,0 +1,229 @@
+{
+	"airborne_ticks": 0,
+	"bend": {
+		"fps": 59.9682068556653,
+		"frame_max_ms": 50.726,
+		"frame_p95_ms": 16.976,
+		"physics_max_ms": 1.109,
+		"physics_p95_ms": 1.095,
+		"samples": 1800
+	},
+	"beyond_gate": {
+		"fps": 59.9661011630126,
+		"frame_max_ms": 52.06,
+		"frame_p95_ms": 16.977,
+		"physics_max_ms": 1.775,
+		"physics_p95_ms": 1.348,
+		"samples": 1800
+	},
+	"checks": 659,
+	"cold": {
+		"fps": 59.9213432748888,
+		"frame_max_ms": 54.56,
+		"frame_p95_ms": 17.03,
+		"physics_max_ms": 2.866,
+		"physics_p95_ms": 2.727,
+		"samples": 1609
+	},
+	"cold_back": {
+		"finish": "(-0.000087, 0.001087, 12.08685)",
+		"seconds": 13.4333333333333,
+		"start": "(-0.036385, 2.009615, -45.05962)",
+		"travel_m": 64.8358753998764
+	},
+	"cold_out": {
+		"finish": "(-0.036385, 2.009615, -45.05962)",
+		"seconds": 13.4166666666667,
+		"start": "(0.0, 0.000703, 12.0)",
+		"travel_m": 64.7535703480244
+	},
+	"environment": {
+		"build_ms": 10216,
+		"enemies": 0,
+		"fps_cap": 60,
+		"godot": {
+			"build": "official",
+			"hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+			"hex": 263938,
+			"major": 4,
+			"minor": 7,
+			"patch": 2,
+			"status": "stable",
+			"string": "4.7.2-stable (official)",
+			"timestamp": 0
+		},
+		"gpu": "NVIDIA GeForce GTX 1080",
+		"physics_hz": 60,
+		"renderer": "gl_compatibility",
+		"resolution": "1152x720",
+		"stage": "before"
+	},
+	"failures": [],
+	"gate": {
+		"fps": 59.9675855211063,
+		"frame_max_ms": 51.281,
+		"frame_p95_ms": 16.804,
+		"physics_max_ms": 0.757,
+		"physics_p95_ms": 0.737,
+		"samples": 1800
+	},
+	"geometry": {
+		"collision_hash": "6636aac97e50bfefcde5c7cfc381aa26a082b09526f2b344883c8d677b7df6f1",
+		"outside_mesh_hash": "bb7b06c3ee6c3fc5d3020ab169d8fbbba450f3c4af11b536098f23c376ef961d",
+		"slab_count": 1125,
+		"slab_transform_aabb_hash": "08cb1d697a16ddfe8e9778ee9e2bc891bdfd53c9b5329cacfb05280f51e1772b",
+		"terrain_bodies": 195,
+		"terrain_geometry_hash": "6636aac97e50bfefcde5c7cfc381aa26a082b09526f2b344883c8d677b7df6f1"
+	},
+	"long_frames": [
+		{
+			"frame_ms": 54.56,
+			"phase": "cold_out",
+			"position": "(2.086638, 0.150092, -3.279205)"
+		},
+		{
+			"frame_ms": 51.73,
+			"phase": "warm_1_out",
+			"position": "(2.086638, 0.150092, -3.279205)"
+		},
+		{
+			"frame_ms": 56.474,
+			"phase": "orbit_(0.0, 0.0, 0.0)",
+			"position": "(0.0, 0.000703, 0.0)"
+		},
+		{
+			"frame_ms": 51.126,
+			"phase": "start",
+			"position": "(0.0, 0.000703, 12.0)"
+		},
+		{
+			"frame_ms": 51.281,
+			"phase": "gate",
+			"position": "(0.0, 0.000703, 0.0)"
+		},
+		{
+			"frame_ms": 52.06,
+			"phase": "beyond_gate",
+			"position": "(3.0, 0.224219, -5.0)"
+		},
+		{
+			"frame_ms": 50.726,
+			"phase": "bend",
+			"position": "(14.0, 1.000703, -22.0)"
+		},
+		{
+			"frame_ms": 52.113,
+			"phase": "plaza_c",
+			"position": "(0.0, 2.002461, -45.0)"
+		}
+	],
+	"orbit_(0.0, 0.0, 0.0)": {
+		"fps": 59.3624322564295,
+		"frame_max_ms": 56.474,
+		"frame_p95_ms": 16.906,
+		"physics_max_ms": 3.807,
+		"physics_p95_ms": 3.807,
+		"samples": 234
+	},
+	"orbit_(14.0, 1.0, -22.0)": {
+		"fps": 60.0013017231561,
+		"frame_max_ms": 17.013,
+		"frame_p95_ms": 16.854,
+		"physics_max_ms": 0.942,
+		"physics_p95_ms": 0.942,
+		"samples": 236
+	},
+	"plaza_c": {
+		"fps": 59.9652447967082,
+		"frame_max_ms": 52.113,
+		"frame_p95_ms": 17.022,
+		"physics_max_ms": 2.549,
+		"physics_p95_ms": 1.395,
+		"samples": 1801
+	},
+	"start": {
+		"fps": 59.9671080412393,
+		"frame_max_ms": 51.126,
+		"frame_p95_ms": 16.837,
+		"physics_max_ms": 2.725,
+		"physics_p95_ms": 2.664,
+		"samples": 1800
+	},
+	"views": {
+		"bend": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (14.0, 8.971771, -14.92897)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(14.0, 1.000703, -22.0)",
+			"yaw": 0.0
+		},
+		"beyond_gate": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (3.0, 8.195287, 2.071026)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(3.0, 0.224219, -5.0)",
+			"yaw": 0.0
+		},
+		"gate": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (0.0, 7.971771, 7.071026)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 0.000703, 0.0)",
+			"yaw": 0.0
+		},
+		"plaza_c": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (0.0, 9.973529, -37.92897)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 2.002461, -45.0)",
+			"yaw": 0.0
+		},
+		"start": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (0.0, 7.971771, 19.07103)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 0.000703, 12.0)",
+			"yaw": 0.0
+		}
+	},
+	"warm_1": {
+		"fps": 59.9372651657764,
+		"frame_max_ms": 51.73,
+		"frame_p95_ms": 17.041,
+		"physics_max_ms": 3.765,
+		"physics_p95_ms": 3.242,
+		"samples": 1609
+	},
+	"warm_1_back": {
+		"finish": "(-0.000087, 0.001087, 12.08685)",
+		"seconds": 13.4333333333333,
+		"start": "(-0.036385, 2.009615, -45.05962)",
+		"travel_m": 64.8358753998764
+	},
+	"warm_1_out": {
+		"finish": "(-0.036385, 2.009615, -45.05962)",
+		"seconds": 13.4166666666667,
+		"start": "(0.0, 0.000703, 12.0)",
+		"travel_m": 64.7535703480244
+	},
+	"warm_2": {
+		"fps": 59.9512498345192,
+		"frame_max_ms": 44.139,
+		"frame_p95_ms": 16.838,
+		"physics_max_ms": 3.093,
+		"physics_p95_ms": 2.922,
+		"samples": 1609
+	},
+	"warm_2_back": {
+		"finish": "(-0.000087, 0.001087, 12.08685)",
+		"seconds": 13.4333333333333,
+		"start": "(-0.036385, 2.009615, -45.05962)",
+		"travel_m": 64.8358753998764
+	},
+	"warm_2_out": {
+		"finish": "(-0.036385, 2.009615, -45.05962)",
+		"seconds": 13.4166666666667,
+		"start": "(0.0, 0.000703, 12.0)",
+		"travel_m": 64.7535703554749
+	}
+}

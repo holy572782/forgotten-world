@@ -3,6 +3,9 @@ extends Node3D
 ## Deterministic stage-A construction, once on scene entry (also visible in editor).
 ## All dimensions live in layout.json. No shared gameplay Resource is mutated.
 const LAYOUT_PATH := "res://resources/maps/wind_hills/layout.json"
+const EntranceGround = preload("res://scripts/maps/wind_hills/entrance_ground_materials.gd")
+@export var entrance_ground: Resource = preload("res://resources/maps/wind_hills/entrance_ground.tres")
+var entrance_materials: RefCounted
 var layout: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(LAYOUT_PATH))
 var routes: Array = []
 var grass: StandardMaterial3D
@@ -21,6 +24,8 @@ func _ready() -> void:
 	grass = material(Color.WHITE, true)
 	stone = material(Color("d6cbb3"))
 	paving = material(Color("c4b69b"))
+	if entrance_ground.enabled:
+		entrance_materials = EntranceGround.new(entrance_ground,grass,paving)
 	var terrain := Node3D.new()
 	terrain.name = "Terrain"
 	add_child(terrain)
@@ -40,6 +45,8 @@ func _ready() -> void:
 		var p: Array = layout.landmarks[key]
 		marker.position = Vector3(p[0],p[1],p[2])
 		add_child(marker)
+	if Engine.is_editor_hint() and entrance_materials!=null:
+		print("WindHills B01 editor: ",entrance_materials.terrain_triangles," painted triangles / ",entrance_materials.tiles," slabs")
 
 func material(color: Color, vertex := false) -> StandardMaterial3D:
 	var result := StandardMaterial3D.new()
@@ -106,6 +113,14 @@ func _build_terrain(parent: Node3D) -> void:
 		for z0 in range(-260,40,20):
 			var surface := SurfaceTool.new()
 			surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+			var local_materials: bool = entrance_materials!=null and entrance_materials.intersects_chunk(x0,z0,20)
+			var base_surface := SurfaceTool.new()
+			var painted_surface := SurfaceTool.new()
+			var painted_count := 0
+			var base_count := 0
+			if local_materials:
+				base_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+				painted_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 			for x in range(x0,x0+20):
 				for z in range(z0,z0+20):
 					var a := _vertex(x,z)
@@ -119,10 +134,29 @@ func _build_terrain(parent: Node3D) -> void:
 						var color := Color("b5c27d").lerp(Color("c9c68c"),0.5+0.5*sin(center.x*0.10+center.z*0.07))
 						if normal.y < 0.80: color = Color("8c93a5").lerp(Color("b3a8af"),clampf(normal.y,0,1))
 						elif road.distance < road.width*0.5: color = Color("c8ba98")
+						var weights: Array[float] = []
+						var painted := false
+						if local_materials:
+							for v in triangle:
+								var weight: float = entrance_materials.grass_weight(v,normal,road)
+								weights.append(weight)
+								painted = painted or weight>0
 						for v in triangle:
 							surface.set_normal(normal)
 							surface.set_color(color)
 							surface.add_vertex(v)
+						if local_materials:
+							var display := painted_surface if painted else base_surface
+							for index in range(3):
+								var v: Vector3 = triangle[index]
+								display.set_normal(normal)
+								display.set_color(color)
+								if painted:
+									display.set_uv(entrance_materials.mask_uv(weights[index]))
+									display.set_uv2(Vector2(v.x,v.z))
+								display.add_vertex(v)
+							if painted: painted_count += 1
+							else: base_count += 1
 			var mesh := surface.commit()
 			mesh.surface_set_material(0,grass)
 			var body := StaticBody3D.new()
@@ -132,6 +166,15 @@ func _build_terrain(parent: Node3D) -> void:
 			parent.add_child(body)
 			var visual := MeshInstance3D.new()
 			visual.mesh = mesh
+			if painted_count>0:
+				var display_mesh := ArrayMesh.new()
+				if base_count>0:
+					base_surface.commit(display_mesh)
+					display_mesh.surface_set_material(0,grass)
+				painted_surface.commit(display_mesh)
+				display_mesh.surface_set_material(display_mesh.get_surface_count()-1,entrance_materials.grass)
+				visual.mesh = display_mesh
+				entrance_materials.terrain_triangles += painted_count
 			body.add_child(visual)
 			var collision := CollisionShape3D.new()
 			collision.shape = mesh.create_trimesh_shape()
@@ -185,6 +228,10 @@ func _build_roads() -> void:
 					var q: Vector3 = p+side*lane*0.9
 					q.y = height_at(q.x,q.z)+0.012
 					var tile := box(road_root,q,Vector3(0.80,0.025,1.12),paving,false)
+					if entrance_materials!=null and entrance_materials.weight_at(q)>0:
+						var visual: MeshInstance3D = tile.get_child(0)
+						visual.mesh = entrance_materials.slab_mesh(Vector3(0.80,0.025,1.12),q,paving)
+						visual.material_override = null
 					tile.rotation.y = atan2(-forward.x,-forward.z)
 					var next := q+Vector3(forward.x,0,forward.z).normalized()*0.5
 					tile.rotation.x = atan2(height_at(next.x,next.z)-q.y,0.5)

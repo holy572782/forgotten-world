@@ -1,3 +1,5 @@
+> **M10-B01（2026-11-06、ADR-063）**：入口A〜門〜最初の曲がり〜Cだけに水彩風の草地と石板上面を試作。既存の `scenes/maps/wind_hills/wind_hills_playground.tscn` をF6で確認します。地形・衝突・主人公・カメラ・照明は維持。ユーザーの見た目確認待ちで、工程Aの個別未確認やM10全体を合格にしません。[設定・比較画像・検証と性能](docs/m10_b01_entrance_watercolor_audit.md)。
+
 > **M10工程A（2026-11-06、ADR-062）**：敵なしの「風渡りの丘」を追加。通常プレイは `scenes/maps/wind_hills/wind_hills_playground.tscn` を開いて **F6**。全景は `wind_hills_overview.tscn`、-24度／12mの比較候補は `wind_hills_camera_comparison.tscn`。F5は既存mainのまま。地形・縮尺・操作感のユーザー確認待ちで、M10全体完了ではありません。[実装・寸法・画像・検証・手順](docs/m10_wind_hills_audit.md)。工程Bの水彩仕上げと工程Cの敵配置は別指示待ち。以下のM10未着手等は各時点の履歴です。
 
 > **魔導士の炎調整（2026-10-30、ADR-045）**：命中の炎を主人公を覆う大きさ（旧倍率の5倍）へ。詠唱開始後は射程外へ離れても発射し、実発射だけFire3。攻撃終了から次の魔法陣まで約10秒待機（発射間隔は詠唱込み約11.1秒）。Magic1／pitch90%・Fire2／Guard中のダメージ表示と床面魔法陣は維持。F5→「遠距離敵」で確認。[設定・検査・F5](docs/m09_mage_cast_commit_audit.md)。ユーザー見た目／聴感確認待ち。

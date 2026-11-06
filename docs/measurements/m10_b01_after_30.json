@@ -1,0 +1,133 @@
+{
+	"airborne_ticks": 0,
+	"checks": 670,
+	"cold": {
+		"fps": 30.0003087093436,
+		"frame_max_ms": 45.84,
+		"frame_p95_ms": 33.721,
+		"physics_max_ms": 2.916,
+		"physics_p95_ms": 1.728,
+		"samples": 827
+	},
+	"cold_back": {
+		"finish": "(0.000584, 0.000752, 12.15855)",
+		"seconds": 13.8,
+		"start": "(-0.077289, 2.016624, -45.12545)",
+		"travel_m": 65.0009482502937
+	},
+	"cold_out": {
+		"finish": "(-0.077289, 2.016624, -45.12545)",
+		"seconds": 13.7666666666667,
+		"start": "(0.0, 0.000703, 12.0)",
+		"travel_m": 64.8360055238009
+	},
+	"environment": {
+		"build_ms": 12857,
+		"enemies": 0,
+		"fps_cap": 30,
+		"godot": {
+			"build": "official",
+			"hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+			"hex": 263938,
+			"major": 4,
+			"minor": 7,
+			"patch": 2,
+			"status": "stable",
+			"string": "4.7.2-stable (official)",
+			"timestamp": 0
+		},
+		"gpu": "NVIDIA GeForce GTX 1080",
+		"physics_hz": 60,
+		"renderer": "gl_compatibility",
+		"resolution": "1152x720",
+		"stage": "after",
+		"stations_only": false
+	},
+	"failures": [],
+	"geometry": {
+		"collision_hash": "6636aac97e50bfefcde5c7cfc381aa26a082b09526f2b344883c8d677b7df6f1",
+		"outside_mesh_hash": "bb7b06c3ee6c3fc5d3020ab169d8fbbba450f3c4af11b536098f23c376ef961d",
+		"slab_count": 1125,
+		"slab_transform_aabb_hash": "08cb1d697a16ddfe8e9778ee9e2bc891bdfd53c9b5329cacfb05280f51e1772b",
+		"terrain_bodies": 195,
+		"terrain_geometry_hash": "6636aac97e50bfefcde5c7cfc381aa26a082b09526f2b344883c8d677b7df6f1"
+	},
+	"long_frames": [],
+	"materials": {
+		"grass_repeat_m": 4.0,
+		"grass_strength": 0.55,
+		"nonzero_mask_vertex_max_xz": "(22.0, 22.0)",
+		"nonzero_mask_vertex_min_xz": "(-22.0, -52.0)",
+		"painted_slabs": 162,
+		"painted_surfaces": 15,
+		"painted_triangles": 5137,
+		"paving_strength": 0.8
+	},
+	"orbit_(0.0, 0.0, 0.0)": {
+		"fps": 30.0003070343923,
+		"frame_max_ms": 45.068,
+		"frame_p95_ms": 33.63,
+		"physics_max_ms": 2.006,
+		"physics_p95_ms": 2.006,
+		"samples": 128
+	},
+	"orbit_(14.0, 1.0, -22.0)": {
+		"fps": 30.0005671982236,
+		"frame_max_ms": 33.685,
+		"frame_p95_ms": 33.536,
+		"physics_max_ms": 1.03,
+		"physics_p95_ms": 1.03,
+		"samples": 128
+	},
+	"views": {
+		"bend": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (14.0, 8.971771, -14.92897)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(14.0, 1.000703, -22.0)",
+			"yaw": 0.0
+		},
+		"beyond_gate": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (3.0, 8.195287, 2.071026)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(3.0, 0.224219, -5.0)",
+			"yaw": 0.0
+		},
+		"fade_030": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (0.0, 7.971771, 19.07103)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 0.000703, 12.0)",
+			"yaw": 0.0
+		},
+		"fade_restored": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (0.0, 7.971771, 19.07103)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 0.000703, 12.0)",
+			"yaw": 0.0
+		},
+		"gate": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (0.0, 7.971771, 7.071026)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 0.000703, 0.0)",
+			"yaw": 0.0
+		},
+		"plaza_c": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (0.0, 9.973529, -37.92897)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 2.002461, -45.0)",
+			"yaw": 0.0
+		},
+		"start": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (0.0, 7.971771, 19.07103)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 0.000703, 12.0)",
+			"yaw": 0.0
+		}
+	}
+}

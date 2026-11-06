@@ -1,0 +1,160 @@
+{
+	"airborne_ticks": 0,
+	"checks": 876,
+	"environment": {
+		"build_ms": 11127,
+		"enemies": 0,
+		"fps_cap": 0,
+		"godot": {
+			"build": "official",
+			"hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+			"hex": 263938,
+			"major": 4,
+			"minor": 7,
+			"patch": 2,
+			"status": "stable",
+			"string": "4.7.2-stable (official)",
+			"timestamp": 0
+		},
+		"gpu": "NVIDIA GeForce GTX 1080",
+		"physics_hz": 60,
+		"renderer": "gl_compatibility",
+		"resolution": "1152x720",
+		"stage": "after",
+		"stations_only": false
+	},
+	"failures": [],
+	"geometry": {
+		"collision_hash": "6636aac97e50bfefcde5c7cfc381aa26a082b09526f2b344883c8d677b7df6f1",
+		"outside_mesh_hash": "bb7b06c3ee6c3fc5d3020ab169d8fbbba450f3c4af11b536098f23c376ef961d",
+		"slab_count": 1125,
+		"slab_transform_aabb_hash": "08cb1d697a16ddfe8e9778ee9e2bc891bdfd53c9b5329cacfb05280f51e1772b",
+		"terrain_bodies": 195,
+		"terrain_geometry_hash": "6636aac97e50bfefcde5c7cfc381aa26a082b09526f2b344883c8d677b7df6f1"
+	},
+	"long_frames": [],
+	"materials": {
+		"grass_repeat_m": 4.0,
+		"grass_strength": 0.55,
+		"nonzero_mask_vertex_max_xz": "(22.0, 22.0)",
+		"nonzero_mask_vertex_min_xz": "(-22.0, -52.0)",
+		"painted_slabs": 162,
+		"painted_surfaces": 15,
+		"painted_triangles": 5137,
+		"paving_strength": 0.8
+	},
+	"views": {
+		"bend": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707107, -0.707107), Z: (0.0, 0.707107, 0.707107), O: (14.0, 8.971771, -14.92893)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(14.0, 1.000703, -22.0)",
+			"yaw": 0.0
+		},
+		"bend_grass_3m": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (14.0, 8.971771, -14.92897)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(14.0, 1.000703, -22.0)",
+			"yaw": 0.0
+		},
+		"bend_grass_4m": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (14.0, 8.971771, -14.92897)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(14.0, 1.000703, -22.0)",
+			"yaw": 0.0
+		},
+		"bend_grass_6m": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (14.0, 8.971771, -14.92897)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(14.0, 1.000703, -22.0)",
+			"yaw": 0.0
+		},
+		"beyond_gate": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707107, -0.707107), Z: (0.0, 0.707107, 0.707107), O: (3.0, 8.195287, 2.071068)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(3.0, 0.224219, -5.0)",
+			"yaw": 0.0
+		},
+		"chunk_seam": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (10.0, 8.824712, -12.92897)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(10.0, 0.853644, -20.0)",
+			"yaw": 0.0
+		},
+		"east_edge": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (20.0, 7.971771, 12.07103)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(20.0, 0.000703, 5.0)",
+			"yaw": 0.0
+		},
+		"fade_030": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (0.0, 7.971771, 19.07103)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 0.000703, 12.0)",
+			"yaw": 0.0
+		},
+		"fade_restored": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (0.0, 7.971771, 19.07103)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 0.000703, 12.0)",
+			"yaw": 0.0
+		},
+		"gate": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707107, -0.707107), Z: (0.0, 0.707107, 0.707107), O: (0.0, 7.971771, 7.071068)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 0.000703, 0.0)",
+			"yaw": 0.0
+		},
+		"plaza_c": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707107, -0.707107), Z: (0.0, 0.707107, 0.707107), O: (0.0, 9.973529, -37.92893)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 2.002461, -45.0)",
+			"yaw": 0.0
+		},
+		"start": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707107, -0.707107), Z: (0.0, 0.707107, 0.707107), O: (0.0, 7.971771, 19.07107)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 0.000703, 12.0)",
+			"yaw": 0.0
+		},
+		"start_grass_3m": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (0.0, 7.971771, 19.07103)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 0.000703, 12.0)",
+			"yaw": 0.0
+		},
+		"start_grass_4m": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (0.0, 7.971771, 19.07103)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 0.000703, 12.0)",
+			"yaw": 0.0
+		},
+		"start_grass_6m": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (0.0, 7.971771, 19.07103)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(0.0, 0.000703, 12.0)",
+			"yaw": 0.0
+		},
+		"west_edge": {
+			"camera_transform": "[X: (1.0, 0.0, 0.0), Y: (0.0, 0.707109, -0.707105), Z: (0.0, 0.707105, 0.707109), O: (-20.0, 7.971771, 12.07103)]",
+			"distance": 10.0,
+			"pitch": -45.0,
+			"player": "(-20.0, 0.000703, 5.0)",
+			"yaw": 0.0
+		}
+	}
+}
