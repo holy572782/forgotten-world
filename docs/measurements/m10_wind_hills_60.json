@@ -1,0 +1,105 @@
+{
+	"B": {
+		"fps": 60.0025301066861,
+		"frame_max_ms": 17.313,
+		"frame_p95_ms": 16.724,
+		"physics_max_ms": 0.974,
+		"physics_p95_ms": 0.954,
+		"samples": 1800
+	},
+	"E": {
+		"fps": 60.0024561005363,
+		"frame_max_ms": 16.946,
+		"frame_p95_ms": 16.737,
+		"physics_max_ms": 0.684,
+		"physics_p95_ms": 0.683,
+		"samples": 1800
+	},
+	"G": {
+		"fps": 60.0024460997193,
+		"frame_max_ms": 16.93,
+		"frame_p95_ms": 16.718,
+		"physics_max_ms": 0.707,
+		"physics_p95_ms": 0.705,
+		"samples": 1800
+	},
+	"H": {
+		"fps": 60.002876137863,
+		"frame_max_ms": 16.88,
+		"frame_p95_ms": 16.711,
+		"physics_max_ms": 0.957,
+		"physics_p95_ms": 0.77,
+		"samples": 1800
+	},
+	"I": {
+		"fps": 60.0024340987433,
+		"frame_max_ms": 18.71,
+		"frame_p95_ms": 16.77,
+		"physics_max_ms": 2.64,
+		"physics_p95_ms": 2.597,
+		"samples": 1800
+	},
+	"J": {
+		"fps": 60.0024501000459,
+		"frame_max_ms": 18.857,
+		"frame_p95_ms": 16.732,
+		"physics_max_ms": 2.796,
+		"physics_p95_ms": 0.755,
+		"samples": 1800
+	},
+	"airborne_ticks": 0,
+	"all_routes": {
+		"fps": 58.6428089261319,
+		"frame_max_ms": 924.153,
+		"frame_p95_ms": 16.836,
+		"physics_max_ms": 3.177,
+		"physics_p95_ms": 1.311,
+		"samples": 15258
+	},
+	"checks": 102,
+	"environment": {
+		"enemies": 0,
+		"fast": false,
+		"fps_cap": 60,
+		"godot": "4.7.2-stable (official)",
+		"gpu": "NVIDIA GeForce GTX 1080",
+		"os": "Windows",
+		"physics_hz": 60,
+		"renderer": "gl_compatibility",
+		"resolution": "1152x720"
+	},
+	"failures": [],
+	"jump_peak_m": 1.28427624702454,
+	"left_loop": {
+		"finish": "(15.07958, 18.01043, -124.9623)",
+		"seconds": 45.55,
+		"start": "(-10.0, 8.003046, -80.0)",
+		"travel_m": 225.334850694519
+	},
+	"main_design_length_m": 372.233387559652,
+	"main_down": {
+		"finish": "(-0.00009, -0.00011, 12.08857)",
+		"seconds": 75.3833333333333,
+		"start": "(30.03169, 44.00093, -230.0263)",
+		"travel_m": 372.738470286131
+	},
+	"main_up": {
+		"finish": "(30.03169, 44.00093, -230.0263)",
+		"seconds": 75.3833333333333,
+		"start": "(0.0, 0.0, 12.0)",
+		"travel_m": 372.737003143877
+	},
+	"river_back": {
+		"finish": "(-0.020047, 2.003795, -45.00488)",
+		"seconds": 28.9,
+		"start": "(114.9989, -6.999343, -90.09324)",
+		"travel_m": 142.163727656007
+	},
+	"river_out": {
+		"finish": "(114.9989, -6.999343, -90.09324)",
+		"seconds": 28.9,
+		"start": "(0.0, 2.002461, -45.0)",
+		"travel_m": 142.161792716011
+	},
+	"route_ticks": 15096
+}

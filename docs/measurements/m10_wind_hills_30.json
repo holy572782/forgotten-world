@@ -1,0 +1,106 @@
+{
+	"B": {
+		"fps": 30.0004800076801,
+		"frame_max_ms": 33.629,
+		"frame_p95_ms": 33.414,
+		"physics_max_ms": 0.691,
+		"physics_p95_ms": 0.691,
+		"samples": 120
+	},
+	"E": {
+		"fps": 30.000487507922,
+		"frame_max_ms": 33.561,
+		"frame_p95_ms": 33.499,
+		"physics_max_ms": 0.625,
+		"physics_p95_ms": 0.487,
+		"samples": 120
+	},
+	"G": {
+		"fps": 30.0005625105471,
+		"frame_max_ms": 33.581,
+		"frame_p95_ms": 33.418,
+		"physics_max_ms": 0.691,
+		"physics_p95_ms": 0.691,
+		"samples": 120
+	},
+	"H": {
+		"fps": 30.0001425006769,
+		"frame_max_ms": 33.762,
+		"frame_p95_ms": 33.445,
+		"physics_max_ms": 0.686,
+		"physics_p95_ms": 0.686,
+		"samples": 120
+	},
+	"I": {
+		"fps": 30.000442506527,
+		"frame_max_ms": 33.534,
+		"frame_p95_ms": 33.42,
+		"physics_max_ms": 0.614,
+		"physics_p95_ms": 0.614,
+		"samples": 120
+	},
+	"J": {
+		"fps": 30.0003600043201,
+		"frame_max_ms": 33.634,
+		"frame_p95_ms": 33.421,
+		"physics_max_ms": 0.686,
+		"physics_p95_ms": 0.686,
+		"samples": 120
+	},
+	"airborne_ticks": 0,
+	"all_routes": {
+		"fps": 28.3543184574451,
+		"frame_max_ms": 866.346,
+		"frame_p95_ms": 33.525,
+		"physics_max_ms": 1.665,
+		"physics_p95_ms": 1.052,
+		"samples": 823
+	},
+	"checks": 65,
+	"environment": {
+		"enemies": 0,
+		"fast": false,
+		"fps_cap": 30,
+		"godot": "4.7.2-stable (official)",
+		"gpu": "NVIDIA GeForce GTX 1080",
+		"hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+		"os": "Windows",
+		"physics_hz": 60,
+		"renderer": "gl_compatibility",
+		"resolution": "1152x720",
+		"smoke": true
+	},
+	"failures": [],
+	"jump_peak_m": 1.28427624702454,
+	"long_frames": [
+		{
+			"frame_ms": 55.692,
+			"phase": "main_up",
+			"position": "(0.0, 0.0, 11.93888)"
+		},
+		{
+			"frame_ms": 864.061,
+			"phase": "main_up",
+			"position": "(2.360798, 0.171969, -3.780071)"
+		},
+		{
+			"frame_ms": 866.346,
+			"phase": "main_down",
+			"position": "(3.105984, 0.219712, -4.779058)"
+		}
+	],
+	"main_design_length_m": 372.233387559652,
+	"main_down": {
+		"finish": "(0.000584, 0.000752, 12.15858)",
+		"seconds": 13.8,
+		"start": "(-0.077215, 2.016611, -45.12534)",
+		"travel_m": 65.000904565677
+	},
+	"main_up": {
+		"finish": "(-0.077215, 2.016611, -45.12534)",
+		"seconds": 13.7666666666667,
+		"start": "(0.0, 0.0, 12.0)",
+		"travel_m": 64.8358827531338
+	},
+	"route_ticks": 781
+}
