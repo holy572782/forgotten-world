@@ -1,0 +1,6 @@
+{
+  "test": "m10_rebuild_composition",
+  "log": ".godot/m10_rebuild_smoke_m10_rebuild_composition.log",
+  "exit_code": 0,
+  "script_error": false
+}

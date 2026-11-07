@@ -1,0 +1,44 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/maps/wind_hills_rebuild/field.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2"]
+[ext_resource type="Script" path="res://scripts/maps/wind_hills_rebuild/playground.gd" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/camera/camera_rig.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="5"]
+[ext_resource type="Script" path="res://scripts/player/target_dash.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/effects/combat_feedback.gd" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/maps/wind_hills_rebuild/lighting.tscn" id="8"]
+
+[node name="WindHillsRebuildPlayground" type="Node3D"]
+script = ExtResource("3")
+
+[node name="Field" parent="." instance=ExtResource("1")]
+
+[node name="Player" parent="." instance=ExtResource("2")]
+
+[node name="TargetDash" type="Node" parent="Player" node_paths=PackedStringArray("camera_rig")]
+script = ExtResource("6")
+camera_rig = NodePath("../../CameraRig")
+
+[node name="CombatFeedback" type="Node" parent="Player"]
+script = ExtResource("7")
+
+[node name="CameraRig" parent="." node_paths=PackedStringArray("target") instance=ExtResource("4")]
+target = NodePath("../Player")
+
+[node name="HUD" parent="." node_paths=PackedStringArray("player", "camera_rig") instance=ExtResource("5")]
+player = NodePath("../Player")
+camera_rig = NodePath("../CameraRig")
+
+[node name="Lighting" parent="." instance=ExtResource("8")]
+
+[node name="Guide" type="CanvasLayer" parent="."]
+
+[node name="Instructions" type="Label" parent="Guide"]
+offset_left = 300.0
+offset_top = 16.0
+offset_right = 1140.0
+offset_bottom = 85.0
+theme_override_colors/font_color = Color(0.16, 0.21, 0.25, 1)
+theme_override_font_sizes/font_size = 17
+text = "新フィールド / 工程01・構図試作\nWASD・矢印：移動   Space：ジャンプ   Q/E：カメラ\n操作できるのは入口周辺のみです。範囲外では入口へ戻ります。"

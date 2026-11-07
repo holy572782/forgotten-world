@@ -1,0 +1,32 @@
+[
+  {
+    "exit_code": 0,
+    "log": ".godot/m10_rebuild_regression_m02_movement.log",
+    "test": "m02_movement",
+    "script_error": false
+  },
+  {
+    "exit_code": 0,
+    "log": ".godot/m10_rebuild_regression_m03_jump.log",
+    "test": "m03_jump",
+    "script_error": false
+  },
+  {
+    "exit_code": 0,
+    "log": ".godot/m10_rebuild_regression_m04_camera.log",
+    "test": "m04_camera",
+    "script_error": false
+  },
+  {
+    "exit_code": 0,
+    "log": ".godot/m10_rebuild_regression_m04_occlusion.log",
+    "test": "m04_occlusion",
+    "script_error": false
+  },
+  {
+    "exit_code": 0,
+    "log": ".godot/m10_rebuild_regression_m09_startup.log",
+    "test": "m09_startup",
+    "script_error": false
+  }
+]

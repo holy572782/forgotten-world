@@ -1,0 +1,24 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/maps/wind_hills_rebuild/field.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/maps/wind_hills_rebuild/lighting.tscn" id="2"]
+[ext_resource type="Script" path="res://scripts/maps/wind_hills_rebuild/review_camera.gd" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="4"]
+
+[node name="WindHillsRebuildComparison" type="Node3D"]
+
+[node name="Field" parent="." instance=ExtResource("1")]
+
+[node name="Lighting" parent="." instance=ExtResource("2")]
+
+[node name="PlayerScaleReference" parent="." instance=ExtResource("4")]
+process_mode = 4
+position = Vector3(-11.6625, 0.0375, 1.5)
+
+[node name="ReviewCamera" type="Camera3D" parent="."]
+position = Vector3(0, 43.5, 63.75)
+rotation_degrees = Vector3(-17, 0, 0)
+current = true
+fov = 48.0
+far = 2400.0
+script = ExtResource("3")

@@ -1,3 +1,5 @@
+> **M10 新フィールド・工程01（2026-11-07、ADR-064）**　参考画像から組み直した地形の構図確認待ち。`scenes/maps/wind_hills_rebuild/comparison.tscn` を開いてF6。 [画像を並べて比較](docs/m10_rebuild_comparison.html) ／ [俯瞰・配置・操作・検証](docs/m10_rebuild_stage01_audit.md)。
+
 > **M10-B01（2026-11-06、ADR-063）**：入口A〜門〜最初の曲がり〜Cだけに水彩風の草地と石板上面を試作。既存の `scenes/maps/wind_hills/wind_hills_playground.tscn` をF6で確認します。地形・衝突・主人公・カメラ・照明は維持。ユーザーの見た目確認待ちで、工程Aの個別未確認やM10全体を合格にしません。[設定・比較画像・検証と性能](docs/m10_b01_entrance_watercolor_audit.md)。
 
 > **M10工程A（2026-11-06、ADR-062）**：敵なしの「風渡りの丘」を追加。通常プレイは `scenes/maps/wind_hills/wind_hills_playground.tscn` を開いて **F6**。全景は `wind_hills_overview.tscn`、-24度／12mの比較候補は `wind_hills_camera_comparison.tscn`。F5は既存mainのまま。地形・縮尺・操作感のユーザー確認待ちで、M10全体完了ではありません。[実装・寸法・画像・検証・手順](docs/m10_wind_hills_audit.md)。工程Bの水彩仕上げと工程Cの敵配置は別指示待ち。以下のM10未着手等は各時点の履歴です。
