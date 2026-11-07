@@ -10,6 +10,9 @@ var terrain_material: StandardMaterial3D
 var stone: StandardMaterial3D
 var path_material: StandardMaterial3D
 var samples: Dictionary = {}
+const CurveIndex = preload("res://scripts/maps/wind_hills_rebuild/curve_index.gd")
+var roads := CurveIndex.new()
+var channel := CurveIndex.new()
 
 func _ready() -> void:
 	if has_node("Terrain"): return
@@ -19,9 +22,16 @@ func _ready() -> void:
 	for route in layout.routes:
 		var points: Array[Vector3] = []
 		for p in route.points: points.append(vec(p))
-		routes.append({"id": route.id, "width": float(route.width), "points": points, "curve": smooth_points(points)})
+		routes.append({"id": route.id, "width": float(route.width), "points": points, "curve": smooth_points(points,route.id!="left")})
 	for p in layout.river: river_points.append(vec(p))
 	river_points = smooth_points(river_points)
+	for route in routes:
+		if route.id == "river":
+			for approach in bridge_approaches(route.curve):
+				roads.add_curve(approach,route.width,22)
+		else:
+			roads.add_curve(route.curve,route.width,22)
+	channel.add_curve(river_points,layout.valley.water_width,maxf(layout.valley.west_reach,layout.valley.east_reach)+12.0)
 	terrain_material = material(Color.WHITE, true)
 	stone = material(Color("cfc8b6"))
 	path_material = material(Color("d9cba8"))
@@ -45,7 +55,7 @@ func _ready() -> void:
 func vec(p: Array) -> Vector3:
 	return Vector3(p[0], p[1], p[2])
 
-func smooth_points(points: Array[Vector3]) -> Array[Vector3]:
+func smooth_points(points: Array[Vector3], grade_by_distance := false) -> Array[Vector3]:
 	var result: Array[Vector3] = []
 	for i in range(points.size()-1):
 		var a := points[maxi(0,i-1)]
@@ -55,7 +65,10 @@ func smooth_points(points: Array[Vector3]) -> Array[Vector3]:
 		for j in range(4):
 			var t := j/4.0
 			var p := b.cubic_interpolate(c,a,d,t)
-			p.y = lerpf(b.y,c.y,t)
+			var rise_t := t
+			if grade_by_distance:
+				rise_t = clampf(Vector2(p.x-b.x,p.z-b.z).length()/Vector2(c.x-b.x,c.z-b.z).length(),0,1)
+			p.y = lerpf(b.y,c.y,rise_t)
 			result.append(p)
 	result.append(points[-1])
 	return result
@@ -75,31 +88,51 @@ func group(label: String) -> Node3D:
 	add_child(n)
 	return n
 
-func route_sample(x: float, z: float) -> Dictionary:
-	var best := {"distance": INF, "height": 0.0, "width": 5.4}
-	var q := Vector2(x,z)
-	for route in routes:
-		for i in range(route.curve.size()-1):
-			var a: Vector3 = route.curve[i]
-			var b: Vector3 = route.curve[i+1]
-			var delta := Vector2(b.x-a.x,b.z-a.z)
-			var t := clampf((q-Vector2(a.x,a.z)).dot(delta)/delta.length_squared(),0,1)
-			var d := q.distance_to(Vector2(a.x,a.z)+delta*t)
-			if d < best.distance:
-				best = {"distance":d,"height":lerpf(a.y,b.y,t),"width":route.width}
-	return best
+func bridge_approaches(curve: Array) -> Array:
+	var ends: Array = layout.valley.bridge_route_endpoints
+	return [curve.slice(0,int(ends[0])*4+1),curve.slice(int(ends[1])*4)]
 
-func river_sample(x: float, z: float) -> Dictionary:
-	var best := {"distance": INF, "height": -30.0}
-	var q := Vector2(x,z)
-	for i in range(river_points.size()-1):
-		var a := river_points[i]
-		var b := river_points[i+1]
-		var delta := Vector2(b.x-a.x,b.z-a.z)
-		var t := clampf((q-Vector2(a.x,a.z)).dot(delta)/delta.length_squared(),0,1)
-		var d := q.distance_to(Vector2(a.x,a.z)+delta*t)
-		if d < best.distance: best = {"distance":d,"height":lerpf(a.y,b.y,t)}
-	return best
+func central_shelves(x: float, z: float, axis: float, underlying: float) -> float:
+	var depth := -z
+	var lateral := x-axis
+	var width := lerpf(83,60,clampf(depth/245.0,0,1))
+	var footprint := (1.0-smoothstep(0.72,1.13,absf(lateral)/width))*smoothstep(-8,22,depth)*(1.0-smoothstep(226,251,depth))
+	if footprint <= 0: return underlying
+	var top := 0.55*sin(x*0.085+z*0.031)+0.32*cos(z*0.13-x*0.04)
+	for shelf in layout.shelves:
+		var advance: float = depth-shelf[0]
+		if advance < -40: continue
+		if advance > 40:
+			top += float(shelf[1])
+			continue
+		# Change the face direction and expose short spurs as each rim crosses the ridge.
+		var phase: float = shelf[5]
+		var edge: float = lateral*shelf[4]+shelf[3]*sin(lateral*0.048+phase)
+		edge += 2.6*sin(lateral*0.145-phase)+1.1*cos(lateral*0.29+phase)
+		var run: float = shelf[2]*(1.0+0.28*sin(lateral*0.085+phase))
+		# One talus fan spreads part of each bed into a shallow grass slope.
+		# Its position changes from ledge to ledge, leaving separate rock noses.
+		var fan := (lateral-38*sin(phase*2.2))/18.0
+		run *= 1.0+2.6*exp(-fan*fan)
+		top += float(shelf[1])*smoothstep(-run*0.5,run*0.5,advance-edge)
+	return lerpf(underlying,top,footprint)
+
+func water_width(z: float) -> float:
+	var bend := 1.0+0.14*sin((z+65)*0.066)+0.10*sin((z+65)*0.109)
+	return layout.valley.water_width*bend*(1.0-0.40*smoothstep(110,270,-z))
+
+func valley_height(z: float, original: float, river: Dictionary) -> float:
+	var west: bool = river.offset_x < 0
+	var reach: float = layout.valley.west_reach if west else layout.valley.east_reach
+	reach += 7*sin(z*0.041) + 3*cos(z*0.073)
+	var d: float = river.distance
+	if d >= reach: return original
+	var half_width := water_width(river.center_z)*0.5
+	var bank := -1.8 + 2.65*smoothstep(half_width-1.6,half_width+0.8,d)
+	bank += (2.6 if west else 3.8)*smoothstep(half_width+2,half_width+10,d)
+	bank += (3.8 if west else 6.0)*smoothstep(half_width+13,half_width+20,d)
+	# The low water meadow eases into a higher, asymmetrical outer valley wall.
+	return lerpf(river.height+bank,original,smoothstep(half_width+6,reach,d))
 
 func height_at(x: float, z: float) -> float:
 	var valley := -36.0 + sin(x*0.035+z*0.015)*3.0
@@ -109,23 +142,43 @@ func height_at(x: float, z: float) -> float:
 	var h := lerpf(valley,crest,ridge)
 	var left_base := 1.0-smoothstep(0.3,1.3,Vector2((x+116)/62,(z+120)/73).length())
 	h = maxf(h,lerpf(valley,8,left_base))
+	# The upstream meander cuts a high catchment before entering the east valley.
+	var catchment := smoothstep(146,252,-z)*smoothstep(72,150,x)
+	var upstream := 11.0+5*cos(x*0.048+z*0.03)+4*sin(z*0.057)
+	h = maxf(h,lerpf(valley,upstream,catchment))
 	for t in layout.terraces:
 		var dx: float = (x-t[0])/t[2]
 		var dz: float = (z-t[1])/t[3]
+		if absf(dx)>1.35 or absf(dz)>1.35: continue
 		var angle := atan2(dz,dx)
 		var edge := 1.0 + sin(angle*3.0+t[0])*0.08 + sin(angle*7.0+t[1])*0.04
 		var radius := Vector2(dx,dz).length()/edge
 		var weight := 1.0-smoothstep(0.70,1.18,radius)
 		var top: float = t[4] + sin(x*0.065+z*0.031)*0.7 + sin(z*0.09)*0.4
 		h = lerpf(h,maxf(h,top),weight)
-	var road := route_sample(x,z)
-	# A broad shoulder prevents a road cut from becoming a narrow trench.
-	h = lerpf(h,minf(h,road.height+0.4),1.0-smoothstep(5,21,road.distance))
-	h = lerpf(h,road.height,1.0-smoothstep(road.width*0.5+0.5,road.width*0.5+8,road.distance))
-	# Broad real valley silhouette, including below the bridge proxy.
-	var river := river_sample(x,z)
-	var cut := 1.0-smoothstep(4.0,14.0,river.distance)
-	h = lerpf(h,minf(h,river.height-1.6),cut)
+	h = central_shelves(x,z,axis,h)
+	var lookout := vec(layout.road_lookout)
+	var lookout_radius := Vector2((x-lookout.x)/12,(z-lookout.z)/8).length()
+	h = lerpf(h,lookout.y,1.0-smoothstep(0.62,1.3,lookout_radius))
+	var summit := vec(layout.landmarks.E_summit)
+	var plaza: Array = layout.summit.plaza
+	var outside_plaza := Vector2(maxf(0,absf(x-summit.x)-plaza[0]*0.5),maxf(0,absf(z-summit.z-layout.summit.plaza_center_z)-plaza[1]*0.5))
+	var river := channel.sample(x,z)
+	h = valley_height(z,h,river)
+	var road := roads.sample(x,z)
+	if road.distance < 22:
+		var shoulder: float = maxf(0,road.distance-road.width*0.5)
+		var graded := lerpf(h,minf(h,road.height+0.6+shoulder*0.44),1.0-smoothstep(5,19,road.distance))
+		graded = lerpf(graded,road.height,1.0-smoothstep(1,8,shoulder))
+		# Stop grading in the streambed beneath the bridge.
+		h = lerpf(h,graded,smoothstep(water_width(river.center_z)*0.5+0.4,9.5,river.distance))
+	# Support every corner of the plinth after the valley and road have been shaped.
+	var apron_distance := outside_plaza.length()
+	var plaza_blend := 1.0-smoothstep(3,12,apron_distance)
+	# Let the last approach rise at its designed grade up to the front lip.
+	if z > summit.z+layout.summit.plaza_center_z+plaza[1]*0.5:
+		plaza_blend *= smoothstep(3.5,13,road.distance)
+	h = lerpf(h,summit.y,plaza_blend)
 	# Stable local rehearsal ground only; full-route collision is stage 02.
 	if x >= -30 and x <= 0 and z >= -10 and z <= 22: h = 0.0
 	return h
@@ -193,56 +246,90 @@ func _build_terrain() -> void:
 	shape.position = Vector3(-15,-0.5,6)
 	pad.add_child(shape)
 
-func _ribbon(parent: Node3D, points: Array, width: float, m: Material, drape: bool) -> void:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+func _ground_quad(st: SurfaceTool, corners: Array[Vector3], lift: float) -> void:
+	# Clip the road to each actual terrain triangle. On steep brows a quad draped
+	# at just its corners would cut into the ridge or bridge the hollow.
+	var polygon := PackedVector2Array()
+	var bounds := Rect2(Vector2(corners[0].x,corners[0].z),Vector2.ZERO)
+	for p in corners:
+		var uv := Vector2(p.x,p.z)
+		polygon.append(uv)
+		bounds = bounds.expand(uv)
+	var step := int(layout.terrain.step)
+	for x in range(floori(bounds.position.x/step)*step,ceili(bounds.end.x/step)*step,step):
+		for z in range(floori(bounds.position.y/step)*step,ceili(bounds.end.y/step)*step,step):
+			var a := Vector2(x,z)
+			var b := Vector2(x+step,z)
+			var c := Vector2(x,z+step)
+			var d := Vector2(x+step,z+step)
+			for cell in [PackedVector2Array([a,b,c]),PackedVector2Array([b,d,c])]:
+				for patch in Geometry2D.intersect_polygons(polygon,cell):
+					var vertices: Array[Vector3] = []
+					for uv in patch:
+						vertices.append(Vector3(uv.x,surface_height(uv.x,uv.y)+lift,uv.y))
+					if Geometry2D.is_polygon_clockwise(patch): vertices.reverse()
+					for k in range(1,vertices.size()-1):
+						if (vertices[k]-vertices[0]).cross(vertices[k+1]-vertices[0]).length_squared()>0.00000001:
+							_triangle(st,vertices[0],vertices[k],vertices[k+1],Color.WHITE)
+
+func _emit_ribbon(st: SurfaceTool, points: Array, width: float, drape: bool, lift := 0.035) -> void:
 	var sides: Array[Vector3] = []
 	for i in range(points.size()):
 		var tangent: Vector3 = points[mini(i+1,points.size()-1)]-points[maxi(i-1,0)]
-		sides.append(Vector3(-tangent.z,0,tangent.x).normalized()*width*0.5)
+		var local_width := width if drape else water_width(points[i].z)
+		sides.append(Vector3(-tangent.z,0,tangent.x).normalized()*local_width*0.5)
 	for i in range(points.size()-1):
 		var a: Vector3 = points[i]
 		var b: Vector3 = points[i+1]
 		var count := maxi(1,ceili(a.distance_to(b)))
-		var columns := maxi(1,ceili(width))
 		for j in range(count):
 			var p := a.lerp(b,float(j)/count)
 			var q := a.lerp(b,float(j+1)/count)
 			var left := sides[i].lerp(sides[i+1],float(j)/count)
 			var right := sides[i].lerp(sides[i+1],float(j+1)/count)
-			for col in range(columns):
-				var u := -1.0+2.0*col/columns
-				var v := -1.0+2.0*(col+1)/columns
-				var vertices: Array[Vector3] = [p+left*u,p+left*v,q+right*u,q+right*v]
-				for k in range(4):
-					if drape: vertices[k].y = surface_height(vertices[k].x,vertices[k].z)+0.10
-				_triangle(st,vertices[0],vertices[2],vertices[1],Color.WHITE)
-				_triangle(st,vertices[1],vertices[2],vertices[3],Color.WHITE)
+			if drape:
+				_ground_quad(st,[p-left,q-right,q+right,p+left],lift)
+			else:
+				_triangle(st,p-left,q-right,p+left,Color.WHITE)
+				_triangle(st,p+left,q-right,q+right,Color.WHITE)
+
+func _finish_mesh(parent: Node3D, label: String, st: SurfaceTool, m: Material) -> void:
 	var mesh := st.commit()
 	mesh.surface_set_material(0,m)
 	var node := MeshInstance3D.new()
+	node.name = label
 	node.mesh = mesh
 	parent.add_child(node)
 
 func _build_paths() -> void:
 	var parent := group("RouteProxies")
 	for route in routes:
-		_ribbon(parent,route.curve,route.width,path_material,true)
-	# Transverse bars locate provisional stair flights; no detailed stairs/colliders.
-	var main: Array = routes[0].points
+		var road_surface := SurfaceTool.new()
+		road_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var sections: Array = bridge_approaches(route.curve) if route.id=="river" else [route.curve]
+		for section in sections: _emit_ribbon(road_surface,section,route.width,true)
+		_finish_mesh(parent,route.id,road_surface,path_material)
+	# Each tread marker shares the curved centerline and the actual road grade.
+	var main: Array = routes[0].curve
+	var flights := SurfaceTool.new()
+	flights.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for flight in layout.stairs:
-		var a: Vector3 = main[int(flight.segment)]
-		var b: Vector3 = main[int(flight.segment)+1]
-		var start := a.lerp(b,flight.from)
-		var end := a.lerp(b,flight.to)
-		var count := maxi(2,ceili(start.distance_to(end)/1.1))
+		var first := int(flight.segment)*4
+		var count := maxi(2,ceili(main[first].distance_to(main[first+4])*(flight.to-flight.from)/1.1))
 		for j in range(count):
-			var p := start.lerp(end,float(j)/count)
-			p.y = height_at(p.x,p.z)+0.22
-			var node := block(parent,p,Vector3(6,0.18,0.4),stone)
-			node.rotation.y = atan2(b.x-a.x,b.z-a.z)
+			var t := 4*lerpf(flight.from,flight.to,float(j)/count)
+			var i := first+floori(t)
+			var a: Vector3 = main[i]
+			var b: Vector3 = main[i+1]
+			var p := a.lerp(b,t-floorf(t))
+			var half_step := (b-a).normalized()*0.22
+			_emit_ribbon(flights,[p-half_step,p+half_step],5.5,true,0.095)
+	_finish_mesh(parent,"StairFlights",flights,stone)
 	var river := group("RiverProxy")
-	_ribbon(river,river_points,4.0,material(Color("72999f")),false)
+	var water := SurfaceTool.new()
+	water.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_emit_ribbon(water,river_points,layout.valley.water_width,false)
+	_finish_mesh(river,"Water",water,material(Color("72999f")))
 
 func block(parent: Node3D, p: Vector3, size: Vector3, m: Material) -> MeshInstance3D:
 	var mesh := BoxMesh.new()
@@ -287,13 +374,7 @@ func _build_landmarks() -> void:
 	arch(parent,gate,6,10.2,1.35,2.0)
 	block(parent,gate+Vector3(-9,1.7,0),Vector3(9,3.4,1.7),stone)
 	block(parent,gate+Vector3(9,1.1,0),Vector3(9,2.2,1.7),stone)
-	var top := vec(layout.landmarks.E_summit)
-	block(parent,top+Vector3(0,-0.5,0),Vector3(49,1,24),stone)
-	arch(parent,top+Vector3(4,0,-3),12,22,1.7,2.4)
-	arch(parent,top+Vector3(-13,0,-4),6,12,1.1,2)
-	arch(parent,top+Vector3(19,0,-4),5,14,1.1,2)
-	for item in [[-23,16,1],[-19,12,-9],[25,13,3],[11,17,-10],[-6,13,-13]]:
-		block(parent,top+Vector3(item[0],float(item[1])*0.5,item[2]),Vector3(1.6,item[1],1.6),stone)
+	_build_summit(parent)
 	var left := vec(layout.landmarks.C_overlook)
 	block(parent,left+Vector3(-7,1.5,0),Vector3(3,3,2),stone)
 	block(parent,left+Vector3(8,1,2),Vector3(2,2,2),stone)
@@ -301,6 +382,25 @@ func _build_landmarks() -> void:
 	block(parent,bridge+Vector3(0,-0.5,0),Vector3(23,1,5.5),stone)
 	arch(parent,bridge+Vector3(0,-6,2.2),16,5.5,1,0.8)
 	arch(parent,bridge+Vector3(0,-6,-2.2),16,5.5,1,0.8)
+
+func _build_summit(parent: Node3D) -> void:
+	var summit := Node3D.new()
+	summit.name = "Summit"
+	summit.position = vec(layout.landmarks.E_summit)
+	parent.add_child(summit)
+	var cfg: Dictionary = layout.summit
+	block(summit,Vector3(0,-0.36,cfg.plaza_center_z),Vector3(cfg.plaza[0],0.8,cfg.plaza[1]),stone)
+	for item in cfg.arches_xz_width_height_rim_depth_yaw:
+		var bay := Node3D.new()
+		bay.position = Vector3(item[0],0,item[1])
+		bay.rotation.y = deg_to_rad(item[6])
+		summit.add_child(bay)
+		arch(bay,Vector3.ZERO,item[2],item[3],item[4],item[5])
+	for pier in cfg.piers_xz_height:
+		block(summit,Vector3(pier[0],pier[2]*0.5,pier[1]),Vector3(1.8,pier[2],1.8),stone)
+	for wall in cfg.wall_fragments_xz_width_height_depth_yaw:
+		var fragment := block(summit,Vector3(wall[0],wall[3]*0.5,wall[1]),Vector3(wall[2],wall[3],wall[4]),stone)
+		fragment.rotation.y = deg_to_rad(wall[5])
 
 func _build_background_proxies() -> void:
 	var parent := group("DistantCompositionProxies")

@@ -1,0 +1,44 @@
+[
+  {
+    "log": ".godot/m10_rebuild_relief_regression_m02_movement.log",
+    "script_error": false,
+    "test": "m02_movement",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "log": ".godot/m10_rebuild_relief_regression_m03_jump.log",
+    "script_error": false,
+    "test": "m03_jump",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "log": ".godot/m10_rebuild_relief_regression_m04_camera.log",
+    "script_error": false,
+    "test": "m04_camera",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "log": ".godot/m10_rebuild_relief_regression_m04_occlusion.log",
+    "script_error": false,
+    "test": "m04_occlusion",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "log": ".godot/m10_rebuild_relief_regression_m09_startup.log",
+    "script_error": false,
+    "test": "m09_startup",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "log": ".godot/m10_rebuild_relief_regression_m10_wind_hills.log",
+    "script_error": false,
+    "test": "m10_wind_hills",
+    "exit_code": 0,
+    "completed": true
+  }
+]

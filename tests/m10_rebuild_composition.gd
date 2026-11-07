@@ -24,6 +24,13 @@ func save_image(label: String) -> void:
 	await RenderingServer.frame_post_draw
 	check(root.get_texture().get_image().save_png("res://docs/images/m10_rebuild/"+label+".png")==OK,"save "+label)
 
+func inspect_scene(_label: String, _scene: Node3D) -> void:
+	pass
+
+func report_path() -> String:
+	var filename := "m10_rebuild_stage01.json" if capture else "m10_rebuild_stage01_headless.json"
+	return "res://docs/measurements/"+filename
+
 func _run() -> void:
 	root.size = Vector2i(1672,941)
 	Engine.max_fps = 60
@@ -64,6 +71,7 @@ func _run() -> void:
 			view["player_height_px"] = camera.unproject_position(feet+Vector3.UP*1.8).distance_to(camera.unproject_position(feet))
 		result.views[label] = view
 		await save_image(label)
+		await inspect_scene(label,scene)
 		scene.queue_free()
 		await ticks(3)
 	var play: Node3D = load("res://scenes/maps/wind_hills_rebuild/playground.tscn").instantiate()
@@ -101,14 +109,14 @@ func _run() -> void:
 	player.reset_motion(Vector3(60,-3,30))
 	await ticks(3)
 	check(player.position.distance_to(start)<0.2,"rehearsal boundary returns to entrance")
+	await inspect_scene("playground",play)
 	result["checks"] = checks
 	result["failures"] = failures
 	result["engine"] = Engine.get_version_info().string
 	result["resolution"] = [root.size.x,root.size.y]
 	result["renderer"] = RenderingServer.get_current_rendering_method()
 	result["gpu"] = RenderingServer.get_video_adapter_name()
-	var report_name := "m10_rebuild_stage01.json" if capture else "m10_rebuild_stage01_headless.json"
-	var file := FileAccess.open("res://docs/measurements/"+report_name,FileAccess.WRITE)
+	var file := FileAccess.open(report_path(),FileAccess.WRITE)
 	file.store_string(JSON.stringify(result,"\t"))
 	file.close()
 	play.queue_free()
