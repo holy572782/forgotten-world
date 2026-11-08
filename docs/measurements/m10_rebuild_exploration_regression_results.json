@@ -1,0 +1,72 @@
+[
+  {
+    "exit_code": 0,
+    "test": "m02_movement",
+    "completed": true,
+    "script_error": false,
+    "log": ".godot/m10_rebuild_exploration_regression_m02_movement.log"
+  },
+  {
+    "exit_code": 0,
+    "test": "m03_jump",
+    "completed": true,
+    "script_error": false,
+    "log": ".godot/m10_rebuild_exploration_regression_m03_jump.log"
+  },
+  {
+    "exit_code": 0,
+    "test": "m04_camera",
+    "completed": true,
+    "script_error": false,
+    "log": ".godot/m10_rebuild_exploration_regression_m04_camera.log"
+  },
+  {
+    "exit_code": 0,
+    "test": "m04_occlusion",
+    "completed": true,
+    "script_error": false,
+    "log": ".godot/m10_rebuild_exploration_regression_m04_occlusion.log"
+  },
+  {
+    "exit_code": 0,
+    "test": "m09_startup",
+    "completed": true,
+    "script_error": false,
+    "log": ".godot/m10_rebuild_exploration_regression_m09_startup.log"
+  },
+  {
+    "exit_code": 0,
+    "test": "m07_combo",
+    "completed": true,
+    "script_error": false,
+    "log": ".godot/m10_rebuild_exploration_regression_m07_combo.log"
+  },
+  {
+    "exit_code": 0,
+    "test": "m07_chain",
+    "completed": true,
+    "script_error": false,
+    "log": ".godot/m10_rebuild_exploration_regression_m07_chain.log"
+  },
+  {
+    "exit_code": 0,
+    "test": "m08_defense",
+    "completed": true,
+    "script_error": false,
+    "log": ".godot/m10_rebuild_exploration_regression_m08_defense.log"
+  },
+  {
+    "exit_code": 0,
+    "test": "m09_enemy_combat",
+    "completed": true,
+    "script_error": false,
+    "log": ".godot/m10_rebuild_exploration_regression_m09_enemy_combat.log"
+  },
+  {
+    "exit_code": 0,
+    "test": "m10_wind_hills",
+    "completed": true,
+    "script_error": false,
+    "log": ".godot/m10_rebuild_exploration_regression_m10_wind_hills.log"
+  }
+]

@@ -1,0 +1,158 @@
+{
+	"airborne_walk_samples": 0,
+	"architecture_shapes": 56,
+	"bridge": {
+		"fps": 30.000486041394,
+		"frame_max_ms": 33.476,
+		"frame_p95_ms": 33.417,
+		"physics_max_ms": 0.578,
+		"physics_p95_ms": 0.539,
+		"samples": 179,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"checks": 271,
+	"chunk_floor_probes": {
+		"max_error_m": 0.0000352859497070313,
+		"misses": 0,
+		"over_floor_angle": 134,
+		"samples": 484
+	},
+	"contact_gaps": [],
+	"cross_back_to_main": {
+		"finish": "(7.372762, 6.536033, -67.57794)",
+		"seconds": 31.1666666666667,
+		"start": "(111.0359, 0.693713, -96.78413)",
+		"travel_m": 151.892576759681
+	},
+	"cross_to_far_bank": {
+		"finish": "(111.0359, 0.693713, -96.78413)",
+		"seconds": 31.1333333333333,
+		"start": "(7.416992, 6.517528, -67.40104)",
+		"travel_m": 151.768344378099
+	},
+	"entrance": {
+		"fps": 30.0014011827592,
+		"frame_max_ms": 33.605,
+		"frame_p95_ms": 33.483,
+		"physics_max_ms": 0.542,
+		"physics_p95_ms": 0.542,
+		"samples": 179,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"environment": {
+		"fps_cap": 30,
+		"godot": "4.7.2-stable (official)",
+		"gpu": "NVIDIA GeForce GTX 1080",
+		"physics_hz": 60,
+		"renderer": "gl_compatibility",
+		"resolution": [
+			1672,
+			941
+		]
+	},
+	"failures": [],
+	"gate_to_left_fork": {
+		"finish": "(-11.91364, 1.635511, -36.81467)",
+		"seconds": 8.96666666666667,
+		"start": "(-11.64289, 0.000833, 0.058905)",
+		"travel_m": 40.9491241555661
+	},
+	"gate_to_middle": {
+		"finish": "(7.541818, 6.547413, -67.57706)",
+		"seconds": 16.7,
+		"start": "(-11.6625, 0.000174, 1.5)",
+		"travel_m": 79.6125468313694
+	},
+	"generation_ms": 2485.426,
+	"jump_inputs_during_walk": 0,
+	"left_climb": {
+		"finish": "(-85.61084, 20.25069, -86.36222)",
+		"seconds": 21.4333333333333,
+		"start": "(-11.91364, 1.635511, -36.81467)",
+		"travel_m": 103.090824378654
+	},
+	"left_rejoin": {
+		"finish": "(19.47286, 18.07802, -111.7487)",
+		"seconds": 24.9666666666667,
+		"start": "(-85.63711, 20.25063, -86.14172)",
+		"travel_m": 120.958306536078
+	},
+	"long_frames": [],
+	"lookout": {
+		"fps": 30.0003201151476,
+		"frame_max_ms": 33.573,
+		"frame_p95_ms": 33.456,
+		"physics_max_ms": 0.575,
+		"physics_p95_ms": 0.541,
+		"samples": 179,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"lookout_walk": {
+		"finish": "(-85.63711, 20.25063, -86.14172)",
+		"seconds": 2.16666666666667,
+		"start": "(-85.61084, 20.25069, -86.36222)",
+		"travel_m": 6.21859271451831
+	},
+	"main_to_river_fork": {
+		"finish": "(7.416992, 6.517528, -67.40104)",
+		"seconds": 11.2333333333333,
+		"start": "(19.47286, 18.07802, -111.7487)",
+		"travel_m": 52.2922727558762
+	},
+	"middle": {
+		"fps": 30.0003402273221,
+		"frame_max_ms": 33.578,
+		"frame_p95_ms": 33.457,
+		"physics_max_ms": 0.565,
+		"physics_p95_ms": 0.565,
+		"samples": 179,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"middle_to_summit": {
+		"finish": "(36.69931, 45.00072, -180.0798)",
+		"seconds": 29.5,
+		"start": "(7.541818, 6.547413, -67.57706)",
+		"travel_m": 143.435734059662
+	},
+	"routes_performance": {
+		"fps": 30.0003012139676,
+		"frame_max_ms": 35.6,
+		"frame_p95_ms": 33.607,
+		"physics_max_ms": 2.961,
+		"physics_p95_ms": 1.113,
+		"samples": 6689
+	},
+	"safe_points": 7,
+	"summit": {
+		"fps": 30.0002748628535,
+		"frame_max_ms": 33.481,
+		"frame_p95_ms": 33.418,
+		"physics_max_ms": 0.527,
+		"physics_p95_ms": 0.527,
+		"samples": 179,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"summit_to_gate": {
+		"finish": "(-11.64289, 0.000833, 0.058905)",
+		"seconds": 45.2,
+		"start": "(36.69931, 45.00072, -180.0798)",
+		"travel_m": 221.941898176447
+	},
+	"terrain_shapes": 484,
+	"walk_samples": 6474
+}

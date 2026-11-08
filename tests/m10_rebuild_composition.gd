@@ -2,7 +2,8 @@ extends SceneTree
 ## Stage 01 smoke, image capture and composition measurements. Not route acceptance.
 var failures: Array[String] = []
 var checks := 0
-var result := {"stage":"01", "full_route_traversal":"not implemented / stage 02", "views":{}}
+const REVIEW_OUTPUT := "res://.godot/m10_rebuild_review/"
+var result := {"stage":"02", "full_route_traversal":"see m10_rebuild_exploration", "views":{}}
 var capture := true
 
 func _initialize() -> void:
@@ -22,16 +23,17 @@ func ticks(n: int) -> void:
 func save_image(label: String) -> void:
 	if not capture: return
 	await RenderingServer.frame_post_draw
-	check(root.get_texture().get_image().save_png("res://docs/images/m10_rebuild/"+label+".png")==OK,"save "+label)
+	check(root.get_texture().get_image().save_png(REVIEW_OUTPUT+label+".png")==OK,"save "+label)
 
 func inspect_scene(_label: String, _scene: Node3D) -> void:
 	pass
 
 func report_path() -> String:
 	var filename := "m10_rebuild_stage01.json" if capture else "m10_rebuild_stage01_headless.json"
-	return "res://docs/measurements/"+filename
+	return REVIEW_OUTPUT+filename
 
 func _run() -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(REVIEW_OUTPUT))
 	root.size = Vector2i(1672,941)
 	Engine.max_fps = 60
 	capture = not "--headless-check" in OS.get_cmdline_user_args()
@@ -54,7 +56,7 @@ func _run() -> void:
 		var camera: Camera3D = scene.get_node("ReviewCamera")
 		check(camera.is_current(),label+" independent camera current")
 		check(field.get_node("Terrain").get_child_count()==484,"484 terrain blocks")
-		check(field.get_node("EntranceRehearsalFloor").get_child_count()==1,"local rehearsal collider only")
+		check(field.find_children("*","CollisionShape3D",true,false).is_empty(),"review scene is visual only")
 		var landmarks := {}
 		for marker in field.get_node("Landmarks").get_children():
 			var uv := camera.unproject_position(marker.global_position)/Vector2(root.size)
@@ -106,9 +108,9 @@ func _run() -> void:
 	Input.action_release("camera_right")
 	await ticks(30)
 	check(absf(rig.rotation.y-yaw)>0.1,"camera rotation action")
-	player.reset_motion(Vector3(60,-3,30))
+	player.reset_motion(Vector3(220,-3,30))
 	await ticks(3)
-	check(player.position.distance_to(start)<0.2,"rehearsal boundary returns to entrance")
+	check(player.position.distance_to(start)<0.2,"map boundary returns to visited entrance")
 	await inspect_scene("playground",play)
 	result["checks"] = checks
 	result["failures"] = failures

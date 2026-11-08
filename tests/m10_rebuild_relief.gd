@@ -1,6 +1,5 @@
 extends "res://tests/m10_rebuild_composition.gd"
 ## Both sides use the same production scene, camera and real renderer.
-const EVIDENCE := "res://docs/images/m10_rebuild/relief/"
 var revision := "before" if "--before" in OS.get_cmdline_user_args() else "after"
 
 func _run() -> void:
@@ -21,14 +20,14 @@ func _run() -> void:
 	await super._run()
 
 func report_path() -> String:
-	return "res://docs/measurements/m10_rebuild_relief_%s.json" % revision
+	return REVIEW_OUTPUT+"relief_%s.json" % revision
 
 func save_image(label: String) -> void:
 	if label == "entrance_play" or (revision == "before" and label != "comparison"):
 		return
 	await RenderingServer.frame_post_draw
 	var shot := root.get_texture().get_image()
-	check(shot.save_png(EVIDENCE + revision + "_" + label + ".png") == OK,"save "+label)
+	check(shot.save_png(REVIEW_OUTPUT+revision+"_"+label+".png")==OK,"save "+label)
 
 func inspect_scene(label: String, scene: Node3D) -> void:
 	var field: Node3D = scene.get_node("Field")
@@ -45,7 +44,7 @@ func inspect_scene(label: String, scene: Node3D) -> void:
 	var camera: Camera3D = scene.get_node("ReviewCamera")
 	result["lighting"] = str(scene.get_node("Lighting/Sun").global_transform)
 	result["colliders"] = field.find_children("*","CollisionShape3D",true,false).size()
-	check(result.colliders == 1,"only the existing entrance floor has collision")
+	check(result.colliders == 0,"no physics in fixed review")
 	# Exclude screenshot encoding, scene construction and warm-up from frame samples.
 	for i in range(30): await RenderingServer.frame_post_draw
 	var elapsed_ms: Array[float] = []

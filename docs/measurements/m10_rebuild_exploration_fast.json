@@ -1,0 +1,90 @@
+{
+	"airborne_walk_samples": 0,
+	"architecture_shapes": 56,
+	"checks": 261,
+	"chunk_floor_probes": {
+		"max_error_m": 0.0000352859497070313,
+		"misses": 0,
+		"over_floor_angle": 134,
+		"samples": 484
+	},
+	"contact_gaps": [],
+	"cross_back_to_main": {
+		"finish": "(7.471312, 6.530686, -67.51698)",
+		"seconds": 30.8,
+		"start": "(111.0162, 0.692387, -96.76584)",
+		"travel_m": 151.728431880474
+	},
+	"cross_to_far_bank": {
+		"finish": "(111.0162, 0.692387, -96.76584)",
+		"seconds": 30.7833333333333,
+		"start": "(7.462134, 6.522554, -67.4552)",
+		"travel_m": 151.695503783878
+	},
+	"environment": {
+		"fps_cap": 0,
+		"godot": "4.7.2-stable (official)",
+		"gpu": "",
+		"physics_hz": 60,
+		"renderer": "gl_compatibility",
+		"resolution": [
+			1672,
+			941
+		]
+	},
+	"failures": [],
+	"gate_to_left_fork": {
+		"finish": "(-11.94129, 1.628831, -36.79374)",
+		"seconds": 8.61666666666667,
+		"start": "(-11.65406, 0.000825, 0.025353)",
+		"travel_m": 40.867555195
+	},
+	"gate_to_middle": {
+		"finish": "(7.515979, 6.537189, -67.52958)",
+		"seconds": 16.35,
+		"start": "(-11.6625, 0.000174, 1.5)",
+		"travel_m": 79.5325337052345
+	},
+	"generation_ms": 2487.557,
+	"jump_inputs_during_walk": 0,
+	"left_climb": {
+		"finish": "(-85.52563, 20.25052, -86.27411)",
+		"seconds": 21.05,
+		"start": "(-11.94129, 1.628831, -36.79374)",
+		"travel_m": 102.853728175629
+	},
+	"left_rejoin": {
+		"finish": "(19.47869, 18.07736, -111.7487)",
+		"seconds": 24.6166666666667,
+		"start": "(-85.56461, 20.25033, -86.20011)",
+		"travel_m": 120.876151995733
+	},
+	"long_frames": [],
+	"lookout_walk": {
+		"finish": "(-85.56461, 20.25033, -86.20011)",
+		"seconds": 1.83333333333333,
+		"start": "(-85.52563, 20.25052, -86.27411)",
+		"travel_m": 6.16362850693986
+	},
+	"main_to_river_fork": {
+		"finish": "(7.462134, 6.522554, -67.4552)",
+		"seconds": 10.8833333333333,
+		"start": "(19.47869, 18.07736, -111.7487)",
+		"travel_m": 52.2119139879942
+	},
+	"middle_to_summit": {
+		"finish": "(36.80105, 45.00065, -180.0153)",
+		"seconds": 29.1333333333333,
+		"start": "(7.515979, 6.537189, -67.52958)",
+		"travel_m": 143.280213129707
+	},
+	"safe_points": 7,
+	"summit_to_gate": {
+		"finish": "(-11.65406, 0.000825, 0.025353)",
+		"seconds": 44.8166666666667,
+		"start": "(36.80105, 45.00065, -180.0153)",
+		"travel_m": 221.705181089696
+	},
+	"terrain_shapes": 484,
+	"walk_samples": 12933
+}

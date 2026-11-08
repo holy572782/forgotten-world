@@ -1,4 +1,4 @@
-> **M10 新フィールド・工程01（2026-11-07、ADR-064）**　参考画像から組み直した地形の構図確認待ち。`scenes/maps/wind_hills_rebuild/comparison.tscn` を開いてF6。 [画像を並べて比較](docs/m10_rebuild_comparison.html) ／ [俯瞰・配置・操作・検証](docs/m10_rebuild_stage01_audit.md)。
+> **M10 新フィールド・工程02（2026-11-08）**　工程01の構図承認済み。[playground.tscn](scenes/maps/wind_hills_rebuild/playground.tscn) をGodotで開いてF6。入口から山頂・左の見晴らし台・右の石橋を探索できます。工程02はユーザー操作確認待ち。[実画面・歩行試験・性能](docs/m10_rebuild_stage02_audit.md) ／ [工程01の構図比較](docs/m10_rebuild_comparison.html)
 
 > **M10-B01（2026-11-06、ADR-063）**：入口A〜門〜最初の曲がり〜Cだけに水彩風の草地と石板上面を試作。既存の `scenes/maps/wind_hills/wind_hills_playground.tscn` をF6で確認します。地形・衝突・主人公・カメラ・照明は維持。ユーザーの見た目確認待ちで、工程Aの個別未確認やM10全体を合格にしません。[設定・比較画像・検証と性能](docs/m10_b01_entrance_watercolor_audit.md)。
 

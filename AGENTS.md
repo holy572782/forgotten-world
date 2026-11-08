@@ -1,5 +1,9 @@
 # AGENTS.md — Codex / AI 制作指示
 
+## M10 新フィールド・工程02　歩行と衝突（2026-11-08）
+- ユーザーから工程01の構図承認を受領。工程02の探索入口は `scenes/maps/wind_hills_rebuild/playground.tscn`。山頂往復、左高台の周回、石橋往復、落下復帰を既存Playerで確認する。
+- 工程02の正式受入はユーザーのF6操作確認待ち。工程03以降は別途指示を待つ。実画面・計測・既存回帰・残件は `docs/m10_rebuild_stage02_audit.md` とDEVELOPMENT_STATUSの最新節を参照。
+
 ## M10 新フィールド・工程01構図の追加改善（2026-11-07、ADR-064）
 - 中央の段丘、右の谷・川、山頂遺跡の仮形状を調整済み。固定構図の前後比較と参考原画は `docs/m10_rebuild_comparison.html`、寸法・検証・残件は `docs/m10_rebuild_stage01_audit.md` の追加改善節にある。
 - 現在は修正後の構図のユーザー承認待ち。工程02の歩行面と衝突判定は承認後の対象。

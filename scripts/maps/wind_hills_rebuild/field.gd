@@ -1,7 +1,8 @@
 @tool
 extends Node3D
-## Stage 01: editable composition blockout, not accepted walking geometry.
+## Shared approved geometry. Only the exploration scene needs static physics.
 @export_file("*.json") var layout_path := "res://resources/maps/wind_hills_rebuild/layout.json"
+@export var exploration_physics := false
 var layout: Dictionary
 var routes: Array = []
 var river_points: Array[Vector3] = []
@@ -38,6 +39,12 @@ func _ready() -> void:
 	_build_terrain()
 	_build_paths()
 	_build_landmarks()
+	if exploration_physics:
+		for visual: MeshInstance3D in get_node("ArchitectureProxies").find_children("*","MeshInstance3D",true,false):
+			# The summit slab is 3 cm above its already solid, level foundation.
+			if visual.name == "PlazaSurface":
+				continue
+			_solid_visual(visual)
 	_build_background_proxies()
 	var markers := group("Landmarks")
 	for key in layout.landmarks:
@@ -50,7 +57,7 @@ func _ready() -> void:
 	spawn.position = vec(layout.spawn)
 	add_child(spawn)
 	generation_ms = (Time.get_ticks_usec() - started) / 1000.0
-	print("WindHills rebuild stage01: %.1f ms; composition only" % generation_ms)
+	print("WindHills rebuild: %.1f ms; exploration physics = %s" % [generation_ms, exploration_physics])
 
 func vec(p: Array) -> Vector3:
 	return Vector3(p[0], p[1], p[2])
@@ -168,8 +175,11 @@ func height_at(x: float, z: float) -> float:
 	var road := roads.sample(x,z)
 	if road.distance < 22:
 		var shoulder: float = maxf(0,road.distance-road.width*0.5)
-		var graded := lerpf(h,minf(h,road.height+0.6+shoulder*0.44),1.0-smoothstep(5,19,road.distance))
-		graded = lerpf(graded,road.height,1.0-smoothstep(1,8,shoulder))
+		# Reach plaza level just before the oblique lip. A sharp cross-slope here
+		# exceeded the floor angle even when the road's longitudinal grade was safe.
+		var grade_y := minf(summit.y,road.height+2.2*smoothstep(42,57,road.height))
+		var graded := lerpf(h,minf(h,grade_y+0.6+shoulder*0.44),1.0-smoothstep(5,19,road.distance))
+		graded = lerpf(graded,grade_y,1.0-smoothstep(1,8,shoulder))
 		# Stop grading in the streambed beneath the bridge.
 		h = lerpf(h,graded,smoothstep(water_width(river.center_z)*0.5+0.4,9.5,river.distance))
 	# Support every corner of the plinth after the valley and road have been shaped.
@@ -179,7 +189,10 @@ func height_at(x: float, z: float) -> float:
 	if z > summit.z+layout.summit.plaza_center_z+plaza[1]*0.5:
 		plaza_blend *= smoothstep(3.5,13,road.distance)
 	h = lerpf(h,summit.y,plaza_blend)
-	# Stable local rehearsal ground only; full-route collision is stage 02.
+	var overlook := vec(layout.landmarks.C_overlook)
+	var overlook_distance := Vector2(x-overlook.x,z-overlook.z).length()
+	h = lerpf(h,overlook.y,1.0-smoothstep(3.5,12.0,overlook_distance))
+	# Preserve the level starting meadow around the gate.
 	if x >= -30 and x <= 0 and z >= -10 and z <= 22: h = 0.0
 	return h
 
@@ -235,16 +248,31 @@ func _build_terrain() -> void:
 			node.name = "Chunk_%d_%d" % [x0-int(cfg.min_x),z0-int(cfg.min_z)]
 			node.mesh = mesh
 			parent.add_child(node)
-	# Explicitly local collision, not a misleading full-map traversal claim.
-	var pad := StaticBody3D.new()
-	pad.name = "EntranceRehearsalFloor"
-	add_child(pad)
-	var shape := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = Vector3(30,1,32)
-	shape.shape = box
-	shape.position = Vector3(-15,-0.5,6)
-	pad.add_child(shape)
+			if exploration_physics:
+				_solid_visual(node)
+
+func _solid_visual(visual: MeshInstance3D) -> void:
+	# The existing camera fader discovers only the meshes owned by the hit body.
+	var parent := visual.get_parent()
+	var body := StaticBody3D.new()
+	var original_name := visual.name
+	var local_transform := visual.transform
+	parent.remove_child(visual)
+	body.name = original_name
+	body.collision_mask = 0
+	body.transform = local_transform
+	parent.add_child(body)
+	visual.name = "Surface"
+	visual.transform = Transform3D.IDENTITY
+	body.add_child(visual)
+	var collider := CollisionShape3D.new()
+	if visual.mesh is BoxMesh:
+		var box := BoxShape3D.new()
+		box.size = visual.mesh.size
+		collider.shape = box
+	else:
+		collider.shape = visual.mesh.create_trimesh_shape()
+	body.add_child(collider)
 
 func _ground_quad(st: SurfaceTool, corners: Array[Vector3], lift: float) -> void:
 	# Clip the road to each actual terrain triangle. On steep brows a quad draped
@@ -376,8 +404,12 @@ func _build_landmarks() -> void:
 	block(parent,gate+Vector3(9,1.1,0),Vector3(9,2.2,1.7),stone)
 	_build_summit(parent)
 	var left := vec(layout.landmarks.C_overlook)
-	block(parent,left+Vector3(-7,1.5,0),Vector3(3,3,2),stone)
-	block(parent,left+Vector3(8,1,2),Vector3(2,2,2),stone)
+	for remnant in [[Vector2(-7,0),Vector3(3,3,2)],[Vector2(2,7),Vector3(2,2,2)]]:
+		var offset: Vector2 = remnant[0]
+		var size: Vector3 = remnant[1]
+		var at := Vector3(left.x+offset.x,0,left.z+offset.y)
+		at.y = surface_height(at.x,at.z)+size.y*0.5-0.18
+		block(parent,at,size,stone)
 	var bridge := vec(layout.landmarks.D_bridge)
 	block(parent,bridge+Vector3(0,-0.5,0),Vector3(23,1,5.5),stone)
 	arch(parent,bridge+Vector3(0,-6,2.2),16,5.5,1,0.8)
@@ -389,7 +421,7 @@ func _build_summit(parent: Node3D) -> void:
 	summit.position = vec(layout.landmarks.E_summit)
 	parent.add_child(summit)
 	var cfg: Dictionary = layout.summit
-	block(summit,Vector3(0,-0.36,cfg.plaza_center_z),Vector3(cfg.plaza[0],0.8,cfg.plaza[1]),stone)
+	block(summit,Vector3(0,-0.36,cfg.plaza_center_z),Vector3(cfg.plaza[0],0.8,cfg.plaza[1]),stone).name = "PlazaSurface"
 	for item in cfg.arches_xz_width_height_rim_depth_yaw:
 		var bay := Node3D.new()
 		bay.position = Vector3(item[0],0,item[1])

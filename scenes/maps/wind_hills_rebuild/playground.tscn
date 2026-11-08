@@ -13,6 +13,7 @@
 script = ExtResource("3")
 
 [node name="Field" parent="." instance=ExtResource("1")]
+exploration_physics = true
 
 [node name="Player" parent="." instance=ExtResource("2")]
 
@@ -41,4 +42,4 @@ offset_right = 1140.0
 offset_bottom = 85.0
 theme_override_colors/font_color = Color(0.16, 0.21, 0.25, 1)
 theme_override_font_sizes/font_size = 17
-text = "新フィールド / 工程01・構図試作\nWASD・矢印：移動   Space：ジャンプ   Q/E：カメラ\n操作できるのは入口周辺のみです。範囲外では入口へ戻ります。"
+text = "風渡りの丘　山頂へは中央の街道、見晴らし台へは左、石橋へは右。\nWASD・矢印で移動　Spaceでジャンプ　Q/Eでカメラ回転"

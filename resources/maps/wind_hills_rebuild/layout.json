@@ -1,5 +1,5 @@
 {
-  "stage": "01_composition_provisional",
+  "stage": "02_exploration",
   "units": "authoring units multiplied by world_scale for meters; +Y up; -Z toward summit",
   "world_scale": 0.75,
   "terrain": {"min_x": -200, "max_x": 240, "min_z": -350, "max_z": 80, "step": 2, "chunk": 20},
