@@ -1,0 +1,105 @@
+{
+	"airborne_walk_samples": 0,
+	"architecture_shapes": 56,
+	"bridge_fall": {
+		"approach": "(45.01445, -10.87742, -39.00108)",
+		"reason": "river",
+		"returned": "(45.01445, -10.87742, -39.00108)"
+	},
+	"checks": 261,
+	"chunk_floor_probes": {
+		"max_error_m": 0.0000352859497070313,
+		"misses": 0,
+		"over_floor_angle": 134,
+		"samples": 484
+	},
+	"contact_gaps": [],
+	"cross_back_to_main": {
+		"finish": "(7.469881, 6.530615, -67.51778)",
+		"seconds": 30.8333333333333,
+		"start": "(111.0232, 0.69286, -96.77223)",
+		"travel_m": 151.889557775576
+	},
+	"cross_to_far_bank": {
+		"finish": "(111.0232, 0.69286, -96.77223)",
+		"seconds": 30.8166666666667,
+		"start": "(7.465552, 6.522907, -67.45891)",
+		"travel_m": 151.859234137926
+	},
+	"environment": {
+		"fps_cap": 0,
+		"godot": "4.7.2-stable (official)",
+		"gpu": "",
+		"physics_hz": 60,
+		"renderer": "gl_compatibility",
+		"resolution": [
+			1672,
+			941
+		]
+	},
+	"failures": [],
+	"gate_to_left_fork": {
+		"finish": "(-11.94324, 1.628346, -36.79225)",
+		"seconds": 8.61666666666667,
+		"start": "(-11.65294, 0.000827, 0.028725)",
+		"travel_m": 40.8675776203163
+	},
+	"gate_to_middle": {
+		"finish": "(7.515816, 6.537347, -67.52932)",
+		"seconds": 16.35,
+		"start": "(-11.6625, 0.000174, 1.5)",
+		"travel_m": 79.5322475880384
+	},
+	"generation_ms": 2423.616,
+	"jump_inputs_during_walk": 0,
+	"left_climb": {
+		"finish": "(-85.56056, 20.25024, -86.30853)",
+		"seconds": 21.0666666666667,
+		"start": "(-11.94324, 1.628346, -36.79225)",
+		"travel_m": 102.931502320804
+	},
+	"left_rejoin": {
+		"finish": "(19.44001, 18.08196, -111.7496)",
+		"seconds": 24.6,
+		"start": "(-85.51945, 20.25073, -86.23485)",
+		"travel_m": 120.79238138441
+	},
+	"long_frames": [],
+	"lookout_walk": {
+		"finish": "(-85.51945, 20.25073, -86.23485)",
+		"seconds": 1.81666666666667,
+		"start": "(-85.56056, 20.25024, -86.30853)",
+		"travel_m": 6.09278866555542
+	},
+	"main_to_river_fork": {
+		"finish": "(7.465552, 6.522907, -67.45891)",
+		"seconds": 10.8833333333333,
+		"start": "(19.44001, 18.08196, -111.7496)",
+		"travel_m": 52.2120016752742
+	},
+	"middle_to_summit": {
+		"finish": "(36.76795, 45.00074, -180.0363)",
+		"seconds": 29.15,
+		"start": "(7.515816, 6.537347, -67.52932)",
+		"travel_m": 143.353973879945
+	},
+	"route_cost": {
+		"framing_calls": 13153,
+		"framing_queries": 0,
+		"framing_usec": 65778,
+		"recovery_max_usec": 6341,
+		"recovery_queries": 1560,
+		"recovery_ticks": 13153,
+		"recovery_usec": 436697,
+		"setup_queries": 16
+	},
+	"safe_points": 7,
+	"summit_to_gate": {
+		"finish": "(-11.65294, 0.000827, 0.028725)",
+		"seconds": 44.8333333333333,
+		"start": "(36.76795, 45.00074, -180.0363)",
+		"travel_m": 221.790800565388
+	},
+	"terrain_shapes": 484,
+	"walk_samples": 12938
+}

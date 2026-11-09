@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/maps/wind_hills_rebuild/field.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://scripts/player/target_dash.gd" id="6"]
 [ext_resource type="Script" path="res://scripts/effects/combat_feedback.gd" id="7"]
 [ext_resource type="PackedScene" path="res://scenes/maps/wind_hills_rebuild/lighting.tscn" id="8"]
+[ext_resource type="Script" path="res://scripts/maps/wind_hills_rebuild/exploration_camera.gd" id="9"]
 
 [node name="WindHillsRebuildPlayground" type="Node3D"]
 script = ExtResource("3")
@@ -25,6 +26,7 @@ camera_rig = NodePath("../../CameraRig")
 script = ExtResource("7")
 
 [node name="CameraRig" parent="." node_paths=PackedStringArray("target") instance=ExtResource("4")]
+script = ExtResource("9")
 target = NodePath("../Player")
 
 [node name="HUD" parent="." node_paths=PackedStringArray("player", "camera_rig") instance=ExtResource("5")]

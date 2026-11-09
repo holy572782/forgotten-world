@@ -36,6 +36,7 @@ func _ready() -> void:
 	terrain_material = material(Color.WHITE, true)
 	stone = material(Color("cfc8b6"))
 	path_material = material(Color("d9cba8"))
+	_grade_road_faces()
 	_build_terrain()
 	_build_paths()
 	_build_landmarks()
@@ -200,6 +201,70 @@ func vertex(x: int, z: int) -> Vector3:
 	var key := Vector2i(x,z)
 	if not samples.has(key): samples[key] = Vector3(x,height_at(x,z),z)
 	return samples[key]
+
+func _grade_road_faces() -> void:
+	# A tight inside bend can sample two different branches of the elevation
+	# profile on a single grid face. Constrain the actual 2-D floor gradient.
+	var step := int(layout.terrain.step)
+	var cells := {}
+	for route in routes:
+		var sections: Array = bridge_approaches(route.curve) if route.id=="river" else [route.curve]
+		for section in sections:
+			for i in range(section.size()-1):
+				var a: Vector3 = section[i]
+				var b: Vector3 = section[i+1]
+				var start := Vector2(a.x,a.z)
+				var end := Vector2(b.x,b.z)
+				var reach: float = route.width*0.5+step*0.95
+				var low := ((start.min(end)-Vector2.ONE*reach)/step).floor()
+				var high := ((start.max(end)+Vector2.ONE*reach)/step).ceil()
+				for x in range(int(low.x),int(high.x)):
+					for z in range(int(low.y),int(high.y)):
+						var center := Vector2(x+0.5,z+0.5)*step
+						if center.distance_to(Geometry2D.get_closest_point_to_segment(center,start,end)) <= reach:
+							cells[Vector2i(x,z)*step] = true
+	var ids := {}
+	var keys: Array[Vector2i] = []
+	var heights := PackedFloat64Array()
+	var movable := PackedFloat64Array()
+	var triangles: Array[Vector3i] = []
+	var summit := vec(layout.landmarks.E_summit)
+	var bridge := vec(layout.landmarks.D_bridge)
+	var plaza: Array = layout.summit.plaza
+	for cell: Vector2i in cells:
+		var corners := PackedInt32Array()
+		for offset: Vector2i in [Vector2i.ZERO,Vector2i.RIGHT,Vector2i.DOWN,Vector2i.ONE]:
+			var key := cell+offset*step
+			if not ids.has(key):
+				ids[key]=keys.size()
+				keys.append(key)
+				var abutment := absf(absf(key.x-bridge.x)-10.0)<=1.0 and absf(key.y-bridge.z)<=3
+				heights.append(bridge.y if abutment else vertex(key.x,key.y).y)
+				var on_plaza: bool = absf(key.x-summit.x)<=plaza[0]*0.5 and absf(key.y-summit.z-layout.summit.plaza_center_z)<=plaza[1]*0.5
+				var under_deck := absf(key.x-bridge.x)<11 and absf(key.y-bridge.z)<3
+				movable.append(0.0 if on_plaza or under_deck or abutment else 1.0)
+			corners.append(ids[key])
+		triangles.append(Vector3i(corners[0],corners[1],corners[2]))
+		triangles.append(Vector3i(corners[3],corners[2],corners[1]))
+	var allowed := step*tan(deg_to_rad(34.0))
+	for iteration in range(36):
+		var largest := 0.0
+		for t in triangles:
+			var dh := Vector2(heights[t.y]-heights[t.x],heights[t.z]-heights[t.x])
+			var excess := dh.length()-allowed
+			if excess <= 0.001: continue
+			var dir := dh.normalized()
+			var center_weight := -dir.x-dir.y
+			var weight := center_weight*center_weight*movable[t.x]+dir.x*dir.x*movable[t.y]+dir.y*dir.y*movable[t.z]
+			if weight < 0.0001: continue
+			var correction := excess/weight
+			heights[t.x]-=correction*center_weight*movable[t.x]
+			heights[t.y]-=correction*dir.x*movable[t.y]
+			heights[t.z]-=correction*dir.y*movable[t.z]
+			largest=maxf(largest,excess)
+		if largest<0.002: break
+	for i in range(keys.size()):
+		samples[keys[i]]=Vector3(keys[i].x,heights[i],keys[i].y)
 
 func surface_height(x: float, z: float) -> float:
 	var step := int(layout.terrain.step)

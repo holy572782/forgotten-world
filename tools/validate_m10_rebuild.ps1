@@ -1,30 +1,41 @@
 param(
-    [ValidateSet('baseline','capture','smoke','regression','relief','relief_regression','exploration_regression','exploration','exploration30','exploration60','exploration_perf30','exploration_perf60')][string]$Mode = 'exploration',
+    [ValidateSet('baseline','capture','smoke','regression','relief','relief_regression','exploration_regression','02r_regression','02r_startup','exploration','exploration30','exploration60','exploration_perf30','exploration_perf60')][string]$Mode = 'exploration',
     [string]$GodotExe = 'D:\Game\Godot\Godot_v4.7.2-stable_win64_console.exe'
 )
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $taskRoot
 try {
-    $taskRegression = $Mode -in @('regression','relief_regression','exploration_regression')
+    $taskRegression = $Mode -in @('regression','relief_regression','exploration_regression','02r_regression')
     $taskTests = if ($taskRegression) { @('m02_movement','m03_jump','m04_camera','m04_occlusion','m09_startup') } elseif ($Mode -eq 'relief') { @('m10_rebuild_relief') } else { @('m10_rebuild_composition') }
     if ($Mode -eq 'relief_regression') { $taskTests += 'm10_wind_hills' }
-    if ($Mode -eq 'exploration_regression') { $taskTests += @('m07_combo','m07_chain','m08_defense','m09_enemy_combat','m10_wind_hills') }
+    if ($Mode -in @('exploration_regression','02r_regression')) { $taskTests += @('m07_combo','m07_chain','m08_defense','m09_enemy_combat','m10_wind_hills') }
+    if ($Mode -eq '02r_regression') { $taskTests += @('m06_target_dash','m07_left_selection','pursuit_budget') }
+    if ($Mode -eq '02r_startup') {
+        $originalField = git show '125cfc0:scripts/maps/wind_hills_rebuild/field.gd'
+        if ($LASTEXITCODE -ne 0) { throw 'Stage 02 source at 125cfc0 is required for the paired startup measurement.' }
+        [IO.File]::WriteAllLines((Join-Path $taskRoot '.godot/m10_02r_original_field.gd'),[string[]]$originalField)
+        $originalRecovery = git show '125cfc0:scripts/maps/wind_hills_rebuild/playground.gd'
+        if ($LASTEXITCODE -ne 0) { throw 'Stage 02 recovery source is missing.' }
+        [IO.File]::WriteAllLines((Join-Path $taskRoot '.godot/m10_02r_original_playground.gd'),[string[]]$originalRecovery)
+        $taskTests = @('m10_rebuild_02r')
+    }
     $exploring = $Mode -like 'exploration*' -and !$taskRegression
     if ($exploring) { $taskTests = @('m10_rebuild_exploration') }
     if ($Mode -eq 'exploration') { $taskTests = @('m10_rebuild_relief','m10_rebuild_exploration') }
     $taskResults = @()
     foreach ($taskTest in $taskTests) {
         $taskLog = ".godot/m10_rebuild_${Mode}_${taskTest}.log"
-        $tickLimit = if ($taskTest -eq 'm10_wind_hills' -or $exploring) { '60000' } else { '7200' }
+        $tickLimit = if ($taskTest -in @('m10_wind_hills','m10_rebuild_02r') -or $exploring) { '60000' } else { '7200' }
         $taskArgs = @('--path','.', '--quit-after',$tickLimit,'--log-file', ".godot/m10_rebuild_${Mode}_${taskTest}_engine.log", '--script', "res://tests/$taskTest.gd")
         if ($Mode -eq 'smoke' -or $taskRegression) {
-            # M07 checks real elapsed time under its own 30/60 FPS caps.
-            if ($taskTest -ne 'm07_combo') { $taskArgs = @('--fixed-fps','60') + $taskArgs }
+            # Combo pacing and AI cache expiry both use the real clock.
+            if ($taskTest -notin @('m07_combo','pursuit_budget')) { $taskArgs = @('--fixed-fps','60') + $taskArgs }
             $taskArgs = @('--headless') + $taskArgs
         }
         if ($Mode -eq 'baseline') { $taskArgs += @('--','--baseline-only') }
         if ($Mode -eq 'smoke') { $taskArgs += @('--','--headless-check') }
+        if ($Mode -eq '02r_startup') { $taskArgs += @('--','--startup') }
         if ($exploring) {
             if ($Mode -eq 'exploration') { $taskArgs = @('--headless','--fixed-fps','60') + $taskArgs }
             $taskArgs += '--'
@@ -67,7 +78,7 @@ try {
         if ($taskExit -ne 0 -or $taskScriptError -or !$taskCompleted) { throw "Validation failed: $taskLog" }
     }
     if (!$exploring) {
-        $reportDir = if ($Mode -eq 'exploration_regression') { 'docs/measurements' } else { '.godot' }
+        $reportDir = if ($Mode -in @('exploration_regression','02r_regression')) { 'docs/measurements' } else { '.godot' }
         $taskResults | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$reportDir/m10_rebuild_${Mode}_results.json"
     }
 } finally {

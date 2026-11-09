@@ -1,0 +1,69 @@
+{
+	"after": [
+		2487.87,
+		2279.436,
+		2452.969
+	],
+	"before": [
+		2466.888,
+		2240.53,
+		2518.65
+	],
+	"checks": 110,
+	"failures": [],
+	"order": [
+		"before",
+		"after",
+		"after",
+		"before",
+		"before",
+		"after"
+	],
+	"renderer": "gl_compatibility",
+	"upper_road_30fps": [
+		{
+			"performance": {
+				"fps": 30.0006339500477,
+				"frame_max_ms": 34.009,
+				"frame_p95_ms": 33.527,
+				"physics_max_ms": 1.029,
+				"physics_p95_ms": 0.949,
+				"samples": 884
+			},
+			"revision": "before"
+		},
+		{
+			"performance": {
+				"fps": 30.0011165573922,
+				"frame_max_ms": 34.0,
+				"frame_p95_ms": 33.505,
+				"physics_max_ms": 0.978,
+				"physics_p95_ms": 0.941,
+				"samples": 884
+			},
+			"revision": "after"
+		},
+		{
+			"performance": {
+				"fps": 30.0005983150999,
+				"frame_max_ms": 33.91,
+				"frame_p95_ms": 33.503,
+				"physics_max_ms": 0.821,
+				"physics_p95_ms": 0.82,
+				"samples": 884
+			},
+			"revision": "after"
+		},
+		{
+			"performance": {
+				"fps": 30.0006420951905,
+				"frame_max_ms": 33.975,
+				"frame_p95_ms": 33.503,
+				"physics_max_ms": 0.958,
+				"physics_p95_ms": 0.923,
+				"samples": 884
+			},
+			"revision": "before"
+		}
+	]
+}

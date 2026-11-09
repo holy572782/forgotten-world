@@ -1,0 +1,173 @@
+{
+	"airborne_walk_samples": 0,
+	"architecture_shapes": 56,
+	"bridge": {
+		"fps": 60.0025204401344,
+		"frame_max_ms": 17.147,
+		"frame_p95_ms": 16.907,
+		"physics_max_ms": 2.392,
+		"physics_p95_ms": 1.062,
+		"samples": 359,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"bridge_fall": {
+		"approach": "(45.01445, -10.87742, -39.00108)",
+		"reason": "river",
+		"returned": "(45.01445, -10.87742, -39.00108)"
+	},
+	"checks": 277,
+	"chunk_floor_probes": {
+		"max_error_m": 0.0000352859497070313,
+		"misses": 0,
+		"over_floor_angle": 134,
+		"samples": 484
+	},
+	"contact_gaps": [],
+	"cross_back_to_main": {
+		"finish": "(7.469724, 6.530684, -67.5182)",
+		"seconds": 30.8333333333333,
+		"start": "(111.0213, 0.692672, -96.77048)",
+		"travel_m": 151.888328718022
+	},
+	"cross_to_far_bank": {
+		"finish": "(111.0213, 0.692672, -96.77048)",
+		"seconds": 30.8166666666667,
+		"start": "(7.464992, 6.522844, -67.45824)",
+		"travel_m": 151.856614364311
+	},
+	"entrance": {
+		"fps": 60.0032926597922,
+		"frame_max_ms": 17.301,
+		"frame_p95_ms": 16.778,
+		"physics_max_ms": 0.987,
+		"physics_p95_ms": 0.987,
+		"samples": 359,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"environment": {
+		"fps_cap": 60,
+		"godot": "4.7.2-stable (official)",
+		"gpu": "NVIDIA GeForce GTX 1080",
+		"physics_hz": 60,
+		"renderer": "gl_compatibility",
+		"resolution": [
+			1672,
+			941
+		]
+	},
+	"failures": [],
+	"gate_to_left_fork": {
+		"finish": "(-11.94324, 1.628346, -36.79225)",
+		"seconds": 8.61666666666667,
+		"start": "(-11.65294, 0.000827, 0.028725)",
+		"travel_m": 40.8675776203163
+	},
+	"gate_to_middle": {
+		"finish": "(7.515816, 6.537347, -67.52932)",
+		"seconds": 16.35,
+		"start": "(-11.6625, 0.000174, 1.5)",
+		"travel_m": 79.5322475880384
+	},
+	"generation_ms": 2306.532,
+	"jump_inputs_during_walk": 0,
+	"left_climb": {
+		"finish": "(-85.56056, 20.25024, -86.30853)",
+		"seconds": 21.0666666666667,
+		"start": "(-11.94324, 1.628346, -36.79225)",
+		"travel_m": 102.931502320804
+	},
+	"left_rejoin": {
+		"finish": "(19.43991, 18.08198, -111.7496)",
+		"seconds": 24.6,
+		"start": "(-85.51945, 20.25073, -86.23485)",
+		"travel_m": 120.792300001718
+	},
+	"long_frames": [],
+	"lookout": {
+		"fps": 60.0026207272786,
+		"frame_max_ms": 18.431,
+		"frame_p95_ms": 16.856,
+		"physics_max_ms": 0.911,
+		"physics_p95_ms": 0.911,
+		"samples": 359,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"lookout_walk": {
+		"finish": "(-85.51945, 20.25073, -86.23485)",
+		"seconds": 1.81666666666667,
+		"start": "(-85.56056, 20.25024, -86.30853)",
+		"travel_m": 6.09278866555542
+	},
+	"main_to_river_fork": {
+		"finish": "(7.464992, 6.522844, -67.45824)",
+		"seconds": 10.8833333333333,
+		"start": "(19.43991, 18.08198, -111.7496)",
+		"travel_m": 52.2130280355923
+	},
+	"middle": {
+		"fps": 60.0025104114383,
+		"frame_max_ms": 17.09,
+		"frame_p95_ms": 16.785,
+		"physics_max_ms": 0.745,
+		"physics_p95_ms": 0.745,
+		"samples": 359,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"middle_to_summit": {
+		"finish": "(36.76795, 45.00074, -180.0363)",
+		"seconds": 29.15,
+		"start": "(7.515816, 6.537347, -67.52932)",
+		"travel_m": 143.353973879945
+	},
+	"route_cost": {
+		"framing_calls": 13153,
+		"framing_queries": 0,
+		"framing_usec": 107773,
+		"recovery_max_usec": 2090,
+		"recovery_queries": 1562,
+		"recovery_ticks": 13153,
+		"recovery_usec": 689888,
+		"setup_queries": 16
+	},
+	"routes_performance": {
+		"fps": 60.0023992748326,
+		"frame_max_ms": 19.035,
+		"frame_p95_ms": 16.856,
+		"physics_max_ms": 2.998,
+		"physics_p95_ms": 1.371,
+		"samples": 13153
+	},
+	"safe_points": 7,
+	"summit": {
+		"fps": 60.0024201533254,
+		"frame_max_ms": 17.125,
+		"frame_p95_ms": 16.784,
+		"physics_max_ms": 0.789,
+		"physics_p95_ms": 0.789,
+		"samples": 359,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"summit_to_gate": {
+		"finish": "(-11.65294, 0.000827, 0.028725)",
+		"seconds": 44.8333333333333,
+		"start": "(36.76795, 45.00074, -180.0363)",
+		"travel_m": 221.790800565388
+	},
+	"terrain_shapes": 484,
+	"walk_samples": 12938
+}

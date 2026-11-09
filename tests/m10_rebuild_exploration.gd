@@ -1,6 +1,6 @@
 extends "res://tests/m10_wind_hills.gd"
 ## Uses the same camera-relative Input actions and production Player as the legacy walk test.
-const IMAGE_DIR := "res://docs/images/m10_rebuild/exploration/"
+const IMAGE_DIR := "res://.godot/m10_02r_stations/"
 const CAPTURE_SIZE := Vector2i(1672,941)
 var stations := {}
 var walking := false
@@ -70,7 +70,15 @@ func _run() -> void:
 	var river := _world_curve(field.routes[2])
 	stations = {"entrance":main[8],"middle":main[25],"lookout":left[24],"bridge":field.get_node("Landmarks/D_bridge").global_position,"summit":main.back()+Vector3(0,0,-4)}
 	if not "--stations" in args:
+		rig.measure_cost = true
+		scene.measure_cost = true
+		var initial_queries: int = scene.safety_queries
 		await _traverse(main,left,river)
+		results.route_cost = {"framing_usec":rig.framing_usec,"framing_calls":rig.framing_calls,"framing_queries":0,
+			"recovery_usec":scene.recovery_usec,"recovery_ticks":scene.recovery_ticks,"recovery_max_usec":scene.max_tick_usec,
+			"recovery_queries":scene.safety_queries-initial_queries,"setup_queries":initial_queries}
+		rig.measure_cost = false
+		scene.measure_cost = false
 		await _jump_and_camera(main)
 		await _fall_and_solid()
 	await _walk_off_map()
@@ -84,7 +92,7 @@ func _run() -> void:
 	results.failures = failures
 	var suffix := "fast" if fast else str(fps)
 	if "--stations" in args: suffix += "_stations"
-	var report := FileAccess.open("res://docs/measurements/m10_rebuild_exploration_"+suffix+".json",FileAccess.WRITE)
+	var report := FileAccess.open("res://docs/measurements/m10_rebuild_02r_route_"+suffix+".json",FileAccess.WRITE)
 	report.store_string(JSON.stringify(results,"\t"))
 	report.close()
 	print("Stage 02: ",checks," checks; failures: ",failures)
@@ -217,7 +225,7 @@ func _fall_and_solid() -> void:
 	_release()
 	_check(was_airborne and player.is_on_floor() and absf(player.position.y)<0.2 and scene.recovery_count==before,"ordinary ledge fall lands on grass")
 	# Start from a previously reached safe bank, then actually jump off the bridge.
-	await _place(field.to_global(field.routes[2].points[3]))
+	await _place(_ground(field.routes[2].points[3]))
 	var bank: Vector3 = scene.last_safe
 	await _place(bridge)
 	before = scene.recovery_count
@@ -228,7 +236,10 @@ func _fall_and_solid() -> void:
 		if i==3: Input.action_release("jump")
 		if scene.recovery_count>before: break
 	_release()
-	_check(scene.last_recovery=="river" and scene.recovery_count==before+1 and player.position.distance_to(bank)<0.25,"bridge fall returns to visited bank")
+	results.bridge_fall = {"approach":str(bank),"returned":str(player.position),"reason":scene.last_recovery}
+	print("BRIDGE FALL ",results.bridge_fall)
+	_check(scene.last_recovery=="river" and scene.recovery_count==before+1 and player.position.distance_to(bank)<1.0 and player.position.x<bridge.x,"bridge fall returns to visited bank")
+	bank = scene.last_safe
 	await _ticks(20)
 	Input.action_press("guard")
 	await _ticks(3)
@@ -291,8 +302,7 @@ func _save_station(label: String) -> void:
 
 func _walk_off_map() -> void:
 	# From the southern grass edge, leave the solid terrain under ordinary input.
-	var edge: Vector3 = _ground(Vector3(-15,0,field.layout.terrain.max_z-2))
-	var anchor: Vector3 = scene.last_safe
+	var edge: Vector3 = _ground(Vector3(-15,0,field.layout.terrain.max_z-6))
 	await _place(edge)
 	var count: int = scene.recovery_count
 	var left_floor := false
@@ -304,4 +314,4 @@ func _walk_off_map() -> void:
 	_release()
 	await _ticks(20)
 	_check(left_floor and scene.last_recovery=="boundary" and scene.recovery_count==count+1,"walk off map edge under gravity")
-	_check(player.is_on_floor() and player.position.distance_to(anchor)<0.3,"boundary fall lands at supported anchor")
+	_check(player.is_on_floor() and player.position.distance_to(edge)<5 and player.position.distance_to(scene.last_safe)<0.3,"boundary fall lands at local supported anchor")

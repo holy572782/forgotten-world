@@ -1,0 +1,123 @@
+{
+	"back_camera_left": {
+		"error": 0.0000247955322265625,
+		"faded": 0,
+		"held": 79,
+		"max_eye_offset_m": 12.7536725997925,
+		"max_step_deg": 3.72194339479014,
+		"outside": 0,
+		"worst": {
+			"desired": "(25.03065, 52.97224, -186.932)",
+			"eye": "(25.03065, 52.97224, -186.932)",
+			"locked": false,
+			"offset_m": 0.0,
+			"pivot_error_m": 0.000469207763671875,
+			"tick": 0,
+			"uv": "(0.5, 0.500025)"
+		}
+	},
+	"back_camera_right": {
+		"error": 0.0000247955322265625,
+		"faded": 0,
+		"held": 57,
+		"max_eye_offset_m": 10.4265689849854,
+		"max_step_deg": 3.82592192584618,
+		"outside": 0,
+		"worst": {
+			"desired": "(24.61934, 52.97224, -186.932)",
+			"eye": "(24.61934, 52.97224, -186.932)",
+			"locked": false,
+			"offset_m": 0.0,
+			"pivot_error_m": 0.000469207763671875,
+			"tick": 0,
+			"uv": "(0.5, 0.500025)"
+		}
+	},
+	"bend_camera_left": {
+		"error": 0.00000929832458496094,
+		"faded": 0,
+		"held": 0,
+		"max_eye_offset_m": 0.0,
+		"max_step_deg": 1.66788737220069,
+		"outside": 0,
+		"worst": {
+			"desired": "(48.95566, 48.37041, -162.432)",
+			"eye": "(48.95566, 48.37041, -162.432)",
+			"locked": false,
+			"offset_m": 0.0,
+			"pivot_error_m": 0.00017547607421875,
+			"tick": 0,
+			"uv": "(0.5, 0.500009)"
+		}
+	},
+	"bend_camera_right": {
+		"error": 0.00000929832458496094,
+		"faded": 0,
+		"held": 0,
+		"max_eye_offset_m": 0.0,
+		"max_step_deg": 1.66741801013866,
+		"outside": 0,
+		"worst": {
+			"desired": "(48.54434, 48.37041, -162.432)",
+			"eye": "(48.54434, 48.37041, -162.432)",
+			"locked": false,
+			"offset_m": 0.0,
+			"pivot_error_m": 0.00017547607421875,
+			"tick": 0,
+			"uv": "(0.5, 0.500009)"
+		}
+	},
+	"checks": 11,
+	"combat": {
+		"held_ticks": 75,
+		"hits": 2,
+		"return_error_m": 0.000786835618782789,
+		"violations": 0
+	},
+	"failures": [],
+	"front_camera_left": {
+		"error": 0.0000246763229370117,
+		"faded": 51,
+		"held": 4,
+		"max_eye_offset_m": 1.19717645645142,
+		"max_step_deg": 2.76144548143616,
+		"outside": 0,
+		"worst": {
+			"desired": "(37.03066, 52.97224, -176.9319)",
+			"eye": "(37.03066, 52.97224, -176.9319)",
+			"locked": false,
+			"offset_m": 0.0,
+			"pivot_error_m": 0.000469207763671875,
+			"tick": 0,
+			"uv": "(0.5, 0.500025)"
+		}
+	},
+	"front_camera_right": {
+		"error": 0.0000247955322265625,
+		"faded": 57,
+		"held": 4,
+		"max_eye_offset_m": 1.19718623161316,
+		"max_step_deg": 2.7611620285856,
+		"outside": 0,
+		"worst": {
+			"desired": "(36.61934, 52.97224, -176.9319)",
+			"eye": "(36.61934, 52.97224, -176.9319)",
+			"locked": false,
+			"offset_m": 0.0,
+			"pivot_error_m": 0.000469207763671875,
+			"tick": 0,
+			"uv": "(0.5, 0.500025)"
+		}
+	},
+	"guard": {
+		"floor": true,
+		"lens_error_deg": 0.0,
+		"result": "",
+		"state": 4
+	},
+	"recovery_event": {
+		"queries": 2,
+		"reason": "river",
+		"usec": 197
+	}
+}
