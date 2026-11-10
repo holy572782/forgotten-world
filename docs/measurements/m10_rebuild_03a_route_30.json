@@ -1,0 +1,173 @@
+{
+	"airborne_walk_samples": 0,
+	"architecture_shapes": 56,
+	"bridge": {
+		"fps": 30.0001692746981,
+		"frame_max_ms": 33.46,
+		"frame_p95_ms": 33.392,
+		"physics_max_ms": 0.478,
+		"physics_p95_ms": 0.478,
+		"samples": 179,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"bridge_fall": {
+		"approach": "(45.01445, -10.87742, -39.00108)",
+		"reason": "river",
+		"returned": "(45.01445, -10.87742, -39.00108)"
+	},
+	"checks": 271,
+	"chunk_floor_probes": {
+		"max_error_m": 0.0000352859497070313,
+		"misses": 0,
+		"over_floor_angle": 134,
+		"samples": 484
+	},
+	"contact_gaps": [],
+	"cross_back_to_main": {
+		"finish": "(7.391257, 6.534998, -67.5666)",
+		"seconds": 31.2,
+		"start": "(111.0379, 0.693848, -96.78575)",
+		"travel_m": 152.04324237071
+	},
+	"cross_to_far_bank": {
+		"finish": "(111.0379, 0.693848, -96.78575)",
+		"seconds": 31.1666666666667,
+		"start": "(7.416287, 6.517447, -67.40018)",
+		"travel_m": 151.931380750611
+	},
+	"entrance": {
+		"fps": 29.9987464210993,
+		"frame_max_ms": 35.455,
+		"frame_p95_ms": 33.598,
+		"physics_max_ms": 0.626,
+		"physics_p95_ms": 0.626,
+		"samples": 179,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"environment": {
+		"fps_cap": 30,
+		"godot": "4.7.2-stable (official)",
+		"gpu": "NVIDIA GeForce GTX 1080",
+		"physics_hz": 60,
+		"renderer": "gl_compatibility",
+		"resolution": [
+			1672,
+			941
+		]
+	},
+	"failures": [],
+	"gate_to_left_fork": {
+		"finish": "(-11.92718, 1.632222, -36.80434)",
+		"seconds": 8.96666666666667,
+		"start": "(-11.63549, 0.000831, 0.081115)",
+		"travel_m": 40.9496390465647
+	},
+	"gate_to_middle": {
+		"finish": "(7.541754, 6.547384, -67.57693)",
+		"seconds": 16.7,
+		"start": "(-11.6625, 0.000174, 1.5)",
+		"travel_m": 79.6123283356428
+	},
+	"generation_ms": 3470.886,
+	"jump_inputs_during_walk": 0,
+	"left_climb": {
+		"finish": "(-85.59695, 20.25048, -86.34688)",
+		"seconds": 21.4333333333333,
+		"start": "(-11.92718, 1.632222, -36.80434)",
+		"travel_m": 103.075248522684
+	},
+	"left_rejoin": {
+		"finish": "(19.48059, 18.07709, -111.7485)",
+		"seconds": 24.9666666666667,
+		"start": "(-85.62877, 20.25077, -86.14876)",
+		"travel_m": 120.959128340706
+	},
+	"long_frames": [],
+	"lookout": {
+		"fps": 30.0003201151476,
+		"frame_max_ms": 33.439,
+		"frame_p95_ms": 33.395,
+		"physics_max_ms": 0.581,
+		"physics_p95_ms": 0.581,
+		"samples": 179,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"lookout_walk": {
+		"finish": "(-85.62877, 20.25077, -86.14876)",
+		"seconds": 2.16666666666667,
+		"start": "(-85.59695, 20.25048, -86.34688)",
+		"travel_m": 6.21368067711592
+	},
+	"main_to_river_fork": {
+		"finish": "(7.416287, 6.517447, -67.40018)",
+		"seconds": 11.2333333333333,
+		"start": "(19.48059, 18.07709, -111.7485)",
+		"travel_m": 52.292344475165
+	},
+	"middle": {
+		"fps": 29.9995106225083,
+		"frame_max_ms": 35.081,
+		"frame_p95_ms": 33.444,
+		"physics_max_ms": 2.483,
+		"physics_p95_ms": 2.483,
+		"samples": 179,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"middle_to_summit": {
+		"finish": "(36.73468, 45.0008, -180.0574)",
+		"seconds": 29.5,
+		"start": "(7.541754, 6.547384, -67.57693)",
+		"travel_m": 143.421957403421
+	},
+	"route_cost": {
+		"framing_calls": 13382,
+		"framing_queries": 0,
+		"framing_usec": 83470,
+		"recovery_max_usec": 278,
+		"recovery_queries": 1556,
+		"recovery_ticks": 13382,
+		"recovery_usec": 555256,
+		"setup_queries": 16
+	},
+	"routes_performance": {
+		"fps": 30.0003069976117,
+		"frame_max_ms": 35.219,
+		"frame_p95_ms": 33.515,
+		"physics_max_ms": 2.581,
+		"physics_p95_ms": 0.864,
+		"samples": 6691
+	},
+	"safe_points": 7,
+	"summit": {
+		"fps": 30.0003905078765,
+		"frame_max_ms": 33.44,
+		"frame_p95_ms": 33.383,
+		"physics_max_ms": 0.474,
+		"physics_p95_ms": 0.474,
+		"samples": 179,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"summit_to_gate": {
+		"finish": "(-11.63549, 0.000831, 0.081115)",
+		"seconds": 45.2,
+		"start": "(36.73468, 45.0008, -180.0574)",
+		"travel_m": 221.951821738854
+	},
+	"terrain_shapes": 484,
+	"walk_samples": 6476
+}

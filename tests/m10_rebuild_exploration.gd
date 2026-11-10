@@ -1,6 +1,6 @@
 extends "res://tests/m10_wind_hills.gd"
 ## Uses the same camera-relative Input actions and production Player as the legacy walk test.
-const IMAGE_DIR := "res://.godot/m10_02r_stations/"
+var station_image_dir := "res://.godot/m10_02r_stations/"
 const CAPTURE_SIZE := Vector2i(1672,941)
 var stations := {}
 var walking := false
@@ -24,6 +24,8 @@ func _ground(local: Vector3) -> Vector3:
 
 func _run() -> void:
 	var args := OS.get_cmdline_user_args()
+	if "--03a" in args:
+		station_image_dir = "res://.godot/m10_03a_stations/"
 	fast = "--fast" in args
 	fps = 30 if "--30" in args else 60
 	Engine.max_fps = 0 if fast else fps
@@ -92,7 +94,8 @@ func _run() -> void:
 	results.failures = failures
 	var suffix := "fast" if fast else str(fps)
 	if "--stations" in args: suffix += "_stations"
-	var report := FileAccess.open("res://docs/measurements/m10_rebuild_02r_route_"+suffix+".json",FileAccess.WRITE)
+	var prefix := "m10_rebuild_03a_route_" if "--03a" in args else "m10_rebuild_02r_route_"
+	var report := FileAccess.open("res://docs/measurements/"+prefix+suffix+".json",FileAccess.WRITE)
 	report.store_string(JSON.stringify(results,"\t"))
 	report.close()
 	print("Stage 02: ",checks," checks; failures: ",failures)
@@ -263,7 +266,7 @@ func _fall_and_solid() -> void:
 	_check(player.is_on_floor(),"post-recovery landing")
 
 func _profile_stations() -> void:
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(IMAGE_DIR))
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(station_image_dir))
 	for label in stations:
 		await _place(stations[label])
 		var headings := {"lookout":-72.0,"bridge":90.0}
@@ -298,7 +301,7 @@ func _profile_stations() -> void:
 func _save_station(label: String) -> void:
 	await RenderingServer.frame_post_draw
 	var image := root.get_texture().get_image()
-	_check(image.get_size()==CAPTURE_SIZE and image.save_png(IMAGE_DIR+label+".png")==OK,label+" full resolution screenshot")
+	_check(image.get_size()==CAPTURE_SIZE and image.save_png(station_image_dir+label+".png")==OK,label+" full resolution screenshot")
 
 func _walk_off_map() -> void:
 	# From the southern grass edge, leave the solid terrain under ordinary input.

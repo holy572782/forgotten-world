@@ -1,0 +1,89 @@
+{
+	"airborne_walk_samples": 0,
+	"architecture_shapes": 56,
+	"bridge": {
+		"fps": 60.0022095521178,
+		"frame_max_ms": 16.842,
+		"frame_p95_ms": 16.73,
+		"physics_max_ms": 0.648,
+		"physics_p95_ms": 0.648,
+		"samples": 359,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"checks": 31,
+	"chunk_floor_probes": {
+		"max_error_m": 0.0000352859497070313,
+		"misses": 0,
+		"over_floor_angle": 134,
+		"samples": 484
+	},
+	"contact_gaps": [],
+	"entrance": {
+		"fps": 60.0026608422301,
+		"frame_max_ms": 16.827,
+		"frame_p95_ms": 16.728,
+		"physics_max_ms": 0.563,
+		"physics_p95_ms": 0.545,
+		"samples": 359,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"environment": {
+		"fps_cap": 60,
+		"godot": "4.7.2-stable (official)",
+		"gpu": "NVIDIA GeForce GTX 1080",
+		"physics_hz": 60,
+		"renderer": "gl_compatibility",
+		"resolution": [
+			1672,
+			941
+		]
+	},
+	"failures": [],
+	"generation_ms": 2894.006,
+	"jump_inputs_during_walk": 0,
+	"lookout": {
+		"fps": 60.0029617060764,
+		"frame_max_ms": 16.851,
+		"frame_p95_ms": 16.728,
+		"physics_max_ms": 0.926,
+		"physics_p95_ms": 0.628,
+		"samples": 359,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"middle": {
+		"fps": 60.0024602680088,
+		"frame_max_ms": 17.027,
+		"frame_p95_ms": 16.738,
+		"physics_max_ms": 1.03,
+		"physics_p95_ms": 1.03,
+		"samples": 359,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"safe_points": 7,
+	"summit": {
+		"fps": 60.0036537043732,
+		"frame_max_ms": 16.878,
+		"frame_p95_ms": 16.802,
+		"physics_max_ms": 1.627,
+		"physics_p95_ms": 1.627,
+		"samples": 359,
+		"viewport": [
+			1672,
+			941
+		]
+	},
+	"terrain_shapes": 484,
+	"walk_samples": 0
+}

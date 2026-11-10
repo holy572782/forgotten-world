@@ -42,10 +42,9 @@ func _ready() -> void:
 	_build_landmarks()
 	if exploration_physics:
 		for visual: MeshInstance3D in get_node("ArchitectureProxies").find_children("*","MeshInstance3D",true,false):
-			# The summit slab is 3 cm above its already solid, level foundation.
-			if visual.name == "PlazaSurface":
-				continue
 			_solid_visual(visual)
+	# Summit masonry owns its simplified colliders; the plaza rests on the terrain.
+	_build_summit(get_node("ArchitectureProxies"))
 	_build_background_proxies()
 	var markers := group("Landmarks")
 	for key in layout.landmarks:
@@ -467,7 +466,6 @@ func _build_landmarks() -> void:
 	arch(parent,gate,6,10.2,1.35,2.0)
 	block(parent,gate+Vector3(-9,1.7,0),Vector3(9,3.4,1.7),stone)
 	block(parent,gate+Vector3(9,1.1,0),Vector3(9,2.2,1.7),stone)
-	_build_summit(parent)
 	var left := vec(layout.landmarks.C_overlook)
 	for remnant in [[Vector2(-7,0),Vector3(3,3,2)],[Vector2(2,7),Vector3(2,2,2)]]:
 		var offset: Vector2 = remnant[0]
@@ -487,17 +485,8 @@ func _build_summit(parent: Node3D) -> void:
 	parent.add_child(summit)
 	var cfg: Dictionary = layout.summit
 	block(summit,Vector3(0,-0.36,cfg.plaza_center_z),Vector3(cfg.plaza[0],0.8,cfg.plaza[1]),stone).name = "PlazaSurface"
-	for item in cfg.arches_xz_width_height_rim_depth_yaw:
-		var bay := Node3D.new()
-		bay.position = Vector3(item[0],0,item[1])
-		bay.rotation.y = deg_to_rad(item[6])
-		summit.add_child(bay)
-		arch(bay,Vector3.ZERO,item[2],item[3],item[4],item[5])
-	for pier in cfg.piers_xz_height:
-		block(summit,Vector3(pier[0],pier[2]*0.5,pier[1]),Vector3(1.8,pier[2],1.8),stone)
-	for wall in cfg.wall_fragments_xz_width_height_depth_yaw:
-		var fragment := block(summit,Vector3(wall[0],wall[3]*0.5,wall[1]),Vector3(wall[2],wall[3],wall[4]),stone)
-		fragment.rotation.y = deg_to_rad(wall[5])
+	var builder := preload("res://scripts/maps/wind_hills_rebuild/summit_masonry.gd").new()
+	builder.build(summit,cfg,material(Color.WHITE,true),exploration_physics)
 
 func _build_background_proxies() -> void:
 	var parent := group("DistantCompositionProxies")

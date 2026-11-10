@@ -1,0 +1,93 @@
+[
+  {
+    "test": "m02_movement",
+    "script_error": false,
+    "log": ".godot/m10_rebuild_03a_regression_m02_movement.log",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "test": "m03_jump",
+    "script_error": false,
+    "log": ".godot/m10_rebuild_03a_regression_m03_jump.log",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "test": "m04_camera",
+    "script_error": false,
+    "log": ".godot/m10_rebuild_03a_regression_m04_camera.log",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "test": "m04_occlusion",
+    "script_error": false,
+    "log": ".godot/m10_rebuild_03a_regression_m04_occlusion.log",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "test": "m09_startup",
+    "script_error": false,
+    "log": ".godot/m10_rebuild_03a_regression_m09_startup.log",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "test": "m07_combo",
+    "script_error": false,
+    "log": ".godot/m10_rebuild_03a_regression_m07_combo.log",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "test": "m07_chain",
+    "script_error": false,
+    "log": ".godot/m10_rebuild_03a_regression_m07_chain.log",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "test": "m08_defense",
+    "script_error": false,
+    "log": ".godot/m10_rebuild_03a_regression_m08_defense.log",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "test": "m09_enemy_combat",
+    "script_error": false,
+    "log": ".godot/m10_rebuild_03a_regression_m09_enemy_combat.log",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "test": "m10_wind_hills",
+    "script_error": false,
+    "log": ".godot/m10_rebuild_03a_regression_m10_wind_hills.log",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "test": "m06_target_dash",
+    "script_error": false,
+    "log": ".godot/m10_rebuild_03a_regression_m06_target_dash.log",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "test": "m07_left_selection",
+    "script_error": false,
+    "log": ".godot/m10_rebuild_03a_regression_m07_left_selection.log",
+    "exit_code": 0,
+    "completed": true
+  },
+  {
+    "test": "pursuit_budget",
+    "script_error": false,
+    "log": ".godot/m10_rebuild_03a_regression_pursuit_budget.log",
+    "exit_code": 0,
+    "completed": true
+  }
+]

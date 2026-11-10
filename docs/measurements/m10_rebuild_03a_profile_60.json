@@ -1,0 +1,24 @@
+{
+	"checks": 35,
+	"dimensions_m": "(59.72965, 18.04698, 23.93349)",
+	"failures": [],
+	"generation_ms": 3293.169,
+	"meshes": 567,
+	"orbit": {
+		"fade_frames": 197,
+		"mean_draw_calls": 1272.21666666667,
+		"outside": 0,
+		"peak_draw_calls": 1533
+	},
+	"shapes": 540,
+	"summit_meshes": 43,
+	"summit_orbit": {
+		"fps": 60.0024430588987,
+		"frame_max_ms": 18.065,
+		"frame_p95_ms": 16.881,
+		"physics_max_ms": 3.526,
+		"physics_p95_ms": 3.526,
+		"samples": 419
+	},
+	"summit_shapes": 42
+}
